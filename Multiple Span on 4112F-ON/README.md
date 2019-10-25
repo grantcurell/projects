@@ -188,10 +188,10 @@ just uploaded the PCAP and replayed it with `tcpreplay -i ens224 ./test_pcap.pca
 I then confirmed that all target ports received traffic. See screenshots below:
 
 ### Host 1
-![](images/host1.png)
+![](images/host1.PNG)
 
 ### Host 2
-![](images/host2.png)
+![](images/host2.PNG)
 
 The host I collected the traffic on was 192.168.1.6 and as you can see from the 
 images both hosts were able to see traffic from the tcpreplay session.
@@ -290,7 +290,7 @@ ports. More investigation required to figure out the difference.
 ![](images/host2_2.PNG)
 - I checked that pure L3 traffic was passed correctly using ICMP.
   
-![](images/icmp_check.png)
+![](images/icmp_check.PNG)
 
 ### Noted Problem
 
