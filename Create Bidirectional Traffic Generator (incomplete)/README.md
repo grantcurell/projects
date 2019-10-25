@@ -2,6 +2,12 @@
 
 ## Environment
 
+### VMWare
+
+I built out a VM on my vSphere cluster running 6.7.0.
+
+### Guest OS
+
 I used CentOS 7
 
 Info:
@@ -28,6 +34,8 @@ Info:
     CentOS Linux release 7.7.1908 (Core)
     CentOS Linux release 7.7.1908 (Core)
 
+
+
 ## Optional - Install VMWare Tools
 
 I like using VMWare tools when I have a GUI because it makes the experience a bit
@@ -43,8 +51,13 @@ Install by doing the following:
 6. Extract it
 7. Run the installer file
 
+## Configuration of VM Networking
 
-## Installation
+I used a dedicated physical interface connected directly to a virtual switch
+with all security settings disabled and fed that directly into NIC2 of my packet
+generator.
+
+## Installation of Packet Sender
 
 1. To install Packet Sender you need a package management solution called snap. Follow instructions [here](https://snapcraft.io/docs/installing-snap-on-centos). I rebooted at the end of the instructions.
 2. Packet Sender requires a GUI. I installed that with `yum -y groups install "GNOME Desktop"`
