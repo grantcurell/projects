@@ -1,4 +1,4 @@
-# Notes for Creating Traffic Generator
+# Notes for Creating Bidirectional Traffic Generator
 
 ## Environment
 
