@@ -65,16 +65,6 @@ OpenSwitch to create a one to many port configuration using SPAN.
 Wasn't sure why I got the unstable version after installation. It didn't cause any
 problems for testing so I just left it as is.
 
-## Physical Configuration
-
-![](images/switch.jpg)
-
-I didn't have enough target hosts to try outputting from one port to all ports so
-I simulated it. The purple cable in the image is the input port from the traffic
-generator (tcpreplay) and the white and yellow cables go out to the hosts listed
-as host 1 and host 2 in the test results section. The ports with the white and yellow
-cables were configured as the mirror's target ports.
-
 # Setup ONIE Prerequisites
 
 I ran the network version of the ONIE installation using a web server. Below
@@ -136,6 +126,18 @@ oddities that come with running in the console port.
 ## Attempt 1 - Mirror Ports
 
 My first go is to try using OpenSwitch's built in mirroring capability.
+
+### Physical Configuration
+
+![](images/switch.JPG)
+
+I didn't have enough target hosts to try outputting from one port to all ports so
+I simulated it. The purple cable in the image is the input port from the traffic
+generator (tcpreplay) and the white and yellow cables go out to the hosts listed
+as host 1 and host 2 in the test results section. The ports with the white and yellow
+cables were configured as the mirror's target ports.
+
+### Mirror Configuration
 
 For each port you want to mirror to run `opx-config-mirror create --src_intf e101-001-0 --dest_intf e101-005-0 --direction ingress --type span`. Substitute your source and destination ports appropriately.
 
@@ -252,6 +254,15 @@ The switch accepts the config. However, the traffic only goes out to one port
 at a time.
 
 ## Attempt 4 (Working Solution) - tc on Management Interface with a Bridge
+
+### Physical Configuration
+
+As mentioned in attempt 3, I used the management interface is the ingress port for
+mirroring.
+
+![](images/switch_2.JPG)
+
+### Bridge/tc Configuration
 
 After attempt 3 I started thinking about other ways to connect things. Realized
 I could just pump everything to a bridge and let that do the replication. That worked!
