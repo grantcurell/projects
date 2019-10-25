@@ -285,7 +285,7 @@ ports. More investigation required to figure out the difference.
 - I moved the SFPs around to multiple different ports to make sure the traffic was mirroing on all of them
 - I double checked the traffic I was capturing belonged to the PCAP in question. Easy enough to see because it has IP addresses the hosts in question wouldn't ever otherwise see. Screenshots for confirmation below.
 ### Host 1
-![](images/host1_2.png)
+![](images/host1_2.PNG)
 ### Host 2
 ![](images/host2_2.PNG)
 - I checked that pure L3 traffic was passed correctly using ICMP.
