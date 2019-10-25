@@ -193,7 +193,7 @@ I then confirmed that all target ports received traffic. See screenshots below:
 ![](images/host1.PNG)
 
 ### Host 2
-![](images/host2.PNG)
+![](images/host2.png)
 
 The host I collected the traffic on was 192.168.1.6 and as you can see from the 
 images both hosts were able to see traffic from the tcpreplay session.
