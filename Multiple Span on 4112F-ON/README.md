@@ -102,6 +102,10 @@ If `onie-server` is not immediately resolvable, the install process will not wor
 
 # Configure Management Interface
 
+**Update:** After I got it working I ended up using this as an ingress interface
+so this step is more or less optional. You won't be able to SSH into this interface
+in the end config (at least not easily).
+
 1. Start by running `sudo -i` to move to privileged mode. **Warning:**  I noticed the OPX command line tools won't behave correctly unless you are privileged. Ex: `opx-show-interface` won't list any interfaces.
 2. I added vim to my box before continuing with `sudo apt-get install -y vim`
 3. The management interface is configured like a typicaly Debian interface with `vim /etc/network/interface.d/eth0`
