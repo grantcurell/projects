@@ -100,7 +100,17 @@ If `onie-server` is not immediately resolvable, the install process will not wor
 4. At this point the ONIE discovery process will commence. It will print each location it attempts to search. It should find the onie-server DNS record and the installation should begin automatically. If this doesn't happen it means there is an issue with the preconfiguration above. Try swapping out the ethernet management cable with a host. Make sure that host pulls DNS/DHCP correctly and is able to download the onie-installer file.
 5. Wait for the installation to finish and the switch to reboot. Login with admin/admin.
 
-# Configure Management Interface
+# Configure Device as TAP
+
+## Physical Configuration
+
+For this configuration to work, we will use the management interface as the input
+interface for the tap. See image below. You will need to move your network cable
+over from your usual network to your traffic generator.
+
+![](images/switch_2.JPG)
+
+## Configure Management Interface (Optional)
 
 **Update:** After I got it working I ended up using this as an ingress interface
 so this step is more or less optional. You won't be able to SSH into this interface
@@ -125,7 +135,54 @@ At this juncture your management interface should be up and running and you shou
 be able to SSH to it. I went ahead and swapped to SSH so as not to deal with the
 oddities that come with running in the console port.
 
-# My Testing
+## Bridge/tc Configuration
+
+After attempt 3 I started thinking about other ways to connect things. Realized
+I could just pump everything to a bridge and let that do the replication. That worked!
+
+Do the following to get it up and running:
+
+`tc` is a feature of modern Linux kernels designed for mirroring traffic. I found
+[this](https://davidwaiting.com/using-linux-tc-for-traffic-mirroring/) article
+helpful. [This Mellanox article](https://github.com/Mellanox/mlxsw/wiki/Port-Mirroring) was also
+useful.
+
+**WARNING:** You must use your management interface for the ingress port or this
+solution will not work! I noticed the other ports do not behave like normal Linux
+ports. More investigation required to figure out the difference.
+
+1. Create a bridge interface with `brctl addbr br0`
+2. Attach all interfaces you want as part of the port mirroring to the bridge with `brctl addif br0 < INTERFACE >`
+   1. Make sure all interfaces in use are enabled with `ip link set < INTERFACE > up`
+3. Disable MAC address learning on the bridge with `brctl setageing br0 0`
+4. Set the device's management interface to promiscuous mode with `ip link set < MGMT_INTERFACE > promisc on`
+5. The first thing I did was create an ingress queue on my input interface with `tc qdisc add dev < MGMT_INTERFACE > handle ffff: ingress`
+   1. If you need to delete a qdisc you can do it with `tc qdisc del dev < MGMT_INTERFACE > [ root | ingress ]`
+6. Double check your queue with handle ffff was created with `tc -s qdisc ls dev < MGMT_INTERFACE >`
+7. Next we want to mirror all traffic from the ingress port to an output port with `tc filter add dev < MGMT_INTERFACE > parent ffff: protocol all u32 match u32 0 0 action mirred egress mirror dev br0`
+8. Check that your port mirror appeared in the config with `tc -s -p filter ls dev < MGMT_INTERFACE > parent ffff:`
+   1. If you need to delete the filters you can do so with `tc filter del dev < MGMT_INTERFACE > parent ffff:`
+9. Set queue to not shape traffic with `tc qdisc add dev < MGMT_INTERFACE > handle 1: root prio`
+
+## Things I Tried
+
+- I added 7 interfaces to my bridge to make sure there weren't any strange limitations
+- I moved the SFPs around to multiple different ports to make sure the traffic was mirroing on all of them
+- I double checked the traffic I was capturing belonged to the PCAP in question. Easy enough to see because it has IP addresses the hosts in question wouldn't ever otherwise see. Screenshots for confirmation below.
+### Host 1
+![](images/host1_2.PNG)
+### Host 2
+![](images/host2_2.PNG)
+- I checked that pure L3 traffic was passed correctly using ICMP.
+  
+![](images/icmp_check.PNG)
+
+### Noted Problem
+
+The only major issue I noticed is that pure layer 2 traffic didn't get passed. Haven't
+figured out how to fix that yet.
+
+# Failed Ideas
 
 ## Attempt 1 - Mirror Ports
 
@@ -256,59 +313,3 @@ interface instead of one of the other interfaces.
 
 The switch accepts the config. However, the traffic only goes out to one port
 at a time.
-
-## Attempt 4 (Working Solution) - tc on Management Interface with a Bridge
-
-### Physical Configuration
-
-As mentioned in attempt 3, I used the management interface is the ingress port for
-mirroring.
-
-![](images/switch_2.JPG)
-
-### Bridge/tc Configuration
-
-After attempt 3 I started thinking about other ways to connect things. Realized
-I could just pump everything to a bridge and let that do the replication. That worked!
-
-Do the following to get it up and running:
-
-`tc` is a feature of modern Linux kernels designed for mirroring traffic. I found
-[this](https://davidwaiting.com/using-linux-tc-for-traffic-mirroring/) article
-helpful. [This Mellanox article](https://github.com/Mellanox/mlxsw/wiki/Port-Mirroring) was also
-useful.
-
-**WARNING:** You must use your management interface for the ingress port or this
-solution will not work! I noticed the other ports do not behave like normal Linux
-ports. More investigation required to figure out the difference.
-
-1. Create a bridge interface with `brctl addbr br0`
-2. Attach all interfaces you want as part of the port mirroring to the bridge with `brctl addif br0 <INTERFACE>`
-3. Disable MAC address learning on the bridge with `brctl setageing br0 0`
-4. The first thing I did was create an ingress queue on my input interface with `tc qdisc add dev < MGMT_INTERFACE > handle ffff: ingress`
-   1. If you need to delete a qdisc you can do it with `tc qdisc del dev < MGMT_INTERFACE > [ root | ingress ]`
-5. Double check your queue with handle ffff was created with `tc -s qdisc ls dev < MGMT_INTERFACE >`
-6. Next we want to mirror all traffic from the ingress port to an output port with `tc filter add dev < MGMT_INTERFACE > parent ffff: protocol all u32 match u32 0 0 action mirred egress mirror dev br0`
-7. Check that your port mirror appeared in the config with `tc -s -p filter ls dev < MGMT_INTERFACE > parent ffff:`
-   1. If you need to delete the filters you can do so with `tc filter del dev < MGMT_INTERFACE > parent ffff:`
-8. Set queue to not shape traffic with `tc qdisc add dev < MGMT_INTERFACE > handle 1: root prio`
-
-
-### Things I Tried
-
-- I added 7 interfaces to my bridge to make sure there weren't any strange limitations
-- I moved the SFPs around to multiple different ports to make sure the traffic was mirroing on all of them
-- I double checked the traffic I was capturing belonged to the PCAP in question. Easy enough to see because it has IP addresses the hosts in question wouldn't ever otherwise see. Screenshots for confirmation below.
-### Host 1
-![](images/host1_2.PNG)
-### Host 2
-![](images/host2_2.PNG)
-- I checked that pure L3 traffic was passed correctly using ICMP.
-  
-![](images/icmp_check.PNG)
-
-### Noted Problem
-
-The only major issue I noticed is that pure layer 2 traffic didn't get passed. Haven't
-figured out how to fix that yet.
-
