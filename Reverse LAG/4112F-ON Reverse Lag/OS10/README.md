@@ -1,4 +1,4 @@
-# Reverse Lag Test - OPX
+# Reverse Lag Test - OS10
 
 In this test case the goal is to create a simple packet broker using a reverse
 LAG port.
@@ -6,24 +6,6 @@ LAG port.
 # Helpful Links
 
 [ONIE Network Install Process Overview](https://opencomputeproject.github.io/onie/user-guide/index.html#installing-over-the-network)
-
-[OPX Install Instructions for Dell EMC Equipment](https://github.com/open-switch/opx-docs/wiki/Install-OPX-on-Dell-EMC-ON-series-platforms)
-
-[OPX Tools Source Code](https://github.com/open-switch/opx-tools)
-
-[OPX Command Reference](https://github.com/open-switch/opx-docs/wiki/OPX-commands)
-
-[OPX LAG Command Documenattion](https://github.com/open-switch/opx-docs/wiki/opx-config-lag)
-
-[OPX Docs Home](https://github.com/open-switch/opx-docs/wiki)
-
-[List of Supported Hardware](https://github.com/open-switch/opx-docs/wiki/hardware-support)
-
-## Helpful Debug Commands
-
-    cps_get_oid.py -qua target base-switch/switching-entities/switching-entity
-    cps_model_info base-switch/switching-entities/switching-entity
-    cps_get_oid.py -qua target base-switch/switching-entities/switching-entity name=lag-hash-fields attr=src-ip,dest-ip,l4-dest-port,l4-src-port,ip-protocol
 
 # My Configuration
 
@@ -55,29 +37,25 @@ LAG port.
     Red Hat Enterprise Linux release 8.0 (Ootpa)
     Red Hat Enterprise Linux release 8.0 (Ootpa)
 
-## OPX Version
+## OS 10 Version
 
-    OS_NAME="OPX"
-    OS_VERSION="unstable"
-    PLATFORM="S4112F-ON"
-    ARCHITECTURE="x86_64"
-    INTERNAL_BUILD_ID="OpenSwitch blueprint for Dell 1.0.0"
-    BUILD_VERSION="unstable.0-stretch"
-    BUILD_DATE="2019-06-21T19:04:22+0000"
-    INSTALL_DATE="2019-10-23T23:16:10+00:00"
-    SYSTEM_UPTIME= 1 day, 5 minutes
-    SYSTEM_STATE= running
-    UPGRADED_PACKAGES=no
-    ALTERED_PACKAGES=yes
-
-Wasn't sure why I got the unstable version after installation. It didn't cause any
-problems for testing so I just left it as is.
+    OS10# show version
+    Dell EMC Networking OS10 Enterprise
+    Copyright (c) 1999-2019 by Dell Inc. All Rights Reserved.
+    OS Version: 10.5.0.2
+    Build Version: 10.5.0.2.468
+    Build Time: 2019-10-19T00:29:00+0000
+    System Type: S4112F-ON
+    Architecture: x86_64
+    Up Time: 00:03:39
 
 # Setup ONIE Prerequisites
 
 See [ONIE Install Setup](/README.md#how-to-configure-onie) for instructions.
 
 # Configure Device for Reverse LAG
+
+IN PROGRESS
 
 ## Physical Configuration
 
