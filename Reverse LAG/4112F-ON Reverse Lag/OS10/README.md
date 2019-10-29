@@ -245,3 +245,34 @@ channel to be load balanced out to all of our listening devices.
     !
     telemetry
 
+# Other Notes
+
+The default VLAN on our OS10 switch is VLAN 1 and is untagged.
+The default configuration of a port is Switchport access vlan 1 on all ports (factory default)
+All ports will show in vlan 1, and vlan 1 will be labeled as the default vlan  using command “sho vlan”
+ 
+If you change the default vlan using the command “default vlan-id” it will change the switchport access vlan on all interfaces that were in the default vlan to the new specified default vlan.
+ 
+    default vlan-id 3
+    
+all vlan 1 ports get changed to vlan 3 ports automatically (vlan 3 is the new default vlan), and the interfaces will sho Switchport access vlan 3
+ 
+If you want any port to be in a different untagged vlan other the default vlan, you must change it via the command “switchport access vlan <vlan-id>”
+ 
+On a trunk port, the default vlan is the native vlan. If you want to change the native vlan on trunk port, then you use the command “switchport access vlan <vlan-id>”
+ 
+So in my example I sent earlier
+The default vlan is vlan 1 on all ports except the trunk port. sho run will sho Switchport access vlan 1 on all interfaces except the trunk port because I changed it.
+I specified vlan 2 as the native vlan for the trunk port only.
+ 
+Untagged VLAN ==> switchport access vlan 2
+Tagged VLAN ==> switchport trunk allowed vlan 1612-1615,3939
+ 
+Example:
+    interface ethernet1/1/17
+    description Node1_Port1
+    switchport mode trunk
+    switchport access vlan 2
+    switchport trunk allowed vlan 1612-1615,3939
+    spanning-tree port type edge
+    no shutdown
