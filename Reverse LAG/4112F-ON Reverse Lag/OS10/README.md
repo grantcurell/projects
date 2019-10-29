@@ -268,6 +268,11 @@ consistently landed on different sessions. Without modifying the guts of how the
 algorithm itself is implemented, there isn't a way to fix this. IE: The idea isn't
 going to work.
 
+The reason for this is that security sensors like Bro and Suricata require the
+complete conversation be sent to a single instance. That is to say, a single
+instance of Bro or Suricata *must* see the entire conversation. The configuration
+above will cause an instance to see only one side of any given conversation.
+
 # Other Notes
 
 The default VLAN on our OS10 switch is VLAN 1 and is untagged.
