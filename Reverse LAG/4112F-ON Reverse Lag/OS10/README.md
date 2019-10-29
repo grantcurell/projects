@@ -7,6 +7,8 @@ LAG port.
 
 [ONIE Network Install Process Overview](https://opencomputeproject.github.io/onie/user-guide/index.html#installing-over-the-network)
 
+[Dell OS10 Manual](https://topics-cdn.dell.com/pdf/networking-s5148f-on_connectivity-guide4_en-us.pdf)
+
 # My Configuration
 
 ## General Configuration
@@ -53,16 +55,18 @@ LAG port.
 
 See [ONIE Install Setup](/README.md#how-to-configure-onie) for instructions.
 
-# Configure Device for Reverse LAG
+# Configure Management Interface
 
-IN PROGRESS
+See [Configure Management Interface on Dell OS10](/README.md#configure-managment-interface-on-dell-os10)
+
+# Configure Device for Reverse LAG
 
 ## Physical Configuration
 
 I used the following SFPs
 
-- 1, 1Gb/s copper SFP (e101-001-0) for input
-- 2, 1Gb/s copper SFPs (e101-005-0/e101-009-0) and 1, 10Gb/s, fiber SFP (e101-012-0) for output
+- 1, 1Gb/s copper SFP (Ethernet 1/1/1) for input
+- 2, 1Gb/s copper SFPs (Ethernet 1/1/5/Ethernet 1/1/9) and 1, 1Gb/s, fiber SFP (Ethernet 1/1/12) for output
 
 ### Input Port
 ![](images/input_port.JPG)
@@ -74,105 +78,170 @@ I used the following SFPs
 
 ### Enable LAG Ports and Input Port
 
-    root@OPX:~# ip link set e101-001-0 up
-    root@OPX:~# ip link set e101-005-0 up
-    root@OPX:~# ip link set e101-009-0 up
-    root@OPX:~# ip link set e101-012-0 up
-    root@OPX:~# opx-show-interface --summary
-    Port       | Enabled | Operational status | Supported speed
-    -----------------------------------------------------------
-    e101-001-0 | yes     | up                 | 1G 10G
-    e101-002-0 | no      | down               | 1G 10G
-    e101-003-0 | no      | down               | 1G 10G
-    e101-004-0 | no      | down               | 1G 10G
-    e101-005-0 | yes     | up                 | 1G 10G
-    e101-006-0 | no      | down               | 1G 10G
-    e101-007-0 | no      | down               | 1G 10G
-    e101-008-0 | no      | down               | 1G 10G
-    e101-009-0 | yes     | up                 | 1G 10G
-    e101-010-0 | no      | down               | 1G 10G
-    e101-011-0 | no      | down               | 1G 10G
-    e101-012-0 | yes     | up                 | 1G 10G
-    e101-013-0 | no      | down               | 100G
-    e101-014-0 | no      | down               | 100G
-    e101-015-0 | no      | down               | 100G
-    eth0       | yes     | UNKNOWN            | UNKNOWN
+#### Verify All Interfaces are Running at the Same Speed
 
-### Configure LAG
+All interfaces must be the same speed in a LAG. In my case, the fiber interface
+was running at 10Gb/s so I brought that down to 1Gb/s by doing the following:
 
-#### Configure LAG Algorithm
+    OS10(config)# interface ethernet 1/1/12
+    OS10(conf-if-eth1/1/12)# speed 1000
+    OS10(conf-if-eth1/1/12)# <165>1 2019-10-28T19:10:22.616888+00:00 OS10 dn_alm 669 - - Node.1-Unit.1:PRI [event], Dell EMC (OS10) %IFM_OSTATE_DN: Interface operational state is down :ethernet1/1/12
+    OS10(conf-if-eth1/1/12)#
+    OS10(conf-if-eth1/1/12)# <165>1 2019-10-28T19:10:29.591467+00:00 OS10 dn_alm 669 - - Node.1-Unit.1:PRI [event], Dell EMC (OS10) %IFM_OSTATE_UP: Interface operational state is up :ethernet1/1/12
 
-You can see the switch's global paramters with the `opx-show-global-switch` command:
+#### Add Interfaces to the Port Channel Group
 
-    root@OPX:~# opx-show-global-switch
-    Switch id 0
-        ACL entry max priority:                     2147483647
-        ACL entry min priority:                     0
-        ACL table max priority:                     11
-        ACL table min priority:                     0
-        Bridge table size:                          147456
-        BST enable:                                 off
-        BST tracking mode:                          current
-        Counter refresh interval:                   5 s
-        Default mac address:                        88:6f:d4:98:b7:80
-        ECMP group size:                            256
-        ECMP hash algorithm:                        crc
-        ECMP hash seed value:                       0
-        Egress buffer pool num:                     4
-        Ingress buffer pool num:                    4
-        IPv6 extended prefix routes:                0
-        IPv6 extended prefix routes lpm block size: 1024
-        L3 nexthop table size:                      32768
-        LAG hash algorithm:                         crc
-        LAG hash seed value:                        0
-        MAC address aging timer:                    1800 s
-        Max ECMP entries per group:                 0
-        Max IPv6 extended prefix routes:            3072
-        Max MTU:                                    9216
-        Max VXLAN overlay nexthops:                 4096
-        Max VXLAN overlay rifs:                     2048
-        Number of multicast queues per port:        10
-        Number of queues cpu port:                  43
-        Number of queues per port:                  20
-        Number of unicast queues per port:          10
-        QoS rate adjust:                            0
-        RIF table size:                             12288
-        Switch mode:                                store and forward
-        Temperature:                                49 deg. C
-        Total buffer size:                          12188
-        UFT mode:                                   default
-        UFT host table size:                        135168
-        UFT L2 mac table size:                      147456
-        UFT L3 route table size:                    16384
-        VXLAN riot enable:                          on
+    OS10(config)# interface port-channel 1
+    OS10(conf-if-po-1)# exit
+    OS10(config)# interface ethernet 1/1/5
+    OS10(conf-if-eth1/1/5)# channel-group 1 mode on
+    
+    OS10(conf-if-eth1/1/5)# <165>1 2019-10-28T19:17:33.746593+00:00 OS10 dn_alm 669 - - Node.1-Unit.1:PRI [event], Dell EMC (OS10) %IFM_OSTATE_UP: Interface operational state is up :port-channel1
 
-If you want to change the hash algorithm you can do so with `opx-config-global-switch --lag-hash-alg <crc | random | xor>`
-I went ahead and left mine are CRC. [This article from Dell](http://topics-cdn.dell.com/s4820t_9.7.0.0_config_pub-v1-temp/en-us/GUID-DD047C60-DBF3-46E5-A0DD-783255573134.html) can be helpful in deciding.
+    OS10(conf-if-eth1/1/5)# exit
+    OS10(config)# interface ethernet 1/1/9
+    OS10(conf-if-eth1/1/9)# channel-group 1 mode on
+    OS10(conf-if-eth1/1/9)# exit
+    OS10(config)# interface ethernet 1/1/12
+    OS10(conf-if-eth1/1/12)# channel-group 1 mode on
 
-#### Configure LAG Fields
+#### Configure the Port Channel Hash Algorithm
 
-More imporantly you will probably want to configure what fields are used to determine
-the hash. The options are:
+We want to load balance on the standard network 5 tuple. You can configure this with
 
-- src-mac: The source MAC address of the frame
-- dest-mac: The destination MAC of the frame
-- vlan-id: The VLAN ID listed in the frame
-- ethertype: The ethertype of the frame
-- ip-protocol: The IP protocol field in the IPv4 header
-- src-ip: The packet source IP
-- dest-ip: The destination IP of the packet
-- l4-dest-port: The destination port of the segment
-- l4-src-port: The source port of the segment
-- in-port: The port from which the packet entered. It is unlikely you would want to use this for a reverse LAG
+    OS10(config)# load-balancing ip-selection destination-ip source-ip protocol l4-destination-port l4-source-port
 
-I will use a standard 5-tuple configuration (src/dst IP, src/dest port, protocol #)
+#### Configure Mirror Port Session from Source to LAG Interface
 
-#### Create LAG
+Next we need to send all the traffic from our "TAP" input interface to our port
+channel to be load balanced out to all of our listening devices.
 
-`opx-config-lag create --name reverse_lag --unblockedports e101-005-0,e101-009-0,e101-012-0 --enable`
+    OS10(config)# monitor session 1
+    OS10(conf-mon-local-1)# source interface ethernet 1/1/1
+    OS10(conf-mon-local-1)# destination interface port-channel 1
+    OS10(conf-mon-local-1)# no shut
 
-# Results
+# Final Configuration
 
-I wasn't able to complete the config. There is a bug in OPX preventing you from
-being able to set the fields on which the LAG will hash. I spent about a day
-working my way through the problem. See current status [on this bug ticket](https://github.com/open-switch/opx-tools/issues/27)
+    OS10# show running-configuration
+    ! Version 10.5.0.2
+    ! Last configuration change at Oct  29 14:53:37 2019
+    !
+    ip vrf default
+    !
+    interface breakout 1/1/13 map 100g-1x
+    interface breakout 1/1/14 map 100g-1x
+    interface breakout 1/1/15 map 100g-1x
+    iscsi enable
+    iscsi target port 860
+    iscsi target port 3260
+    system-user linuxadmin password XXXXX
+    username admin password XXXXX role sysadmin priv-lvl 15
+    aaa authentication login default local
+    aaa authentication login console local
+    !
+    class-map type application class-iscsi
+    !
+    policy-map type application policy-iscsi
+    !
+    interface vlan1
+    no shutdown
+    !
+    interface port-channel1
+    no shutdown
+    switchport access vlan 1
+    !
+    interface mgmt1/1/1
+    no shutdown
+    no ip address dhcp
+    ip address 192.168.1.20/24
+    ipv6 address autoconfig
+    !
+    interface ethernet1/1/1
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/2
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/3
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/4
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/5
+    no shutdown
+    channel-group 1
+    no switchport
+    flowcontrol receive on
+    !
+    interface ethernet1/1/6
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/7
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/8
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/9
+    no shutdown
+    channel-group 1
+    no switchport
+    flowcontrol receive on
+    !
+    interface ethernet1/1/10
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/11
+    no shutdown
+    no switchport
+    flowcontrol receive on
+    !
+    interface ethernet1/1/12
+    no shutdown
+    channel-group 1
+    no switchport
+    speed 1000
+    flowcontrol receive on
+    !
+    interface ethernet1/1/13
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/14
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    interface ethernet1/1/15
+    no shutdown
+    switchport access vlan 1
+    flowcontrol receive on
+    !
+    monitor session 1
+    destination interface port-channel1
+    source interface ethernet1/1/1
+    no shut
+    !
+    snmp-server contact "Contact Support"
+    !
+    telemetry
+

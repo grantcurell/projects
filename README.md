@@ -37,3 +37,13 @@ If `onie-server` is not immediately resolvable, the install process will not wor
 3. Once the grub menu appears, select ONIE Installer. In my case this was the top option.
 4. At this point the ONIE discovery process will commence. It will print each location it attempts to search. It should find the onie-server DNS record and the installation should begin automatically. If this doesn't happen it means there is an issue with the preconfiguration above. Try swapping out the ethernet management cable with a host. Make sure that host pulls DNS/DHCP correctly and is able to download the onie-installer file.
 5. Wait for the installation to finish and the switch to reboot. Login with admin/admin.
+
+# Configure Managment Interface on Dell OS10
+
+Do the following to configure a management interface on Dell OS10
+
+    OS10# configure terminal
+    OS10(config)# interface mgmt 1/1/1
+    OS10(conf-if-ma-1/1/1)# ip address 192.168.1.20/24
+    OS10(conf-if-ma-1/1/1)# <165>1 2019-10-28T19:04:39.385196+00:00 OS10 dn_alm 669 - - Node.1-Unit.1:PRI [event], Dell EMC (OS10) %IP_ADDRESS_ADD: IP Address add is successful. IP 192.168.1.20/24 in VRF:default added successfully
+    OS10(conf-if-ma-1/1/1)# do write memory
