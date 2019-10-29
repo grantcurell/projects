@@ -15,7 +15,7 @@ LAG port.
 
 - ONIE host is running RHEL 8
 - I am using a Dell S4112F-ON for testing
-- OpenSwitch version PKGS_OPX-3.2.0-installer-x86_64
+- OS10 10.5.0.2
 - PFSense running DNS and DHCP as services
 
 ## RHEL Release Info
