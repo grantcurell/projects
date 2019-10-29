@@ -22,3 +22,7 @@ work in the first one I tried. See picture below.
         # "Images available to be installed"
 
         switch (config) # image delete <old_image>
+
+# Conclusions
+
+Testing was discontinued. Idea will not work. See [Results from reverse lag testing on OS10](../4112F-ON&#32;Reverse&#32;Lag/OS10/README.md#Findings)

@@ -1,7 +1,8 @@
 # Reverse Lag Test - OS10
 
-In this test case the goal is to create a simple packet broker using a reverse
-LAG port.
+In this test case the goal is to create a simple load balancer using a reverse
+LAG port. The idea is to have one input port which is then mirrored to a logical
+LAG port and at the other end of the LAG port is a number of security sensors.
 
 # Helpful Links
 
@@ -244,6 +245,28 @@ channel to be load balanced out to all of our listening devices.
     snmp-server contact "Contact Support"
     !
     telemetry
+
+# Findings
+
+The reverse LAG strategy will load balance traffic, but there is a critical problem.
+The hash algorithm is sensitive to the order of the fields. This means that in a
+standard TCP conversation as the IP/TCP/UDP source and destinations reverse for
+inbound and outbound traffic they will *always* go to different hosts on a five
+tuple hash. For example, see the below:
+
+## Host 1
+![](images/host1.PNG)
+
+## Host 2
+![](images/host2.PNG)
+
+## Host 3
+![](images/host3.PNG)
+
+If you look at host 1 and host 3 you can see that both sides of the traffic
+consistently landed on different sessions. Without modifying the guts of how the
+algorithm itself is implemented, there isn't a way to fix this. IE: The idea isn't
+going to work.
 
 # Other Notes
 
