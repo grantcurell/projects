@@ -1,4 +1,4 @@
-# Reverse Lag Test - OS10
+# Dell OS10 Load Balancing with LAG Config
 
 In this test case the goal is to create a simple load balancer using a reverse
 LAG port. The idea is to have one input port which is then mirrored to a logical
@@ -68,6 +68,10 @@ I used the following SFPs
 
 - 1, 1Gb/s copper SFP (Ethernet 1/1/1) for input
 - 2, 1Gb/s copper SFPs (Ethernet 1/1/5/Ethernet 1/1/9) and 1, 1Gb/s, fiber SFP (Ethernet 1/1/12) for output
+
+I used the following optics:
+
+![](images/optics_used.JPG)
 
 ### Input Port
 ![](images/input_port.JPG)

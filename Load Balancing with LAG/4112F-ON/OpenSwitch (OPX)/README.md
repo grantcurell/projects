@@ -1,4 +1,4 @@
-# Reverse Lag Test - OPX
+# Load Balancing with LAG OPX
 
 In this test case the goal is to create a simple packet broker using a reverse
 LAG port.
@@ -23,7 +23,7 @@ LAG port.
 
     cps_get_oid.py -qua target base-switch/switching-entities/switching-entity
     cps_model_info base-switch/switching-entities/switching-entity
-    cps_get_oid.py -qua target base-switch/switching-entities/switching-entity name=lag-hash-fields attr=src-ip,dest-ip,l4-dest-port,l4-src-port,ip-protocol
+    cps_set_oid.py -qua target base-switch/switching-entities/switching-entity name=lag-hash-fields attr=src-ip,dest-ip,l4-dest-port,l4-src-port,ip-protocol
 
 # My Configuration
 
