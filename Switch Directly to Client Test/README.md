@@ -55,7 +55,7 @@ was set it worked.
     Vlan 1                     unassigned          NO       unset        up          down
     Port-channel 1             unassigned          NO       unset        up          down
     OS10# configure terminal
-    OS10(config-I AM GOD)# interface ethernet 1/1/8
+    OS10(config)# interface ethernet 1/1/8
     OS10(conf-if-eth1/1/8)# speed 10
     1000  10000
     OS10(conf-if-eth1/1/8)# speed 1000
