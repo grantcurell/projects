@@ -221,9 +221,10 @@ However a session on host 1 seems to work correctly.
 I wanted to be sure of my findings so I crafted a new PCAP. This time, I started
 a capture on my desktop and opened a new connection to vCenter knowing this should
 generate several new streams. I then closed the browser entirely to ensure those
-same sessions would close.
+same sessions would close. I saved the capture off and sent it to my traffic replay
+system.
 
-I then played that back through `tcpreplay`. I then grabbed a random stream from
+I then played it back with `tcpreplay`. I then grabbed a random stream from
 the sequence to confirm whether I could see the entire three way hand shake on one
 host or not.
 
