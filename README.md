@@ -12,7 +12,7 @@ control the ONIE server location.
 
 1. Install Apache on RHEL or your favorite Linux distro.
 2. Make sure you allow HTTP traffic through the firewall
-3. Download Open Switch [here](http://archive.openswitch.net/).
+3. Download your operating system of choice.
 4. Upload `<YOUR INSTALLER>.bin` to the root of your web server.
 5. Create a symlink to the installer with `ln -s <YOUR INSTALLER>.bin onie-installer`. The file must have this name for the installation to work.
 6. The switch will use DHCP to acquire an IP address. On the DNS server pointed to by your DHCP configuration, add a record for onie-server and point it at the host running Apache.
