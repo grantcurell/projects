@@ -11,6 +11,15 @@ __license__ = "GPLv3"
 
 
 def run(refresh_rate, jitter, duration, url, job_number):
+    """
+    Runs an instance of Selenium webdriver and browses to a URL.
+
+    :param refresh_rate: int - See help text
+    :param jitter: int - See help text.
+    :param duration: int - See help text
+    :param url: str - See help text
+    :param job_number: str - Used in console output to differentiate between multiple threads.
+    """
 
     browser = webdriver.Chrome()
 
@@ -58,8 +67,6 @@ def run(refresh_rate, jitter, duration, url, job_number):
         # If less than 50 we will make the jitter negative, otherwise it will be positive.
         plus_minus = randint(0, 100)
 
-        next_refresh = refresh_rate
-
         if plus_minus < 50:
             if refresh_rate - next_jitter < 1:
                 logging.debug("Jitter would be less than 1. Setting the jitter to 1.")
@@ -72,6 +79,8 @@ def run(refresh_rate, jitter, duration, url, job_number):
                               "next refresh at stop time.")
                 next_jitter = stop_time - time() - refresh_rate
             next_refresh = refresh_rate + next_jitter
+
+        logging.debug("Next refresh will be in " + str(next_refresh) + " seconds.")
 
         sleep(next_refresh)
 
