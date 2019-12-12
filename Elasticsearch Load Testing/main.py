@@ -9,11 +9,6 @@ __author__ = "Grant Curell"
 __copyright__ = "Do what you want with it"
 __license__ = "GPLv3"
 
-from urllib2 import urlopen
-from urllib import quote
-from HTMLParser import HTMLParser
-from .bs4 import BeautifulSoup
-
 
 class BrowserWorker:
 
@@ -22,20 +17,36 @@ class BrowserWorker:
     jitter = int
 
     def __init__(self, refresh_rate, jitter):
-        chop = webdriver.Chrome()
         self.refresh_rate = refresh_rate
         self.jitter = jitter
-        self.browser = webdriver.Chrome(chrome_options=chop)
+        self.browser = webdriver.Chrome()
 
     def run(self, duration, url):
 
-        stop_time = time.time()+duration
+        stop_time = time() + duration
 
-        while time.time() + self.refresh_rate < stop_time:
+        while time() + self.refresh_rate < stop_time:
             self.browser.get(url)
 
-            # Use Navigation Timing  API to calculate the timings that matter the most
+            """
+            
+            Taken from: https://www.lambdatest.com/blog/how-to-measure-page-load-times-with-selenium/
+            
+            navigation_start – This attribute returns the time spent after the user agent completes unloading the 
+            previous page/document. If there was no document prior to loading the new page, navigationStart returns the
+             same value as fetchStart.
+            
+            responseStart – This attribute returns the time as soon as the user-agent receives the first byte from the 
+            server or from the local sources/application cache.
+            
+            domComplete – This attribute returns the time just before the current document/page readiness is set to 
+            ‘complete’. document.readyState status as ‘complete’ indicates that the parsing of the page/document is 
+            complete & all the resources required for the page are downloaded. We will have a look an example of 
+            domComplete in subsequent section.
+            
+            """
 
+            # Use Navigation Timing  API to calculate the timings that matter the most
             navigation_start = self.browser.execute_script("return window.performance.timing.navigationStart")
             response_start = self.browser.execute_script("return window.performance.timing.responseStart")
             dom_complete = self.browser.execute_script("return window.performance.timing.domComplete")
@@ -62,13 +73,17 @@ class BrowserWorker:
                 else:
                     next_refresh = self.refresh_rate - jitter
             else:
-                if time.time() + self.refresh_rate + jitter > stop_time:
+                if time() + self.refresh_rate + jitter > stop_time:
                     logging.debug("Refresh rate plus jitter would exceed the stop time. Truncating jitter to launch "
                                   "next refresh at stop time.")
-                    jitter = stop_time - time.time() - self.refresh_rate
+                    jitter = stop_time - time() - self.refresh_rate
                 next_refresh = self.refresh_rate + jitter
 
-            time.sleep(next_refresh)
+            sleep(next_refresh)
+
+            self.browser.refresh()
+
+        self.browser.quit()
 
 
 def main():
@@ -76,23 +91,23 @@ def main():
                                         "places on Elasticsearch.")
     parser.add_argument('--url', metavar='URL', dest="url", type=str, required=True,
                         help='The url you would like the worker threads to browse to.')
-    parser.add_argument('--browsers', metavar='BROWSERS', dest="number_of_browsers", type=int, required=False,
+    parser.add_argument('--browsers', metavar='num_browsers', dest="number_of_browsers", type=int, required=False,
                         default=10, help='The number of browsers you want to use to test the Kibana dashboard.')
-    parser.add_argument('--refresh-rate', metavar='REFRESH', dest="refresh_rate", type=int, required=False, default=20,
+    parser.add_argument('--refresh-rate', metavar='seconds', dest="refresh_rate", type=int, required=False, default=20,
                         help='How often the browsers will refresh themselves after being opened.')
-    parser.add_argument('--jitter', metavar='JITTER', dest="jitter", type=int, required=False, default=10,
+    parser.add_argument('--jitter', metavar='seconds', dest="jitter", type=int, required=False, default=10,
                         help='Controls randomness in the refresh rate up or down. For example if your refresh rate is '
                              '20 seconds and jitter is five, the refreshes will happen in between 15 and 25 seconds at '
                              'random. The default is 10 seconds. Set to 0 to remove jitter.')
-    parser.add_argument('--duration', metavar='DURATION', dest="duration", type=int, required=False, default=60,
+    parser.add_argument('--duration', metavar='seconds', dest="duration", type=int, required=False, default=60,
                         help='The test duration measured in seconds. The default is 60.')
-    parser.add_argument('--log-level', metavar='LOG_LEVEL', dest="log_level", required=False, type=str, default="info",
+    parser.add_argument('--log-level', metavar='log_level', dest="log_level", required=False, type=str, default="info",
                         choices=['debug', 'info', 'warning', 'error', 'critical'],
                         help='Set the log level used by the program.')
     parser.add_argument('--print-usage', dest="print_usage", required=False, action='store_true',
                         help='Show example usage.')
 
-    args = parser.parse_args()  # type: argparse.Namespace
+    args = parser.parse_args()
 
     if not args.number_of_browsers and not args.print_usage:
         parser.print_help()
@@ -114,20 +129,6 @@ def main():
         logging.critical("Duration must be set to a positive value.")
         exit(0)
 
-    browsers = []  # type: list
-
-    logging.info("Creating browsers we will use to connect to the target URL.")
-    for i in range(args.number_of_browsers):
-
-        logging.debug("Created browser # " + str(i))
-        browsers.append(BrowserWorker(args.refresh_rate))
-
-    logging.info("Beginning test.")
-    for i in range(args.number_of_browsers):
-        logging.info("Starting job on browser #" + str(i))
-
-
-
     if args.log_level:
         if args.log_level == "debug":
             logging.basicConfig(level=logging.DEBUG)
@@ -141,6 +142,22 @@ def main():
             logging.basicConfig(level=logging.CRITICAL)
     else:
         logging.basicConfig(level=logging.INFO)
+
+    # Begin main program execution
+    browsers = []
+
+    logging.info("Creating browsers we will use to connect to the target URL.")
+    for i in range(args.number_of_browsers):
+
+        logging.debug("Created browser # " + str(i))
+        browsers.append(BrowserWorker(args.refresh_rate, args.jitter))
+
+    logging.info("Beginning test.")
+    logging.debug("Creating multithreaded pool to which we will issue jobs.")
+    with Pool(processes=args.number_of_browsers) as pool:
+        for i in range(args.number_of_browsers):
+            logging.info("Starting job on browser #" + str(i))
+            pool.apply(browsers[i].run, args=(args.duration, args.url))
 
 
 if __name__ == '__main__':
