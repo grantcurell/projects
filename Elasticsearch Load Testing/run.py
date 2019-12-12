@@ -60,7 +60,7 @@ def run(refresh_rate, jitter, duration, url, job_number):
         logging.debug("Back End: %s" % backend_performance_calc)
         logging.debug("Front End: %s" % frontend_performance_calc)
 
-        print("Load time for thread # " + job_number + " ~:" + str(frontend_performance_calc) + "ms.")
+        print("Load time for browser # " + job_number + " ~:" + str(frontend_performance_calc) + "ms.")
 
         next_jitter = randint(0, jitter)
 
