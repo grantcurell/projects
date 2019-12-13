@@ -1,13 +1,13 @@
+__author__ = "Grant Curell"
+__copyright__ = "Do what you want with it"
+__license__ = "GPLv3"
+
 from argparse import ArgumentParser
 from time import time, sleep
 from random import randint
 from selenium import webdriver
 import logging
 from multiprocessing.pool import Pool
-
-__author__ = "Grant Curell"
-__copyright__ = "Do what you want with it"
-__license__ = "GPLv3"
 
 
 def run(refresh_rate, jitter, duration, url, job_number):
