@@ -1,4 +1,4 @@
-# Creating Bidirectional Traffic Generator
+# Setting Up Cisco T-Rex
 
 # Environment
 
@@ -10,10 +10,6 @@ I built out a VM on my vSphere cluster running 6.7.0.
 
 I used CentOS 7
 
-Info:
-
-    Last login: Thu Oct 24 13:13:56 2019 from 192.168.1.6
-    [root@centos ~]# cat /etc/*-release
     CentOS Linux release 7.7.1908 (Core)
     NAME="CentOS Linux"
     VERSION="7 (Core)"
