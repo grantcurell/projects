@@ -1,0 +1,48 @@
+### Tuned for NapaTech 
+# See https://trex-tgn.cisco.com/trex/doc/trex_manual.html#_platform_yaml_cfg_argument for more details on configuration
+
+- port_limit: 2                                         # Number of ports. Should be equal to the number of interfaces 
+                                                        # listed in the interfaces directive
+  version: 2
+  interfaces: ['0000:5b:00.0/0', '0000:5b:00.0/1']      # List of interfaces to use. Run 
+                                                        # sudo ./dpdk_setup_ports.py --show to see the list you can 
+                                                        # choose from. - mandatory. there are cases that one PCI can 
+                                                        # have more than one port (MLX4 driver for example), for this 
+                                                        # you can use the format dd:dd.d/d for example 03:00.0/1, it 
+                                                        # means the second port of this device. The order of the list is
+                                                        # important the first will the virtual port 0.
+
+  c: 40                                                 # Number of threads (cores) TRex will use per interface pair 
+                                                        # ( Can be overridden by -c command line option )
+
+  port_bandwidth_gb: 100                                # The bandwidth of each interface in Gbs. In this example we 
+                                                        # have 10Gbs interfaces. For VM, put 1. Used to tune the amount
+                                                        # of memory allocated by TRex.
+  port_info:
+      - dest_mac: 00:0d:e9:06:90:24                     # TRex need to know the destination MAC address to use on each 
+                                                        # port. You can specify this in one of two ways:
+                                                        # Specify dest_mac directly.
+                                                        # Specify default_gw (since version 2.10). In this case (only if
+                                                        # no dest_mac given), TRex will issue ARP request to this IP, 
+                                                        # and will use the result as dest MAC. If no dest_mac given, and
+                                                        # no ARP response received, TRex will exit.
+
+        src_mac:  00:0d:e9:06:48:1d                     # Source MAC to use when sending packets from this interface. If
+                                                        # not given (since version 2.10), MAC address of the port will 
+                                                        # be used.
+      - dest_mac: 00:0d:e9:06:90:25
+        src_mac:  00:0d:e9:06:48:1e
+
+  # See https://trex-tgn.cisco.com/trex/doc/trex_manual.html#_platform_section_configuration for more details
+  platform:
+      master_thread_id: 0                               # Hardware thread_id for control thread.
+      latency_thread_id: 4                              # Hardware thread_id for RX thread.
+      dual_if:                                          # “dual_if” section defines info for interface pairs (according 
+                                                        # to the order in “interfaces” list). each section, starting 
+                                                        # with “- socket” defines info for different interface pair.
+        - socket: 1                                     # The NUMA node from which memory will be allocated for use by 
+                                                        # the interface pair.
+          threads: [1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61] # Hardware threads to be used for sending packets for 
+                                                                  # the interface pair. Threads are pinned to cores, so
+                                                                  # specifying threads actually determines the hardware
+                                                                  # cores.
