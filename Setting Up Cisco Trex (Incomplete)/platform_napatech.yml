@@ -12,7 +12,7 @@
                                                         # means the second port of this device. The order of the list is
                                                         # important the first will the virtual port 0.
 
-  c: 40                                                 # Number of threads (cores) TRex will use per interface pair 
+  c: 20                                                 # Number of threads (cores) TRex will use per interface pair 
                                                         # ( Can be overridden by -c command line option )
 
   port_bandwidth_gb: 100                                # The bandwidth of each interface in Gbs. In this example we 
