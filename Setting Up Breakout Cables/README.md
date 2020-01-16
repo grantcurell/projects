@@ -34,3 +34,9 @@ Run:
     OS10# write memory
 
 That's it. I really thought it would be harder.
+
+![](images/result.png)
+
+You can then access the interfaces individually using the subport:
+
+    OS10(config)# interface ethernet 1/1/13:1
