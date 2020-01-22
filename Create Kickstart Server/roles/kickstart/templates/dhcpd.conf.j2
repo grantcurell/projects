@@ -1,0 +1,20 @@
+allow booting;
+allow bootp;
+
+option space PXE;
+option arch code 93 = unsigned integer 16; # RFC4578
+
+subnet {{ dhcp_net }} netmask {{ dhcp_mask }} {
+    range {{ dhcp_start }} {{ dhcp_end }};
+    next-server {{ server_ip }};
+    default-lease-time 150;
+    max-lease-time 300;
+    deny unknown-clients;
+}
+
+{% for host in groups['servers'] %}
+host {{ hostvars[host].inventory_hostname_short }} {
+  hardware ethernet {{ hostvars[host].mac | lower }};
+  filename {% if hostvars[host].pxe_type == 'uefi' %}"uefi/BOOTX64.EFI";{% else %}"pxelinux.0";{% endif %}
+}
+{% endfor %}
