@@ -47,6 +47,12 @@ A fabric is just a series of electrical connections that in this case make up a 
 Fabric D is the internal management fabric. The CMC basically acts as a switch on this fabric and all of the chassis
 management related services are connected to it - idrac, CMC, and FN410 management functions.
 
+## Example Configs
+
+[4112F-ON Example Configuration](./4112F-ON_config.txt)
+
+[FN410 Example Configuration](./FN410_config.txt)
+
 ## Configuring the FN410
 
 ### Configure the FN410
