@@ -55,9 +55,7 @@ management related services are connected to it - idrac, CMC, and FN410 manageme
 
 ## Configuring the FN410
 
-### Configure the FN410
-
-#### Configure FN410 as a Switch via GUI
+### Configure FN410 as a Switch via GUI
 
 1. Go to CMC -> Click *I/O Module Overview*
 2. Click on your FN410
@@ -71,7 +69,7 @@ management related services are connected to it - idrac, CMC, and FN410 manageme
    6. On time I set my time zone and used *216.239.35.0* (Google's time servers - the zero isn't a type-o)
    7. At the end you will be asked to reboot. Say yes. A window will appear that says rebooting. Wait for it to go away. At the end the page will refresh and you will  get an error message on the web site saying it isn't available. This is because you put it in switch mode. This process took ~3 minutes for me.
 
-#### Configure FN410 as a Swich via Command Line
+### Configure FN410 as a Swich via Command Line
 
 From [the manual](https://topics-cdn.dell.com/pdf/poweredge-fx2_users-guide6_en-us.pdf)
 
@@ -93,30 +91,30 @@ You will need to connect through the CMC:
 4. Run `stack-unit 0 iom-mode full-switch` to change the switch to full switch mode
 5. Run `write mem` and reboot the IOM
 
-#### Configuring Switch Management
+### Configuring Switch Management
 
 You may have already done this in the GUI, but if not, you can do the following:
 
-##### Configure Default Route
+#### Configure Default Route
 
       management route 0.0.0.0/0 192.168.1.1
 
-##### Configure NTP
+#### Configure NTP
 
       ntp server 216.239.35.0
 
-##### Configure Management IP Address
+#### Configure Management IP Address
 
       Dell(conf)#interface managementethernet 0/0
       Dell(conf-if-ma-0/0)#ip address 192.168.1.114/24
 
-##### Configure SNMP
+#### Configure SNMP
 
       snmp-server community public ro
       snmp-server enable traps snmp linkdown linkup
       snmp-server enable traps stack
 
-#### Upgrading the firmware
+### Upgrading the firmware
 
 You can download the firmware from the [force10 website](https://www.force10networks.com/CSPortal20/Software/MSeriesDownloads.aspx)
 
@@ -131,8 +129,8 @@ You can download the firmware from the [force10 website](https://www.force10netw
 5. Save the config: `write memory`.
 6. Reload the switch so the config takes effect. `reload`
 7. After boot, use `show version` and `show system stack-unit [0-5]` to check that versions have updated correctly.
-
-#### Configure Port Channels
+   
+### Configure Interfaces
 
 1. Begin by configuring the port-channel interface:
    1. Note: Hybrid mode allows the interface to pass tagged and untagged traffic.
@@ -154,10 +152,10 @@ You can download the firmware from the [force10 website](https://www.force10netw
             Dell(conf-if-range-vl-32-37)#tagged tengigabitethernet 0/1-2
             Dell(conf-if-range-vl-32-37)#tagged tengigabitethernet 0/12
 
-4. 
+4. If desired at this point you can enter into each VLAN interface and run the `ip address` command to give it an IP address.
 5. Run `write memory`
 
-### Configure 4112F-ON
+## Configure 4112F-ON
 
 1. Log into the 4112F-ON via its management interfaces. Move to configuration mode.
 2. Next, configure the port channel interface:
@@ -165,23 +163,17 @@ You can download the firmware from the [force10 website](https://www.force10netw
             OS10(config)# interface port-channel 128
             OS10(conf-if-po-128)# switchport mode trunk
             OS10(conf-if-po-128)# no switchport access vlan
-
-### Configure the 4112F-ON
-
-1. The first thing you will do is set up your port channel interface with the following:
-
-            OS10(conf-if-po-128)# switchport mode trunk
             OS10(conf-if-po-128)# switchport trunk allowed vlan 32
             OS10(conf-if-po-128)# no shutdown
 
-2. Now configure the interfaces to join the port channel.
+3. Now configure the interfaces to join the port channel.
 
             OS10(config)# interface range ethernet 1/1/1-1/1/2
             OS10(conf-range-eth1/1/1-1/1/2)# channel-group 128 mode active
             OS10(conf-range-eth1/1/1-1/1/2)# no switchport
             OS10(conf-range-eth1/1/1-1/1/2)# switchport mode trunk
 
-3. Run `write memory`
+4. Run `write memory`
 
 ## Troubleshooting
 
