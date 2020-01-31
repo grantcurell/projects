@@ -53,6 +53,8 @@ management related services are connected to it - idrac, CMC, and FN410 manageme
 
 [FN410 Example Configuration](./FN410_config.txt)
 
+***For the keen eyed*** I was too lazy to remove the password hashes. Spoiler it's admin/admin on the 4112 and root/calvin on the FN410.
+
 ## Configuring the FN410
 
 ### Configure FN410 as a Switch via GUI
