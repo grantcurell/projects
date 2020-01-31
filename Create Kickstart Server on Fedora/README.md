@@ -11,6 +11,8 @@ For more information on Fedora's Kickstart capabilities see [this link](https://
 
 [The Fedora Mirror I used](http://ftp.muug.mb.ca/pub/fedora/linux/releases/31/Everything/x86_64/os/Packages/)
 
+https://gist.github.com/andrewwippler/b636cdb68249ab5ffb67b4d8693a780b
+
 ## Prerequisites
 
 Note: If you use a VM it will need at least 90GB of space.
@@ -109,6 +111,11 @@ disks on the RAID controller (assuming you have one).
 Once you are finished editing the *inventory.yml* file, `cd` to the root of the Fedora-autoinstall
 directory and run `make`. This will run the makefile in the directory. You can
 see what it is doing by examining the file called *Makefile*
+
+## CRITICAL: Change BIOS Settings
+
+If you have NVMe drives and are trying to install Fedora, make sure you go into your BIOS and disable Intel Rapid Storage
+Technology. If you do not, the NVMe drive will not appear and Anaconda will report that there are no disks available.
 
 ### (Optional) Make it so that all hosts receive dhcp
 
