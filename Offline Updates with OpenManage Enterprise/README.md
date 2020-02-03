@@ -3,7 +3,7 @@
 1. Download [Dell Repository Manager](https://www.dell.com/support/driver/us/en/19/DriversDetails?driverid=v8ym0)
 2. `chmod +x <binary name>` then run with `./<binary_name>`.
 3. On Ubuntu Desktop, open terminal, run `sudo apt-get install xdg-utils firefox openjfx -y`
-4. My apache config
+4. I used Apache to host my web server. My configuration is below.
 
         <VirtualHost *:80>
         # The ServerName directive sets the request scheme, hostname and port that
@@ -48,7 +48,7 @@
 
 5. I downloaded all the catelogs to /opt/dell/catelogs/fc640
 6. You then have to go open the Dell EMC Repository Manager -> Export -> Export
-   1. This has to be in the web server root! There is a bug in OME that causes it to send out the wrong URLs if the URI path requires forwardslashes.
+   1. This has to be in the web server root! There is a bug in OME that causes it to send out the wrong URLs if the URI path requires forwardslashes. See [this post](https://www.dell.com/community/Dell-OpenManage-Essentials/Dell-OpenManage-Reports-TCP-Window-Full/m-p/7473117#M14933) for details on why.
    2. **WARNING** You have to download the Windows 64 bit versions of the updates for it to work! Even if you are using Linux the idrac only accepts the Windows EXE files.
 7. Firmware compliance -> Catelog Management -> Add
    1. Share Address: <YOUR_UP> (nothing else)
