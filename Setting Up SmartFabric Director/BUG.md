@@ -1,5 +1,33 @@
 # Bug Write Up
 
+sfd_init.sh fails because it incorrectly checks ntp status. The failure condition can be replicated by using an ntp server
+of `time.google.com` on template import for the OVA.
+
+## Version
+
+### SFD
+
+SFD version is 1.1.0.
+
+### Ubuntu
+
+    admin@sfd.local@sfd:~$ cat /etc/*-release
+    DISTRIB_ID=Ubuntu
+    DISTRIB_RELEASE=16.04
+    DISTRIB_CODENAME=xenial
+    DISTRIB_DESCRIPTION="Ubuntu 16.04.6 LTS"
+    NAME="Ubuntu"
+    VERSION="16.04.6 LTS (Xenial Xerus)"
+    ID=ubuntu
+    ID_LIKE=debian
+    PRETTY_NAME="Ubuntu 16.04.6 LTS"
+    VERSION_ID="16.04"
+    HOME_URL="http://www.ubuntu.com/"
+    SUPPORT_URL="http://help.ubuntu.com/"
+    BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+    VERSION_CODENAME=xenial
+    UBUNTU_CODENAME=xenial
+
 ## Suggested Patch
 
 ### Patch
@@ -29,7 +57,7 @@
 
 See below for a detailed explanation of my troubleshooting and additional information.
 
-Based on the regex looking for an IP I'm guessing the intent was to verify that the server is synched to a remote NTP server. However there are two problems. The first is that it is looking at the refid (column 2) which is not the server you are synched to, but the server that the server you are pointing at is synched to. Second, there is no guarentee that an IP address will be in this column (or PPS/GPS/LOCAL/LOCL). This was my case. Instead, I would check for the line that has the synchronized server (starts with *). Using `ntpq -pn | awk '{print $1}' | sed -n '/^\*/p'`. You don't really need to check beyond that because it won't synchronize unless everything is working. Though if you want to take it a step further you could do: `ntpq -pn | awk '{print $1}' | sed -n '/^\*/p' | sed 's/\*//g' | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}|PPS|GPS|LOCAL|LOCL"`. Keep in mind though that if at any point this becomes a DNS name that will cause failure so I would avoid that approach altogether.
+Based on the regex looking for an IP I'm guessing the intent was to verify that the server is synched to a remote NTP server. However there are two problems. The first is that it is looking at the refid (column 2) which is not the server you are synched to, but the server that the server you are pointing at is synched to. Second, there is no guarentee that an IP address will be in this column (or PPS/GPS/LOCAL/LOCL). This was my case. Instead, I would check for the line that has the synchronized server (starts with *). Using `ntpq -pn | awk '{print $1}' | sed -n '/^\*/p'`. You don't really need to check beyond that because it won't synchronize unless everything is working. Though if you want to take it a step further you could do: `ntpq -pn | awk '{print $1}' | sed -n '/^\*/p' | sed 's/\*//g' | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}|PPS|GPS|LOCAL|LOCL"`.
 
 ## Detailed Explanation
 
@@ -50,7 +78,6 @@ Based on the regex looking for an IP I'm guessing the intent was to verify that 
         Loaded: loaded (/etc/systemd/system/sfd.service; enabled; vendor preset: enabled)
         Active: failed (Result: exit-code) since Tue 2020-02-04 20:38:10 UTC; 18min ago
         Main PID: 1327 (code=exited, status=1/FAILURE)
-
 
 - Entire system will hard fail if NTP cannot start. I realized this is the cause of the failure above. This should not be the default behavior. Should continue and issue a warning. Most customers working on servers would not know how to troubleshoot this.
 
@@ -141,7 +168,7 @@ Based on the regex looking for an IP I'm guessing the intent was to verify that 
         +216.239.35.0    .GOOG.           1 u   42   64  377   63.484  -83.978  10.080
         -216.239.35.8    .GOOG.           1 u   21   64  377   72.245  -73.087  15.674
 
-- Based on the regex looking for an IP I'm guessing the intent was to verify that the server is synched to a remote NTP server. However there are two problems. The first is that it is looking at the refid which is not the server you are synched to, but the server that the server you are pointing at is synched to. Second, there is no guarentee that an IP address will be in this column (or PPS/GPS/LOCAL/LOCL). This was my case. See below for my `ntpq -pn` results. Instead, I would check for the line that has the synchronized server (starts with *). Using `ntpq -pn | awk '{print $1}' | sed -n '/^\*/p'`. You don't really need to check beyond that because it won't synchronize unless everything is working. Though if you want to take it a step further you could do: `ntpq -pn | awk '{print $1}' | sed -n '/^\*/p' | sed 's/\*//g' | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}|PPS|GPS|LOCAL|LOCL"`. Keep in mind though that if at any point this becomes a DNS name that will cause failure so I would avoid that approach altogether.
+- Based on the regex looking for an IP I'm guessing the intent was to verify that the server is synched to a remote NTP server. However there are two problems. The first is that it is looking at the refid which is not the server you are synched to, but the server that the server you are pointing at is synched to. Second, there is no guarentee that an IP address will be in this column (or PPS/GPS/LOCAL/LOCL). This was my case. See below for my `ntpq -pn` results. Instead, I would check for the line that has the synchronized server (starts with *). Using `ntpq -pn | awk '{print $1}' | sed -n '/^\*/p'`. You don't really need to check beyond that because it won't synchronize unless everything is working. Though if you want to take it a step further you could do: `ntpq -pn | awk '{print $1}' | sed -n '/^\*/p' | sed 's/\*//g' | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}|PPS|GPS|LOCAL|LOCL"`.
 
 ### My ntpq -pn with time.google.com as my server
 

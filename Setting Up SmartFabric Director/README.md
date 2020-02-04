@@ -1,4 +1,4 @@
-# Setting Up SmartFabric Director
+# Setting Up SmartFabric Director (IN PROGRESS)
 
 ## Helpful Links
 
