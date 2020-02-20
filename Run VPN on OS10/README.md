@@ -1,5 +1,67 @@
 # Run VPN on OS10
 
+## My Configuration
+
+### Dell 4112F-ON
+
+        Dell EMC Networking OS10 Enterprise
+        Copyright (c) 1999-2020 by Dell Inc. All Rights Reserved.
+        OS Version: 10.5.0.4
+        Build Version: 10.5.0.4.638
+        Build Time: 2020-01-30T21:08:56+0000
+        System Type: S4112F-ON
+        Architecture: x86_64
+        Up Time: 2 days 03:54:07
+
+### CentOS
+
+        [root@centos ~]# cat /etc/*-release
+        CentOS Linux release 7.6.1810 (Core)
+        NAME="CentOS Linux"
+        VERSION="7 (Core)"
+        ID="centos"
+        ID_LIKE="rhel fedora"
+        VERSION_ID="7"
+        PRETTY_NAME="CentOS Linux 7 (Core)"
+        ANSI_COLOR="0;31"
+        CPE_NAME="cpe:/o:centos:centos:7"
+        HOME_URL="https://www.centos.org/"
+        BUG_REPORT_URL="https://bugs.centos.org/"
+
+        CENTOS_MANTISBT_PROJECT="CentOS-7"
+        CENTOS_MANTISBT_PROJECT_VERSION="7"
+        REDHAT_SUPPORT_PRODUCT="centos"
+        REDHAT_SUPPORT_PRODUCT_VERSION="7"
+
+        CentOS Linux release 7.6.1810 (Core)
+        CentOS Linux release 7.6.1810 (Core)
+
+### Physical Configuration
+
+Interface `ethernet 1/1/12` on the 4112F-ON plugged directly into a server running ESXi. That interface was assigned as an uplink associated with a vswitch when then was tied to a portgroup running on VLAN 32. `ethernet 1/1/12` was configured as follows:
+
+        OS10(conf-if-eth1/1/12)# show configuration
+        !
+        interface ethernet1/1/12
+        no shutdown
+        switchport mode trunk
+        switchport access vlan 1
+        switchport trunk allowed vlan 32
+        flowcontrol receive on
+
+`interface vlan 32` was configured as follows:
+
+        OS10(conf-if-vl-32)# show configuration
+
+        !
+        interface vlan32
+        no shutdown
+        ip address 192.168.32.1/24
+
+The full switch config [is here](TODO ADD SWITCH CONFIG)
+
+Interface `ethernet 1/1/1` was configured as an access port in VLAN <TODO>
+
 ## Research 
 
 ### Sources
@@ -31,6 +93,19 @@ On the 4112F-ON:
 
 7. Generate key pairs `wg genkey | tee wg-private.key | wg pubkey > wg-public.key`
 8. 
+
+On CentOS 7
+
+1. Make sure everything is up to date. `yum update -y && reboot`. The reboot is important because if your kernel might update. If this happens you need to reboot to load the new kernel. Wireguard requires kernel 3.10 or higher - I noticed if you haven't updated CentOS for a bit than your kernel might be to old and you'll get `RTNETLINK answers: Operation not supported`.
+2. Run:
+
+                sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+                sudo curl -o /etc/yum.repos.d/jdoss-wireguard-epel-7.repo https://copr.fedorainfracloud.org/coprs/jdoss/wireguard/repo/epel-7/jdoss-wireguard-epel-7.repo
+                sudo yum install wireguard-dkms wireguard-tools
+
+3. `mkdir /opt/wireguard && cd /opt/wireguard`
+4. Generate key pairs `wg genkey | tee wg-private.key | wg pubkey > wg-public.key`
+5. `ip link add wg0 type wireguard`
 
 ## Strange Behavior
 
