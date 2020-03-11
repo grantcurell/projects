@@ -36,44 +36,74 @@
         CentOS Linux release 7.6.1810 (Core)
         CentOS Linux release 7.6.1810 (Core)
 
-### Physical Configuration
+### Testing Topology
 
-Interface `ethernet 1/1/12` on the 4112F-ON plugged directly into a server running ESXi. That interface was assigned as an uplink associated with a vswitch when then was tied to a portgroup running on VLAN 32. `ethernet 1/1/12` was configured as follows:
+![](images/configuration.jpg)
 
-        OS10(conf-if-eth1/1/12)# show configuration
-        !
-        interface ethernet1/1/12
-        no shutdown
-        switchport mode trunk
-        switchport access vlan 1
-        switchport trunk allowed vlan 32
-        flowcontrol receive on
+[Switch Configuration](./switch_config)
 
-`interface vlan 32` was configured as follows:
-
-        OS10(conf-if-vl-32)# show configuration
-
-        !
-        interface vlan32
-        no shutdown
-        ip address 192.168.32.1/24
-
-The full switch config [is here](TODO ADD SWITCH CONFIG)
-
-Interface `ethernet 1/1/1` was configured as an access port in VLAN <TODO>
-
-## Research 
-
-### Sources
+## Research Sources
 
 [Helpful Book](http://www.cse.bgu.ac.il/npbook/)
+
 [Basics of Network Processor](https://www.embedded.com/the-basics-of-network-processors/)
+
 [Packet Processing](https://en.wikipedia.org/wiki/Packet_processing)
+
 [How Network Processors Work](https://barrgroup.com/embedded-systems/how-to/network-processors)
 
-### NPU Problem
+## NPU Interface Problem
 
-Explanation
+The one big gotcha with doing this is that when you drop to the command line in
+OS10 and do a `ip a s`, the interfaces you see that look like physical interfaces
+ex:
+
+```
+13: e101-001-0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc multiq master br32 state UP group default qlen 1000
+    link/ether 50:9a:4c:d6:0a:71 brd ff:ff:ff:ff:ff:ff
+14: e101-002-0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop master br1 state DOWN group default qlen 1000
+    link/ether 50:9a:4c:d6:0a:72 brd ff:ff:ff:ff:ff:ff
+15: e101-003-0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop master br1 state DOWN group default qlen 1000
+    link/ether 50:9a:4c:d6:0a:73 brd ff:ff:ff:ff:ff:ff
+16: e101-004-0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop master br1 state DOWN group default qlen 1000
+    link/ether 50:9a:4c:d6:0a:74 brd ff:ff:ff:ff:ff:ff
+
+```
+
+are not actual physical interfaces. Under the hood the operating system is actually
+using tap interfaces. Inside the switch there are two processors - a regular x86
+processor and a separate processor called the Network Processing Unit (NPU). The
+interfaces are connected to the NPU. Most traffic that comes in on the physical interfaces
+managed by the NPU *does not* flow up to the x86 chip. This means that if you do
+a `tcpdump` on one of the interfaces you see in `ip a s` you will see very little.
+In fact, the only traffic you will see is management traffic which *is* handled
+by the Linux kernel.
+
+This means if you want to set up a VPN you have to have a way to make sure all the
+traffic is visible to the Linux kernel. Fortunately, there is a way to make this
+happen. VLAN interfaces are virtual and subsequently are handled entirely by the
+Linux kernel. In fact, VLAN interfaces actually show up under the hood as bridge
+interfaces:
+
+```
+29: br32: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 50:9a:4c:d6:0a:a1 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.32.1/24 brd 255.168.32.255 scope global br32
+       valid_lft forever preferred_lft forever
+    inet6 fe80::529a:4cff:fed6:aa1/64 scope link
+       valid_lft forever preferred_lft forever
+41: br33: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 50:9a:4c:d6:0a:a1 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.33.1/24 brd 255.168.33.255 scope global br33
+       valid_lft forever preferred_lft forever
+    inet6 fe80::529a:4cff:fed6:aa1/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+These two correspond to interface vlans 32 and 33. By using VLAN interfaces you
+can tie the VPN to these interfaces and everything works just fine. You just place
+any associated physical interfaces as access VLANs or trunks with the appropriate
+allowed VLANs.
 
 ## Installing OpenVPN as a Server on the 4112F-ON
 
@@ -87,12 +117,13 @@ On the 4112F-ON:
 2. Run `ip name-server 192.168.1.1` to add a name server.
 3. Run `write mem` in enable mode to save your configuration changes.
 4. Run `system bash`
-5. Run `sudo apt-get install -y openvpn vim `. I installed `vim` because I don't hate myself.
-6. I used [this script](./openvpn-install.sh) from [git.io/vpn](https://git.io/vpn) to install OpenVPN. Having done the entire thing manually before, I can tell you this saves a huge amount of time.
-7. To run the script run `wget https://git.io/vpn -O openvpn-install.sh && chmod +x openvpn-install.sh && ./openvpn-install.sh`
+5. Before continuing, make sure that the time is correct on the device. **WARNING** If you do not do this and you generate certificates, none of the encryption will work and you will have to recreate all of your certificates!
+6. Run `sudo apt-get install -y openvpn vim `. I installed `vim` because I don't hate myself.
+7. I used [this script](./openvpn-install.sh) from [git.io/vpn](https://git.io/vpn) to install OpenVPN. Having done the entire thing manually before, I can tell you this saves a huge amount of time.
+8. To run the script run `wget https://git.io/vpn -O openvpn-install.sh && chmod +x openvpn-install.sh && ./openvpn-install.sh`
    1. Fill in the options as needed.
-8. I did find some things you have to tweak with their script. Perform the below to clean things up.
-   1. Run `vim /lib/systemd/system/openvpn@.service`. Where it says `--config /etc/openvpn/%i.conf`, change that to `--config /etc/openvpn/%i/%i.conf`. For details on specifies work see [this post](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Specifiers).
+9. I did find some things you have to tweak with their script. Perform the below to clean things up.
+   1. Run `vim /lib/systemd/system/openvpn@.service`. Where it says `--config /etc/openvpn/%i.conf`, change that to `--config /etc/openvpn/%i/%i.conf`. For details on specifies work see [this post](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Specifiers). When you are done run `systemctl daemon-reload` to reload the systemd daemon.
    2. If you used my version of the script then you do not need to do this. Otherwise you need to run `vim /etc/openvpn/server/server.conf` and you need to prepend `/etc/openvpn/server/` on several of the paths or the service won't start. See my config below:
 
                 local 192.168.32.1
@@ -121,8 +152,9 @@ On the 4112F-ON:
                 crl-verify /etc/openvpn/server/crl.pem
                 explicit-exit-notify
 
-9.  Run `systemctl start openvpn@server` to start the server.
-10. Rerun the script to add clients. Your output should look like the below. In my case I added one client to perform the test.
+10. You may want to add something like `push route 192.168.1.0 255.255.255.0` to your server config. This allows the server to push routes to the client. For example, in my case the 192.168.1.0/24 network is behind my server, so I have to push a route so that the clients know how to get to it. Just keep in mind, that hosts on your distant network must have a route back to your VPN network.
+11. Run `systemctl start openvpn@server` to start the server.
+12. Rerun the script to add clients. Your output should look like the below. In my case I added one client to perform the test.
 
                 ```
                 Looks like OpenVPN is already installed.
@@ -156,12 +188,12 @@ On the 4112F-ON:
                 Client test-client added, configuration is available at: /root/test-client.ovpn
                 ```
 
-11. Copy the contents of your client config. In my case this was from `/root/test-client.ovpn` and it looked like:
+13. Copy the contents of your client config. In my case this was from `/root/test-client.ovpn` and it looked like:
 
                 client
                 dev tun
                 proto udp
-                remote 130.45.32.252 1194
+                remote <SERVER ADDRESS> 1194
                 resolv-retry infinite
                 nobind
                 persist-key
@@ -267,48 +299,10 @@ On the 4112F-ON:
                 </tls-crypt>
 
 
-12. 
-
-
+14. NOTE: The script automatically accounts for NAT. Notice in your client config that it sets the remote server as whatever your external address is. You may not want this behavior. If that is the case you will need to go in and edit the `remote` line with the IP address of your VPN server.
 
 ## On CentOS 7
 
 1. Make sure everything is up to date. `yum update -y && reboot`. The reboot is important because if your kernel might update. If this happens you need to reboot to load the new kernel.
-2. Run `yum install -y epel-release && yum update -y && yum install -y openvpn easy-rsa`
-3. 
-
-## Strange Behavior
-
-    OS10(config)# management route 192.168.1.0/24 192.168.1.1
-    % Error: Overlapping route for Management interface
-    OS10(config)# ip route 0.0.0.0/0 192.168.1.1 interface ethernet 1/1/1
-    % Error: Network unreachable
-    OS10(config)# ping 192.168.1.1
-    PING 192.168.1.1 (192.168.1.1) 56(84) bytes of data.
-    64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=0.452 ms
-    64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=0.388 ms
-    ^C
-    --- 192.168.1.1 ping statistics ---
-    2 packets transmitted, 2 received, 0% packet loss, time 1005ms
-    rtt min/avg/max/mdev = 0.388/0.420/0.452/0.032 ms
-    OS10(config)# do system bash
-    admin@OS10:~$ su -
-    Password:
-    root@OS10:~# ip route
-    192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.20
-    192.168.4.0/24 dev br32 proto none scope link
-    root@OS10:~# ip route add 0.0.0.0/0 via 192.168.1.1
-    root@OS10:~# ip route
-    default via 192.168.1.1 dev eth0
-    192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.20
-    192.168.4.0/24 dev br32 proto none scope link
-    root@OS10:~# ping google.com
-    PING google.com (216.58.193.142) 56(84) bytes of data.
-    64 bytes from dfw25s34-in-f14.1e100.net (216.58.193.142): icmp_seq=1 ttl=55 time=25.4 ms
-    64 bytes from dfw25s34-in-f14.1e100.net (216.58.193.142): icmp_seq=2 ttl=55 time=22.9 ms
-    64 bytes from dfw25s34-in-f14.1e100.net (216.58.193.142): icmp_seq=3 ttl=55 time=22.1 ms
-    64 bytes from dfw25s34-in-f14.1e100.net (216.58.193.142): icmp_seq=4 ttl=55 time=22.2 ms
-    ^C
-    --- google.com ping statistics ---
-    4 packets transmitted, 4 received, 0% packet loss, time 3002ms
-    rtt min/avg/max/mdev = 22.149/23.185/25.408/1.329 ms
+2. Run `yum install -y epel-release && yum update -y && yum install -y openvpn easy-rsa chrony && systemctl enable chronyd && chronyc makestep` This is a long series of commands, but it installs openvpn and chrony. You need chrony to ensure your time is synched. **WARNING**: If the time is not synched between the server and your clients, the VPN will fail to connect!
+3. You should have copied your client config to your client already. If you haven't, do that now. To run the VPN, run `openvpn <client_config_name>`
