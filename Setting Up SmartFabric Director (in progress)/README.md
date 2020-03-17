@@ -14,12 +14,12 @@
 
     Dell EMC Networking OS10 Enterprise
     Copyright (c) 1999-2020 by Dell Inc. All Rights Reserved.
-    OS Version: 10.5.0.4
-    Build Version: 10.5.0.4.638
-    Build Time: 2020-01-30T21:08:56+0000
+    OS Version: 10.5.1.0
+    Build Version: 10.5.1.0.124
+    Build Time: 2020-02-12T09:05:20+0000
     System Type: S4112F-ON
     Architecture: x86_64
-    Up Time: 01:33:00
+    Up Time: 01:06:30
 
 ### Dell OS10 Running in GNS3
 
