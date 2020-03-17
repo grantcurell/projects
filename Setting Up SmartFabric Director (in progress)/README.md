@@ -4,7 +4,9 @@
 
 [SmartFabric Director Download Page](https://www.force10networks.com/CSPortal20/Software/SmartFabric.aspx)
 
-[SmartFabric Director User's Guide](https://topics-cdn.dell.com/pdf/smartfabric-os10-5-0_en-us.pdf)
+[Dell OS10 User's Guide](https://topics-cdn.dell.com/pdf/smartfabric-os10-5-0_en-us.pdf)
+
+[Dell SmartFabric Director User's Guide](https://topics-cdn.dell.com/pdf/smart-fabric-director_users-guide10_en-us.pdf)
 
 ## My Configuration
 
@@ -39,6 +41,9 @@ I used the GNS3 VM and tied the switch with a virtual cloud into my actual infra
 3. When it finishes importing, keep in mind that the username and password is:
    1. Username: admin@sfd.local
    2. Password: The password you set
+4. I had problems when I used a DNS name for NTP. See: [BUG](./BUG.md)
+5. Go to the [Fabric Designer](https://fdc.emc.com/#!/network-fabric) online.
+6. 
 
 ## Problems Encountered
 

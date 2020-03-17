@@ -12,7 +12,7 @@ control the ONIE server location.
 
 1. Install Apache on RHEL or your favorite Linux distro.
 2. Make sure you allow HTTP traffic through the firewall
-3. Download your operating system of choice.
+3. Download your operating system of choice and untar it.
 4. Upload `<YOUR INSTALLER>.bin` to the root of your web server.
 5. Create a symlink to the installer with `ln -s <YOUR INSTALLER>.bin onie-installer`. The file must have this name for the installation to work.
 6. The switch will use DHCP to acquire an IP address. On the DNS server pointed to by your DHCP configuration, add a record for onie-server and point it at the host running Apache.
@@ -37,6 +37,7 @@ If `onie-server` is not immediately resolvable, the install process will not wor
 3. Once the grub menu appears, select ONIE Installer. In my case this was the top option.
 4. At this point the ONIE discovery process will commence. It will print each location it attempts to search. It should find the onie-server DNS record and the installation should begin automatically. If this doesn't happen it means there is an issue with the preconfiguration above. Try swapping out the ethernet management cable with a host. Make sure that host pulls DNS/DHCP correctly and is able to download the onie-installer file.
 5. Wait for the installation to finish and the switch to reboot. Login with admin/admin.
+6. If after logging in you are told you can't enter configuration mode because "% Error: ZTD is in progress(configuration is locked)." run `ztd cancel`
 
 # Configure Managment Interface on Dell OS10
 
