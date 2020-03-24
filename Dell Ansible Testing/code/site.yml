@@ -1,0 +1,16 @@
+---
+
+- name: Restart Servers
+  hosts: hosts
+  connection: local
+  gather_facts: False
+
+  tasks:
+
+    - name: "Check that the control-node can transfer a file to the TFTP server using a TFTP client."
+      hosts: tftp
+      remote_user: pmo_admin
+      tasks:
+        - import_role:
+          name: tftp
+      tags: tftp

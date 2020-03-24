@@ -1,0 +1,9 @@
+all:
+    #vars:
+    #  tail_number: "{{ tail_number }}"
+    hosts:
+      r440:
+        ansible_host: "r440idrac.lan"
+        idrac_ip_address: "192.168.1.63"
+        idrac_user: "{{ idrac_user }}"
+        idrac_password: "{{ idrac_pwd }}"
