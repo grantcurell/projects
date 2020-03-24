@@ -2,7 +2,7 @@
 
 - name: Configure Server Power Setting - GracefulRestart
   dellemc_change_power_state:
-    idrac_ip:   "{{ hostvars["r440"].idrac_ip_address }}"
+    idrac_ip:   "{{ hostvars[groups['servers']].idrac_ip_address }}"
     idrac_user: "{{ idrac_user }}"
     idrac_password:  "{{ idrac_password }}"
     # GracefulRestart is applicable for idrac firmware versions below 3.30.30.30
@@ -13,9 +13,9 @@
 
 - name: Configure Server Power Setting - ForceRestart
   dellemc_change_power_state:
-    idrac_ip:   "{{ hostvars["r440"].idrac_ip_address }}"
-    idrac_user: "{{ hostvars["r440"].idrac_user }}"
-    idrac_password:  "{{ hostvars["r440"].idrac_password }}"
+    idrac_ip:   "{{ {{ hostvars[groups['servers']].idrac_ip_address }}"
+    idrac_user: "{{ idrac_user }}"
+    idrac_password:  "{{ idrac_password }}"
     # ForceRestart is applicable for idrac firmware versions above 3.30.30.30
     reset_type: "ForceRestart"
 
