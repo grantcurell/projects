@@ -10,8 +10,8 @@
         - name: "Booting to Network Operating System image"
           idrac_os_deployment:
             idrac_ip: "{{ idrac_ip }}"
-            idrac_password: "{{ idrac_password }}"
-            idrac_user: "{{ idrac_user }}"
+            idrac_password: "{{ global_idrac_password }}"
+            idrac_user: "{{ global_idrac_user }}"
             share_name: "{{ playbook_dir }}"
             iso_image: "kickstart.iso"        
             expose_duration: 180

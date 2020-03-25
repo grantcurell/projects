@@ -1,9 +1,9 @@
 ---
 
-    idrac_user: "root"
-    idrac_pwd:  "I.am.ghost.47"
+    global_idrac_user: "root"
+    global_idrac_password:  "I.am.ghost.47"
     share_name: "192.168.1.63:/samba"
-    share_pwd:  ""
+    share_password:  "I.am.ghost.47"
     share_user: "samba"
     share_mnt:  "/mnt/"
 
