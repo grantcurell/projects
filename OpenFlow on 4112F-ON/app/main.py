@@ -73,7 +73,7 @@ class ExampleSwitch13(app_manager.RyuApp):
         datapath.send_msg(mod)
 
 
-    #@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         msg = ev.msg
         # TODO remove when done
@@ -93,7 +93,7 @@ class ExampleSwitch13(app_manager.RyuApp):
         dst = eth_pkt.dst
         src = eth_pkt.src
 
-        pp.pprint(eth_pkt)
+        #pp.pprint(eth_pkt)
 
         # get the received port number from packet_in message.
         in_port = msg.match['in_port']
@@ -108,34 +108,22 @@ class ExampleSwitch13(app_manager.RyuApp):
         if dst in self.mac_to_port[dpid]:
             out_port = self.mac_to_port[dpid][dst]
         else:
-            # TODO this isn't supported on the Dell switches
             out_port = ofproto.OFPP_FLOOD
 
-        pp.pprint("self.mac_to_port type: " + str(type(self.mac_to_port)))
+        # construct action list.
+        actions = [parser.OFPActionOutput(out_port)]
 
-        for i in range(9, 30):
+        # install a flow to avoid packet_in next time.
+        if out_port != ofproto.OFPP_FLOOD:
+            match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
+            self.add_flow(datapath, 1, match, actions)
+            print("HERE")
 
-            print("Trying: " + str(i))
+        # construct packet_out message and send it.
+        out = parser.OFPPacketOut(datapath=datapath,
+                                  buffer_id=ofproto.OFP_NO_BUFFER,
+                                  in_port=in_port, actions=actions,
+                                  data=msg.data)
 
-            self.mac_to_port[dpid]["00:0c:29:7a:62:1a"] = i
-            out_port = self.mac_to_port[dpid]["00:0c:29:7a:62:1a"]
-
-            print("mac_to_port: " + str(self.mac_to_port))
-            pp.pprint(in_port)
-
-            # construct action list.
-            actions = [parser.OFPActionOutput(out_port)]
-
-            # install a flow to avoid packet_in next time.
-            if out_port != ofproto.OFPP_FLOOD:
-                match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
-                self.add_flow(datapath, 1, match, actions)
-
-            # construct packet_out message and send it.
-            out = parser.OFPPacketOut(datapath=datapath,
-                                      buffer_id=ofproto.OFP_NO_BUFFER,
-                                      in_port=in_port, actions=actions,
-                                      data=msg.data)
-
-            pp.pprint("Out is: " + str(out))
-            datapath.send_msg(out)
+        pp.pprint("Out is: " + str(out))
+        datapath.send_msg(out)
