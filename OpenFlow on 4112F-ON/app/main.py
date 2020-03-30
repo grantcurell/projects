@@ -16,7 +16,8 @@ from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
 from pprint import PrettyPrinter
-
+from ryu.cmd import manager
+import sys
 
 class ExampleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -125,3 +126,15 @@ class ExampleSwitch13(app_manager.RyuApp):
         pp.pprint("Out is: " + str(out))
         datapath.send_msg(out)
 
+
+def main():
+    sys.argv.append('--ofp-tcp-listen-port')
+    sys.argv.append('6633')
+    sys.argv.append('main')  # This is the name of the Ryu app
+    sys.argv.append('--verbose')
+    sys.argv.append('--enable-debugger')
+    manager.main()
+
+
+if __name__ == '__main__':
+    main()
