@@ -6,3 +6,5 @@ Elasticsearch Load Testing/debug.log
 Setting Up SmartFabric Director/dumped_javascript/
 
 *.swp
+
+*.pyc
