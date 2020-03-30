@@ -93,8 +93,6 @@ class ExampleSwitch13(app_manager.RyuApp):
         dst = eth_pkt.dst
         src = eth_pkt.src
 
-        #pp.pprint(eth_pkt)
-
         # get the received port number from packet_in message.
         in_port = msg.match['in_port']
 
@@ -117,7 +115,6 @@ class ExampleSwitch13(app_manager.RyuApp):
         if out_port != ofproto.OFPP_FLOOD:
             match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
             self.add_flow(datapath, 1, match, actions)
-            print("HERE")
 
         # construct packet_out message and send it.
         out = parser.OFPPacketOut(datapath=datapath,

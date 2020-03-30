@@ -85,3 +85,8 @@ On the switch run:
     OS10(config-openflow)# switch of-switch-1
     OS10(config-openflow-switch)# controller ipv4 <YOUR_CONTROLLER_IP> port 6633
     OS10(config-openflow-switch)# no shutdown
+
+## Run the Code
+
+To run the code there is an application called `ryu-manager`. To run the code 
+you have to run `ryu-manager main.py`.
