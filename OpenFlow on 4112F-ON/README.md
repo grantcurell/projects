@@ -90,3 +90,9 @@ On the switch run:
 
 To run the code there is an application called `ryu-manager`. To run the code 
 you have to run `ryu-manager main.py`.
+
+## Random Programming Thoughts
+
+- 它只會詢問流中的第一個封包。
+- 我可以使用混合模式。
+- 
