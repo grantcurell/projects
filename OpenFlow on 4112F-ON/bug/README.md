@@ -95,8 +95,8 @@ See [the switch config](./switch_configuration) for details.
 
 Run `pip install ryu` to install Ryu and its dependencies.
 
-I have included my Ryu app as it currently was when I found the bug in the file
-`main.py`.
+I have included [my Ryu app](./main.py) as it currently was when I found the bug 
+in the file `main.py`.
 
 I used PyCharm to perform debugging which required me to adjust the debug configuration
 to the below:
