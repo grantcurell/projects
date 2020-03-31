@@ -2,10 +2,16 @@
 
 ## Overview
 
+### Problem
+
 OS10 does not correctly follow [the specification](https://www.opennetworking.org/wp-content/uploads/2014/10/openflow-spec-v1.3.0.pdf)
 with regards to datapath_id. See page 52 for the definition of *struct ofp_switch_features*.
 The datapath_id should be 64 bits long, however, I discovered while using Ryu
 that OS10 returns a 60 bit integer instead.
+
+### Suggested Fix
+
+Suggest zero padding the datapath_id to 64 bits.
 
 I found the problem while testing [this Ryu example](https://osrg.github.io/ryu-book/en/html/rest_api.html#implementing-simpleswitchrest13-class).
 
