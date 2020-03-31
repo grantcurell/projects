@@ -4,9 +4,52 @@
 
 ### Problem
 
-Ryu incorrectly truncates datapath_id.
+Ryu incorrectly truncates datapath_id from 16 characters to 15.
 
 I found the problem while testing [this Ryu example](https://osrg.github.io/ryu-book/en/html/rest_api.html#implementing-simpleswitchrest13-class).
+
+## Proof of Concept
+
+Running the code in debug mode produces the below:
+![](images/poc.PNG)
+You can see that the switch ID 150013889525632 which is only 15 characters instead
+of the required 16. 
+
+To confirm that the problem was not with what the switch was sending I captured
+the response in Wireshark.
+
+![](images/wireshark.PNG)
+
+You can see the switch correctly adheres to the 64bit datapath_id requirement.
+
+### Detailed Troubleshooting
+
+I found the problem when none of the routes ran when browsing to the address:
+
+    http://127.0.0.1:8080/simpleswitch/mactable/150013889525632
+
+I eventually realized it is because of the following line:
+
+    @route('/simpleswitch', url, methods=['PUT'], requirements={'dpid': dpid_lib.DPID_PATTERN})
+
+DPID_PATTERN's definition is as follows:
+
+    _DPID_LEN = 16
+    _DPID_FMT = '%0{0}x'.format(_DPID_LEN)
+    DPID_PATTERN = r'[0-9a-f]{%d}' % _DPID_LEN
+
+You can see this more directly by looking at the regex as it is used in the WSGI
+call produced from the above line.
+
+![](images/regex.jpg)
+
+As you can see from *{16}* the switch ID Ryu produces does not match because it
+is a character short. You can fix the problem by using the URL:
+
+    http://127.0.0.1:8080/simpleswitch/mactable/0150013889525632
+
+However, that then causes other code to fail because it is is looking for the
+original switch ID of 150013889525632.
 
 ## Reproducing
 
@@ -67,36 +110,3 @@ to run the application.
 
 To run the code there is an application called `ryu-manager`. To run the code 
 you have to run `ryu-manager main.py`.
-
-## Proof of Concept
-
-Running the code in debug mode produces the below:
-![](images/poc.PNG)
-You can see that the switch ID 150013889525632 which is only 15 characters instead
-of the required 16. 
-
-To confirm that the problem was not with what the switch was sending I captured
-the response in Wireshark.
-
-![](images/wireshark.PNG)
-
-### Consequences
-
-This causes code following the spec to fail. In my case, Ryu's WSGI application fails
-because it is using dlib:
-
-    @route('/simpleswitch', url, methods=['PUT'], requirements={'dpid': dpid_lib.DPID_PATTERN})
-
-and dlib requires all 16 digits to be present. You can see this by reverse engineering
-the WSGI call until you find the regex produced from the above line.
-
-![](images/regex.jpg)
-
-This will lead you to the dlib library where you see:
-
-    _DPID_LEN = 16
-    _DPID_FMT = '%0{0}x'.format(_DPID_LEN)
-    DPID_PATTERN = r'[0-9a-f]{%d}' % _DPID_LEN
-
-This is in no way relevant to the bug, I just wanted another programmer to appreciate
-how much of a pain in the ass this was to find hahahahaha
