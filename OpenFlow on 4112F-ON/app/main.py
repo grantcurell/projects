@@ -160,7 +160,7 @@ class SimpleSwitch:
         parser = datapath.ofproto_parser
 
         # get Datapath ID to identify OpenFlow switches.
-        dpid = datapath.id  # 64-bit OpenFlow Datapath ID of the switch to which the port belongs.
+        dpid = format(datapath.id, "d").zfill(16)  # 64-bit OpenFlow Datapath ID of the switch to which the port belongs.
         self.mac_to_port.setdefault(dpid, {})
 
         # analyse the received packets using the packet library.
@@ -313,14 +313,14 @@ class SimpleSwitchController(ControllerBase):
         """
 
         simple_switch = self.simple_switch_app
-        dpid = dpid_lib.str_to_dpid(kwargs['dpid'])
+        dpid = kwargs['dpid']
 
         if dpid not in simple_switch.mac_to_port:
             return Response(status=404)
 
         mac_table = simple_switch.mac_to_port.get(dpid, {})
         body = json.dumps(mac_table)
-        return Response(content_type='application/json', body=body)
+        return Response(content_type='application/json', text=body)
 
     @route('/simpleswitch', url, methods=['PUT'], requirements={'dpid': dpid_lib.DPID_PATTERN})
     def put_mac_table(self, req: json, **kwargs) -> Response:
@@ -338,7 +338,7 @@ class SimpleSwitchController(ControllerBase):
         """
 
         simple_switch = self.simple_switch_app
-        dpid = dpid_lib.str_to_dpid(kwargs['dpid'])
+        dpid = kwargs['dpid']
         try:
             new_entry = req.json if req.body else {}
         except ValueError:
@@ -350,7 +350,7 @@ class SimpleSwitchController(ControllerBase):
         try:
             mac_table = simple_switch.set_mac_to_port(dpid, new_entry)
             body = json.dumps(mac_table)
-            return Response(content_type='application/json', body=body)
+            return Response(content_type='application/json', text=body)
         except Exception as e:
             return Response(status=500)
 
