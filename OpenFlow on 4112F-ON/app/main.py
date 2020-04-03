@@ -9,20 +9,21 @@ An OpenFlow 1.3 L2 learning switch implementation.
 """
 
 import json
+import sys
+import communityid
 
 from webob import Response
-from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
+from ryu.controller import dpset
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
-from ryu.lib import dpid as dpid_lib
-from ryu.app.wsgi import ControllerBase, WSGIApplication, route
+from ryu.app.wsgi import WSGIApplication, route
+from ryu.app.ofctl_rest import StatsController,RestStatsApi
 from pprint import PrettyPrinter # TODO REMOVE
 from ryu.cmd import manager
-import sys
 
 simple_switch_instance_name = 'simple_switch_api_app'
 url = '/simpleswitch/mactable/{dpid}'
@@ -42,6 +43,7 @@ class SimpleSwitch:
         super(SimpleSwitch, self).__init__(*args, **kwargs)
         # mac_to_port is the MAC address table for the switch
         self.mac_to_port = {}
+        self.flow_table = {}
         self.switches = {}
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -131,11 +133,6 @@ class SimpleSwitch:
         datapath.send_msg(mod)
 
 
-    # TODO - FINISH
-    def new_conversation(self, pkt):
-        print("NEW CONVO")
-
-
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         """
@@ -160,7 +157,8 @@ class SimpleSwitch:
         parser = datapath.ofproto_parser
 
         # get Datapath ID to identify OpenFlow switches.
-        dpid = format(datapath.id, "d").zfill(16)  # 64-bit OpenFlow Datapath ID of the switch to which the port belongs.
+        dpid = datapath.id  # 64-bit OpenFlow Datapath ID of the switch to which the port belongs.
+
         self.mac_to_port.setdefault(dpid, {})
 
         # analyse the received packets using the packet library.
@@ -168,6 +166,18 @@ class SimpleSwitch:
         eth_pkt = pkt.get_protocol(ethernet.ethernet)
         dst = eth_pkt.dst
         src = eth_pkt.src
+
+        """
+        if len(pkt.protocols) > 3:
+            print("here")
+
+            if "ipv4" in pkt.protocols and "tcp" in pkt.protocols:
+                cid = communityid.CommunityID()
+                tpl = communityid.FlowTuple.make_tcp(pkt.protocols["ipv4"].src, pkt.protocols["ipv4"].dst, pkt.protocols["tcp"].src_port, pkt.protocols["tcp"].dst_port)
+                flow_hash = cid.calc(tpl)
+
+                if flow_hash in self.flow_table:
+        """
 
         # get the received port number from packet_in message.
         in_port = msg.match['in_port']
@@ -210,7 +220,7 @@ class SimpleSwitch:
         datapath.send_msg(out)
 
 
-class SimpleSwitchRest(SimpleSwitch, app_manager.RyuApp):
+class SimpleSwitchRest(SimpleSwitch, RestStatsApi):
     """
     Overview is here: https://osrg.github.io/ryu-book/en/html/rest_api.html
 
@@ -218,20 +228,27 @@ class SimpleSwitchRest(SimpleSwitch, app_manager.RyuApp):
 
     """
 
+    # A dictionary to specify contexts which this Ryu application wants to use. Its key is a name of context and its
+    # value is an ordinary class which implements the context. The class is instantiated by app_manager and the instance
+    # is shared among RyuApp subclasses which has _CONTEXTS member with the same key. A RyuApp subclass can obtain a
+    # reference to the instance via its __init__'s kwargs as the following.
     # Class variable _CONTEXT is used to specify Ryu’s WSGI-compatible Web server class. By doing so, WSGI’s Web server
     # instance can be acquired by a key called the wsgi key.
-    _CONTEXTS = {'wsgi': WSGIApplication}
+    _CONTEXTS = {
+        'wsgi': WSGIApplication,
+        'dpset': dpset.DPSet
+    }
 
     def __init__(self, *args, **kwargs):
-        super(SimpleSwitchRest, self).__init__(*args, **kwargs)
         self.switches = {}
         wsgi = kwargs['wsgi']
 
         # For registration, the register method is used. When executing the register method, the dictionary object is
         # passed in the key name simple_switch_api_app so that the constructor of the controller can access the instance
         # of the SimpleSwitchRest class.
-        wsgi.register(SimpleSwitchController,
-                      {simple_switch_instance_name: self})
+        wsgi.register(SimpleSwitchController, {simple_switch_instance_name: self})
+        SimpleSwitch.__init__(self, *args, **kwargs)
+        RestStatsApi.__init__(self, *args, **kwargs)
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -292,13 +309,22 @@ class SimpleSwitchRest(SimpleSwitch, app_manager.RyuApp):
         return mac_table
 
 
-class SimpleSwitchController(ControllerBase):
+class SimpleSwitchController(StatsController):
+
+    _CONTEXTS = {
+        'wsgi': WSGIApplication,
+        'dpset': dpset.DPSet
+    }
 
     def __init__(self, req, link, data, **config):
+        data["dpset"] = data[simple_switch_instance_name].dpset
+
+        # waiters in this case is ultimately used by ofctl_utils.py. It appears to be used for locks
+        data["waiters"] = {}
         super(SimpleSwitchController, self).__init__(req, link, data, **config)
         self.simple_switch_app = data[simple_switch_instance_name]
 
-    @route('/simpleswitch', url, methods=['GET'], requirements={'dpid': dpid_lib.DPID_PATTERN})
+    @route('/simpleswitch', url, methods=['GET'])
     def list_mac_table(self, req, **kwargs) -> Response:
         """
         Retrieves and returns the MAC address table of the specified switch. The REST API is called by the URL
@@ -313,7 +339,7 @@ class SimpleSwitchController(ControllerBase):
         """
 
         simple_switch = self.simple_switch_app
-        dpid = kwargs['dpid']
+        dpid = int(kwargs['dpid'])
 
         if dpid not in simple_switch.mac_to_port:
             return Response(status=404)
@@ -322,7 +348,7 @@ class SimpleSwitchController(ControllerBase):
         body = json.dumps(mac_table)
         return Response(content_type='application/json', text=body)
 
-    @route('/simpleswitch', url, methods=['PUT'], requirements={'dpid': dpid_lib.DPID_PATTERN})
+    @route('/simpleswitch', url, methods=['PUT'])
     def put_mac_table(self, req: json, **kwargs) -> Response:
         """
         Update a MAC address in the designated switch's MAC address table.
@@ -338,7 +364,7 @@ class SimpleSwitchController(ControllerBase):
         """
 
         simple_switch = self.simple_switch_app
-        dpid = kwargs['dpid']
+        dpid = int(kwargs['dpid'])
         try:
             new_entry = req.json if req.body else {}
         except ValueError:
@@ -347,6 +373,7 @@ class SimpleSwitchController(ControllerBase):
         if dpid not in simple_switch.mac_to_port:
             return Response(status=404)
 
+        # noinspection PyBroadException
         try:
             mac_table = simple_switch.set_mac_to_port(dpid, new_entry)
             body = json.dumps(mac_table)
