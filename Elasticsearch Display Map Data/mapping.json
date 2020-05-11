@@ -1,0 +1,66 @@
+{
+  "properties": {
+    "migrationVersion": {
+      "properties": {
+        "task": {
+          "type": "keyword"
+        }
+      }
+    },
+    "task": {
+      "properties": {
+        "attempts": {
+          "type": "integer"
+        },
+        "ownerId": {
+          "type": "keyword"
+        },
+        "params": {
+          "type": "keyword"
+        },
+        "retryAt": {
+          "type": "keyword"
+        },
+        "runAt": {
+          "type": "date",
+          "format": "yyyy/MM/dd HH:mm:ss.SSSZZ||yyyy/MM/dd HH:mm:ss.SSS||yyyy/MM/dd"
+        },
+        "scheduledAt": {
+          "type": "date",
+          "format": "yyyy/MM/dd HH:mm:ss.SSSZZ||yyyy/MM/dd HH:mm:ss.SSS||yyyy/MM/dd"
+        },
+        "startedAt": {
+          "type": "keyword"
+        },
+        "state": {
+          "type": "keyword"
+        },
+        "status": {
+          "type": "keyword"
+        },
+        "taskType": {
+          "type": "keyword"
+        }
+      }
+    },
+    "type": {
+      "type": "keyword"
+    },
+    "updated_at": {
+      "type": "date",
+      "format": "yyyy/MM/dd HH:mm:ss.SSSZZ||yyyy/MM/dd HH:mm:ss.SSS||yyyy/MM/dd"
+    },
+    "references": {
+      "type": "keyword"
+    },
+    "geometry": {
+      "type": "geo_point"
+    }
+  },
+  "_meta": {
+    "fid": "ogc_fid",
+    "fields": {
+      "references": "StringList"
+    }
+  }
+}

@@ -8,3 +8,9 @@ Setting Up SmartFabric Director/dumped_javascript/
 *.swp
 
 *.pyc
+
+Elasticsearch Display Map Data/code/conflict_data.csv
+
+Elasticsearch Display Map Data/.idea/
+
+Elasticsearch Display Map Data/code/GeoObs.json
