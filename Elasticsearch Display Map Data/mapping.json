@@ -1,66 +1,286 @@
 {
   "properties": {
-    "migrationVersion": {
+    "geometry": {
       "properties": {
-        "task": {
-          "type": "keyword"
+        "coordinates": {
+          "type": "float"
+        },
+        "type": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         }
       }
     },
-    "task": {
+    "properties": {
       "properties": {
-        "attempts": {
-          "type": "integer"
+        "actor1": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
-        "ownerId": {
-          "type": "keyword"
+        "actor2": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
-        "params": {
-          "type": "keyword"
+        "admin1": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
-        "retryAt": {
-          "type": "keyword"
+        "admin2": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
-        "runAt": {
-          "type": "date",
-          "format": "yyyy/MM/dd HH:mm:ss.SSSZZ||yyyy/MM/dd HH:mm:ss.SSS||yyyy/MM/dd"
+        "admin3": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
-        "scheduledAt": {
-          "type": "date",
-          "format": "yyyy/MM/dd HH:mm:ss.SSSZZ||yyyy/MM/dd HH:mm:ss.SSS||yyyy/MM/dd"
+        "assoc_actor_1": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
-        "startedAt": {
-          "type": "keyword"
+        "assoc_actor_2": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
-        "state": {
-          "type": "keyword"
+        "country": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
-        "status": {
-          "type": "keyword"
+        "data_id": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "integer"
+            }
+          }
         },
-        "taskType": {
-          "type": "keyword"
+        "event_date": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "date",
+              "format": "yyyy/MM/dd"
+            }
+          }
+        },
+        "event_id_cnty": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "event_id_no_cnty": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "event_type": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "fatalities": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "integer"
+            }
+          }
+        },
+        "geo_precision": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "integer"
+            }
+          }
+        },
+        "inter1": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "integer"
+            }
+          }
+        },
+        "inter2": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "integer"
+            }
+          }
+        },
+        "interaction": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "integer"
+            }
+          }
+        },
+        "iso": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "iso3": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "latitude": {
+          "type": "float"
+        },
+        "location": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "longitude": {
+          "type": "float"
+        },
+        "notes": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "text"
+            }
+          }
+        },
+        "region": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "source": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "source_scale": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "sub_event_type": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "time_precision": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "integer"
+            }
+          }
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "year": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         }
       }
     },
     "type": {
-      "type": "keyword"
-    },
-    "updated_at": {
-      "type": "date",
-      "format": "yyyy/MM/dd HH:mm:ss.SSSZZ||yyyy/MM/dd HH:mm:ss.SSS||yyyy/MM/dd"
-    },
-    "references": {
-      "type": "keyword"
-    },
-    "geometry": {
-      "type": "geo_point"
-    }
-  },
-  "_meta": {
-    "fid": "ogc_fid",
-    "fields": {
-      "references": "StringList"
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
     }
   }
 }

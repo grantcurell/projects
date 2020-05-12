@@ -3,7 +3,55 @@
 ## Installation
 
 1. [Install CRI-O](https://github.com/cri-o/cri-o/blob/master/tutorials/setup.md#rhel-8)
-2. Kibana only allows you to upload 50 MB files so ingest must be done manually. I'm using GDAL. [Install here](https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries)
+2. Install Kibana.
+
+
+## Running Elasticsearch with Podman
+
+### Set VM Max Map
+
+In `/etc/sysctl.conf` add `vm.max_map_count=262144`
+
+### Turn off swap
+
+`sudo swapoff -a`
+
+### Running Elasticsearch
+
+`podman run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged  -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms28g -Xmx28g" docker.elastic.co/elasticsearch/elasticsearch:7.6.2`
+
+I also gave all privs to /opt/elasticsearch because I didn't want to go to the trouble of figuring out what the proper UID is. Sue me.
+
+If you need to, you can double check the heap size with:
+
+`curl -sS -XGET "localhost:9200/_cat/nodes?h=heap*&v"`
+
+## Importing the Data into Elasticsearch
+
+1. I worte the code in [main.py](./code/main.py) to take a CSV I got from [ACLED](https://acleddata.com/) into geoJSON formatted data. The program [format.py](./code/format.py) just formatted the 30 fields into the Python program for ease of use.
+   1. Modify the code as necessary and then run to get geoJSON formatted data.
+
+
+### Upload the Mapping
+
+First you have to create the index with `curl -X PUT "localhost:9200/conflict-data?pretty"`
+
+Then you can upload the mapping with: `curl -X PUT localhost:9200/conflict-data/_mapping?pretty -H "Content-Type: application/json" -d @mapping.json`
+
+## Helpful Links
+
+Examples of usage [https://gist.github.com/nickpeihl/1a8f9cbecc78e9e04a73a953b30da84d](https://gist.github.com/nickpeihl/1a8f9cbecc78e9e04a73a953b30da84d)
+
+[Ingest geospatial data into Elasticsearch with GDAL](https://www.elastic.co/blog/how-to-ingest-geospatial-data-into-elasticsearch-with-gdal)
+
+[Elasticsearch Driver for GDAL Page](https://gdal.org/drivers/vector/elasticsearch.html)
+
+## Scrapped Idea
+
+I originally tried to push the data with GDAL, but wasn't sure how to get the syntax to work.
+
+Kibana only allows you to upload 50 MB files so ingest must be done manually. I'm using GDAL. [Install here](https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries)
+
    1. `wget https://github.com/OSGeo/gdal/releases/download/v3.1.0/gdal-3.1.0.tar.gz`
    2. `tar xf gdal*`
    3. On RHEL8 run `dnf install -y gcc-toolset-9 && scl enable gcc-toolset-9 bash`.
@@ -22,45 +70,8 @@
 
 For utility you may want to install EPEL with `sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm`
 
-## Running Elasticsearch with Podman
+Creating a mapping with GDAL: `ogr2ogr -overwrite -lco INDEX_NAME=gdal-data -lco NOT_ANALYZED_FIELDS={ALL} -lco WRITE_MAPPING=./mapping.json ES:http://localhost:9200 GeoObs.json`
 
-### Set VM Max Map
+Uploading with GDAL: `ogr2ogr -lco INDEX_NAME=gdal-data -lco OVERWRITE_INDEX=YES -lco MAPPING=./mapping.json ES:http://localhost:9200 GeoObs.json`
 
-In `/etc/sysctl.conf` add `vm.max_map_count=262144`
-
-### Turn off swap
-
-`sudo swapoff -a`
-
-### Running Elasticsearch
-
-`podman run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms28g -Xmx28g" docker.elastic.co/elasticsearch/elasticsearch:7.6.2`
-
-If you need to, you can double check the heap size with:
-
-`curl -sS -XGET "localhost:9200/_cat/nodes?h=heap*&v"`
-
-## Importing the Data into Elasticsearch
-
-1. I worte the code in [main.py](./code/main.py) to take a CSV I got from [ACLED](https://acleddata.com/) into geoJSON formatted data. The program [format.py](./code/format.py) just formatted the 30 fields into the Python program for ease of use.
-   1. Modify the code as necessary and then run to get geoJSON formatted data.
 2. You can run `ogrinfo ES:http://localhost:9200` to check the indicies in your Elasticsearch instance and make sure that everything is connected and ready to go.
-
-### Create the Mapping
-
-`ogr2ogr -overwrite -lco INDEX_NAME=gdal-data -lco NOT_ANALYZED_FIELDS={ALL} -lco WRITE_MAPPING=./mapping.json ES:http://localhost:9200 GeoObs.json`
-
-### Upload the Mapping
-
-First you have to create the index with `curl -X PUT "localhost:9200/gdal_data?pretty"`
-
-Then you can upload the data.
-`ogr2ogr -lco INDEX_NAME=gdal-data -lco OVERWRITE_INDEX=YES -lco MAPPING=./mapping.json ES:http://localhost:9200 GeoObs.json`
-
-## Helpful Links
-
-Examples of usage [https://gist.github.com/nickpeihl/1a8f9cbecc78e9e04a73a953b30da84d](https://gist.github.com/nickpeihl/1a8f9cbecc78e9e04a73a953b30da84d)
-
-[Ingest geospatial data into Elasticsearch with GDAL](https://www.elastic.co/blog/how-to-ingest-geospatial-data-into-elasticsearch-with-gdal)
-
-[Elasticsearch Driver for GDAL Page](https://gdal.org/drivers/vector/elasticsearch.html)
