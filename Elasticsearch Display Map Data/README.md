@@ -3,7 +3,7 @@
 ## Installation
 
 1. [Install CRI-O](https://github.com/cri-o/cri-o/blob/master/tutorials/setup.md#rhel-8)
-2. Install Kibana.
+2. Install [Kibana](https://www.elastic.co/guide/en/kibana/current/install.html).
 
 
 ## Running Elasticsearch with Podman
@@ -18,25 +18,46 @@ In `/etc/sysctl.conf` add `vm.max_map_count=262144`
 
 ### Running Elasticsearch
 
-`podman run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged  -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms28g -Xmx28g" docker.elastic.co/elasticsearch/elasticsearch:7.6.2`
+`podman run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged  -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms28g -Xmx28g" docker.elastic.co/elasticsearch/elasticsearch:7.7.0`
 
-I also gave all privs to /opt/elasticsearch because I didn't want to go to the trouble of figuring out what the proper UID is. Sue me.
+**If you want to make it easy don't set up security, but !**
+
+Run with `podman run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e xpack.security.enabled=true -e xpack.monitoring.collection.enabled=true -e ES_JAVA_OPTS="-Xms16g [53/53]" docker.elastic.co/elasticsearch/elasticsearch:7.7.0`
+to run Elasticsearch with security enabled.
+
+I ran `chmod -R 774 /opt/elasticsearch` to change the permissions to allow `podman`
+to run unpriveleged.
 
 If you need to, you can double check the heap size with:
 
 `curl -sS -XGET "localhost:9200/_cat/nodes?h=heap*&v"`
 
+If you want to use Metricbeat you'll also have to enable security and configure
+users. Do the following:
+
+1. Install Metricbeat from [here](https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-installation.html)
+2. Before starting Metricbeat, go in to the config file at `/etc/metricbeat/metricbeat.yml` and make sure you have the dashboard upload enabled.
+3. Next, you'll need to exec into your Elasticsearch container and setup passwords.
+   1. Run `podman exec -it <CONTAINER_ID> /bin/bash` to get a command line on the container.
+   2. Run `/usr/share/elasticsearch/bin/elasticsearch-setup-passwords interactive` to setup passwords.
+4. Run `cd /etc/metricbeat` then run `metricbeat modules enable elasticsearch-xpack`
+5. Then edit `/etc/metricbeat/metricbeat.yml` Make sure the output hosts are correct and then change username and password to what you set earlier.
+   1. Also make sure that the Kibana host is set correctly.
+6. You'll also need to set the Kibana user in `/etc/kibana/kibana.yml`
+
+#### Remove Exited Containers
+
+`sudo podman rm $(podman ps -a -f status=exited -q)`
+
 ## Importing the Data into Elasticsearch
 
-1. I worte the code in [main.py](./code/main.py) to take a CSV I got from [ACLED](https://acleddata.com/) into geoJSON formatted data. The program [format.py](./code/format.py) just formatted the 30 fields into the Python program for ease of use.
+1. I worte the code in [csv2geojson.py](./code/csv2geojson.py) to take a CSV I got from [ACLED](https://acleddata.com/) into geoJSON formatted data. The program [format.py](./code/format.py) just formatted the 30 fields into the Python program for ease of use.
    1. Modify the code as necessary and then run to get geoJSON formatted data.
-
-
-### Upload the Mapping
-
-First you have to create the index with `curl -X PUT "localhost:9200/conflict-data?pretty"`
-
-Then you can upload the mapping with: `curl -X PUT localhost:9200/conflict-data/_mapping?pretty -H "Content-Type: application/json" -d @mapping.json`
+2. Next you'll need to upload the mapping file.
+   1. First you have to create the index with `curl -X PUT "localhost:9200/conflict-data?pretty"`
+   2. Then you can upload the mapping with: `curl -X PUT localhost:9200/conflict-data/_mapping?pretty -H "Content-Type: application/json" -d @mapping.json`
+3. Now you can import the data with [index_data.py](code/index_data.py).
+   1. You may have to modify the code a bit to get it to ingest properly.
 
 ## Helpful Links
 
