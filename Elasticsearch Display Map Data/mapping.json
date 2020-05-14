@@ -3,7 +3,7 @@
     "geometry": {
       "properties": {
         "coordinates": {
-          "type": "float"
+          "type": "geo_point"
         },
         "type": {
           "type": "text",
@@ -103,7 +103,7 @@
           "fields": {
             "keyword": {
               "type": "date",
-              "format": "yyyy/MM/dd"
+              "format": "yyyy-MM-dd"
             }
           }
         },
