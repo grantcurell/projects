@@ -3,10 +3,9 @@
 ## Installation
 
 1. [Install CRI-O](https://github.com/cri-o/cri-o/blob/master/tutorials/setup.md#rhel-8)
-2. Install [Kibana](https://www.elastic.co/guide/en/kibana/current/install.html).
+2. Install podman-compose with `pip3 install podman-compose`
 
-
-## Running Elasticsearch with Podman
+## Running Elasticsearch with Docker
 
 ### Set VM Max Map
 
@@ -16,48 +15,54 @@ In `/etc/sysctl.conf` add `vm.max_map_count=262144`
 
 `sudo swapoff -a`
 
+### Setup Data Directories
+
+If you are bind-mounting a local directory or file, it must be readable by the elasticsearch user. In addition, this user must have write access to the data and log dirs. A good strategy is to grant group access to gid 0 for the local directory.
+
+For example, to prepare a local directory for storing data through a bind-mount:
+
+      mkdir /var/elasticsearch-data
+      mkdir /var/elasticsearch-data/data01
+      mkdir /var/elasticsearch-data/data02
+      mkdir /var/elasticsearch-data/data03
+      mkdir /var/elasticsearch-data/data04
+
+      chmod g+rwx /var/elasticsearch-data
+      chgrp 0 /var/elasticsearch-data
+
 ### Running Elasticsearch
 
-`podman run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged  -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms28g -Xmx28g" docker.elastic.co/elasticsearch/elasticsearch:7.7.0`
 
-**If you want to make it easy don't set up security, but !**
-
-Run with `podman run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e xpack.security.enabled=true -e xpack.monitoring.collection.enabled=true -e ES_JAVA_OPTS="-Xms16g [53/53]" docker.elastic.co/elasticsearch/elasticsearch:7.7.0`
-to run Elasticsearch with security enabled.
-
-I ran `chmod -R 774 /opt/elasticsearch` to change the permissions to allow `podman`
-to run unpriveleged.
-
-If you need to, you can double check the heap size with:
-
-`curl -sS -XGET "localhost:9200/_cat/nodes?h=heap*&v"`
-
-If you want to use Metricbeat you'll also have to enable security and configure
-users. Do the following:
-
-1. Install Metricbeat from [here](https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-installation.html)
-2. Before starting Metricbeat, go in to the config file at `/etc/metricbeat/metricbeat.yml` and make sure you have the dashboard upload enabled.
-3. Next, you'll need to exec into your Elasticsearch container and setup passwords.
-   1. Run `podman exec -it <CONTAINER_ID> /bin/bash` to get a command line on the container.
-   2. Run `/usr/share/elasticsearch/bin/elasticsearch-setup-passwords interactive` to setup passwords.
-4. Run `cd /etc/metricbeat` then run `metricbeat modules enable elasticsearch-xpack`
-5. Then edit `/etc/metricbeat/metricbeat.yml` Make sure the output hosts are correct and then change username and password to what you set earlier.
-   1. Also make sure that the Kibana host is set correctly.
-6. You'll also need to set the Kibana user in `/etc/kibana/kibana.yml`
-
-#### Remove Exited Containers
-
-`sudo podman rm $(podman ps -a -f status=exited -q)`
 
 ## Importing the Data into Elasticsearch
 
-1. I worte the code in [csv2geojson.py](./code/csv2geojson.py) to take a CSV I got from [ACLED](https://acleddata.com/) into geoJSON formatted data. The program [format.py](./code/format.py) just formatted the 30 fields into the Python program for ease of use.
+1. I wrote the code in [csv2geojson.py](./code/csv2geojson.py) to take a CSV I got from [ACLED](https://acleddata.com/) into geoJSON formatted data. The program [format.py](./code/format.py) just formatted the 30 fields into the Python program for ease of use.
    1. Modify the code as necessary and then run to get geoJSON formatted data.
 2. Next you'll need to upload the mapping file.
    1. First you have to create the index with `curl -X PUT "localhost:9200/conflict-data?pretty"`
    2. Then you can upload the mapping with: `curl -X PUT localhost:9200/conflict-data/_mapping?pretty -H "Content-Type: application/json" -d @mapping.json`
 3. Now you can import the data with [index_data.py](code/index_data.py).
    1. You may have to modify the code a bit to get it to ingest properly.
+
+## Importing Map from Somewhere Else
+
+Online it will tell you that you need code to import and export objects. This is
+no longer the case. When I tested in 7.7.0 you could export saved objects from
+the saved objects menu in Kibana and then import them on the other side.
+
+## Running A Single Elasticsearch Instance
+
+`podman run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged  -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms28g -Xmx28g" docker.elastic.co/elasticsearch/elasticsearch:7.7.0`
+
+## Helpful Commands
+
+### Check Heap Size
+
+`curl -sS -XGET "localhost:9200/_cat/nodes?h=heap*&v"`
+
+#### Remove Exited Containers
+
+`sudo podman rm $(podman ps -a -f status=exited -q)`
 
 ## Helpful Links
 
@@ -67,7 +72,7 @@ Examples of usage [https://gist.github.com/nickpeihl/1a8f9cbecc78e9e04a73a953b30
 
 [Elasticsearch Driver for GDAL Page](https://gdal.org/drivers/vector/elasticsearch.html)
 
-## Scrapped Idea
+## GDAL Attempt (Does not work)
 
 I originally tried to push the data with GDAL, but wasn't sure how to get the syntax to work.
 
@@ -96,3 +101,30 @@ Creating a mapping with GDAL: `ogr2ogr -overwrite -lco INDEX_NAME=gdal-data -lco
 Uploading with GDAL: `ogr2ogr -lco INDEX_NAME=gdal-data -lco OVERWRITE_INDEX=YES -lco MAPPING=./mapping.json ES:http://localhost:9200 GeoObs.json`
 
 2. You can run `ogrinfo ES:http://localhost:9200` to check the indicies in your Elasticsearch instance and make sure that everything is connected and ready to go.
+
+## Metricbeat Install Attempt (Does not work)
+
+**If you want to make it easy don't set up security, but !**
+
+Run with `podman run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e xpack.security.enabled=true -e xpack.monitoring.collection.enabled=true -e ES_JAVA_OPTS="-Xms16g [53/53]" docker.elastic.co/elasticsearch/elasticsearch:7.7.0`
+to run Elasticsearch with security enabled.
+
+I ran `chmod -R 774 /opt/elasticsearch` to change the permissions to allow `podman`
+to run unpriveleged.
+
+If you need to, you can double check the heap size with:
+
+`curl -sS -XGET "localhost:9200/_cat/nodes?h=heap*&v"`
+
+If you want to use Metricbeat you'll also have to enable security and configure
+users. Do the following:
+
+1. Install Metricbeat from [here](https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-installation.html)
+2. Before starting Metricbeat, go in to the config file at `/etc/metricbeat/metricbeat.yml` and make sure you have the dashboard upload enabled.
+3. Next, you'll need to exec into your Elasticsearch container and setup passwords.
+   1. Run `podman exec -it <CONTAINER_ID> /bin/bash` to get a command line on the container.
+   2. Run `/usr/share/elasticsearch/bin/elasticsearch-setup-passwords interactive` to setup passwords.
+4. Run `cd /etc/metricbeat` then run `metricbeat modules enable elasticsearch-xpack`
+5. Then edit `/etc/metricbeat/metricbeat.yml` Make sure the output hosts are correct and then change username and password to what you set earlier.
+   1. Also make sure that the Kibana host is set correctly.
+6. You'll also need to set the Kibana user in `/etc/kibana/kibana.yml`
