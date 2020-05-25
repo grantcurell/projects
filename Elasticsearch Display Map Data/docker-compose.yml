@@ -3,7 +3,6 @@ services:
   es01:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
     container_name: es01
-    privileged: true
     environment:
       - node.name=es01
       - cluster.name=es-docker-cluster
@@ -24,7 +23,6 @@ services:
   es02:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
     container_name: es02
-    privileged: true
     environment:
       - node.name=es02
       - cluster.name=es-docker-cluster
@@ -42,7 +40,6 @@ services:
       - elastic
   es03:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
-    container_name: es03
     privileged: true
     environment:
       - node.name=es03
@@ -61,7 +58,6 @@ services:
       - elastic
   es04:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
-    container_name: es03
     privileged: true
     environment:
       - node.name=es04
