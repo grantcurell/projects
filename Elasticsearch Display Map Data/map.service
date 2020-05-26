@@ -1,0 +1,20 @@
+[Unit]
+Description=map
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+WorkingDirectory=/opt
+
+# Remove old containers, images and volumes
+ExecStartPre=-/bin/bash -c 'docker rm $(docker ps -a -f status=exited -q)'
+
+# Compose up
+ExecStart=/usr/local/bin/docker-compose -p opt -f /opt/docker-compose.yml up
+
+# Compose down, remove containers and volumes
+ExecStop=/usr/local/bin/docker-compose -p opt -f /opt/docker-compose.yml down -v
+
+[Install]
+WantedBy=multi-user.target

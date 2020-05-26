@@ -74,23 +74,23 @@ something else.
             '
 
    2. Then you can upload the mapping with: `curl -X PUT localhost:9200/conflict-data/_mapping?pretty -H "Content-Type: application/json" -d @mapping.json`
-3. Now you can import the data with [index_data.py](code/index_data.py).
+3. Now you can import the data with [index_data.py](code/index_data.py). **NOTE** Make sure you use `python3.6`
    1. You may have to modify the code a bit to get it to ingest properly.
 
-### Configuring Metricbeat
+### Configuring Metricbeat in a container
 
 First double check the name of your elastic network with `docker network ls`
 It's probably opt_elastic. Docker compose prefixes everything with the directory
 from which you're running unless you specify the `-p` option.
 
-cd /opt
-docker pull docker.elastic.co/beats/metricbeat:7.7.0
+1. Pull the container and then run the setup
 
-docker run \
---network elastic \
-docker.elastic.co/beats/metricbeat:7.7.0 \
-setup -E setup.kibana.host=kib01:5601 \
--E output.elasticsearch.hosts=["es01:9200"]
+         cd /opt
+         docker pull docker.elastic.co/beats/metricbeat:7.7.0
+         docker run --network opt_elastic docker.elastic.co/beats/metricbeat:7.7.0 setup -E setup.kibana.host=kib01:5601 -E output.elasticsearch.hosts=["es01:9200"]
+
+2. Copy the metricbeat.yml to /opt
+
 
 ## Importing Map from Somewhere Else
 
@@ -113,10 +113,4 @@ the saved objects menu in Kibana and then import them on the other side. I inclu
 
 `docker run -v /opt/elasticsearch:/usr/share/elasticsearch/data --privileged  -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms28g -Xmx28g" docker.elastic.co/elasticsearch/elasticsearch:7.7.0`
 
-## Helpful Links
 
-Examples of usage [https://gist.github.com/nickpeihl/1a8f9cbecc78e9e04a73a953b30da84d](https://gist.github.com/nickpeihl/1a8f9cbecc78e9e04a73a953b30da84d)
-
-[Ingest geospatial data into Elasticsearch with GDAL](https://www.elastic.co/blog/how-to-ingest-geospatial-data-into-elasticsearch-with-gdal)
-
-[Elasticsearch Driver for GDAL Page](https://gdal.org/drivers/vector/elasticsearch.html)
