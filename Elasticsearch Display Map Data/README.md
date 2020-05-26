@@ -4,11 +4,14 @@
 
 Install docker with the following:
 
-      dnf install -y https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm
-      dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+      yum install -y https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm epel-release
+      yum config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+      yum install -y docker python-pip python36
       curl -L "https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      chmod +x /usr/local/bin/docker-compose
       systemctl enable docker
       systemctl start docker
+      pip3.6 install geojson elasticsearch
 
 ## Running Elasticsearch with Docker
 
@@ -34,17 +37,34 @@ For example, to prepare a local directory for storing data through a bind-mount:
 
       chmod g+rwx /var/elasticsearch-data
       chgrp 0 /var/elasticsearch-data
+      chmod 777 -R /var/elasticsearch-data
+
+^ I got lazy. Not sure what the permissions issue is, but I fixed it.
+
 
 ### Running Elasticsearch
 
-
+1. Copy over the docker compose file
+2. Now, you must run docker-compose *in the folder in which you have the directories*. Otherwies you get a permissions error. cd `/var/elasticsearch-data/` then run `docker-compose up`
 
 ## Importing the Data into Elasticsearch
 
 1. I wrote the code in [csv2geojson.py](./code/csv2geojson.py) to take a CSV I got from [ACLED](https://acleddata.com/) into geoJSON formatted data. The program [format.py](./code/format.py) just formatted the 30 fields into the Python program for ease of use.
    1. Modify the code as necessary and then run to get geoJSON formatted data.
 2. Next you'll need to upload the mapping file.
-   1. First you have to create the index with `curl -X PUT "localhost:9200/conflict-data?pretty"`
+   1. First you have to create the index with
+
+            curl -X PUT "localhost:9200/conflict-data?pretty" -H 'Content-Type: application/json' -d'
+            {
+               "settings" : {
+                  "index" : {
+                        "number_of_shards" : 4, 
+                        "number_of_replicas" : 3
+                  }
+               }
+            }
+            '
+
    2. Then you can upload the mapping with: `curl -X PUT localhost:9200/conflict-data/_mapping?pretty -H "Content-Type: application/json" -d @mapping.json`
 3. Now you can import the data with [index_data.py](code/index_data.py).
    1. You may have to modify the code a bit to get it to ingest properly.
@@ -53,7 +73,8 @@ For example, to prepare a local directory for storing data through a bind-mount:
 
 Online it will tell you that you need code to import and export objects. This is
 no longer the case. When I tested in 7.7.0 you could export saved objects from
-the saved objects menu in Kibana and then import them on the other side.
+the saved objects menu in Kibana and then import them on the other side. I included
+`export.ndjson` (contains the required files)
 
 ## Running A Single Elasticsearch Instance
 
@@ -67,7 +88,7 @@ the saved objects menu in Kibana and then import them on the other side.
 
 #### Remove Exited Containers
 
-`sudo podman rm $(podman ps -a -f status=exited -q)`
+`sudo docker rm $(docker ps -a -f status=exited -q)`
 
 ## Helpful Links
 
