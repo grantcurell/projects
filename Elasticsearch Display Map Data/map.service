@@ -8,6 +8,8 @@ Restart=always
 WorkingDirectory=/opt
 
 # Remove old containers, images and volumes
+# The '-' means ignore the result so if this fails it doesn't cause the whole
+# service to go down with it.
 ExecStartPre=-/bin/bash -c 'docker rm $(docker ps -a -f status=exited -q)'
 
 # Compose up

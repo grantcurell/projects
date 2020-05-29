@@ -97,7 +97,8 @@ from which you're running unless you specify the `-p` option.
 Online it will tell you that you need code to import and export objects. This is
 no longer the case. When I tested in 7.7.0 you could export saved objects from
 the saved objects menu in Kibana and then import them on the other side. I included
-`export.ndjson` (contains the required files)
+the CPU load gauges, my custom queries, and the maps. Import the three ndjson
+files included in the repo.
 
 ## Helpful Commands
 
