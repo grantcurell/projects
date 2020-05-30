@@ -96,11 +96,12 @@ services:
     container_name: metricbeat
     image: docker.elastic.co/beats/metricbeat:7.7.0
     #hostname: "{{.Node.Hostname}}-metricbeat"
+    privileged: true
     user: root
     networks:
       - elastic
     volumes:
-      - /opt/metricbeat.yml/metricbeat.docker.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /opt/metricbeat.docker.yml:/usr/share/metricbeat/metricbeat.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
       - /proc:/hostfs/proc:ro
