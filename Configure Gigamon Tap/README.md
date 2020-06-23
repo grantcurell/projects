@@ -101,6 +101,22 @@ Scenario: Same as 2 except with a 10Gb/s Dell adapter.
 
 Results: Same as Run 2.
 
+### Run 5 - Fail
+
+Scenario: I tried with the 10Gb/s Dell SFP again - this time I made the distant
+end a RHEL box.
+
+Results: RHEL saw nothing. `ethtool` showed both the duplex and speed as unknown.
+Nothing came up.
+
+### Run 6 - Fail
+
+Scenario: I tried with the 10Gb/s Dell SFP again - this time I made the distant
+end a Dell 4112F-ON.
+
+Results: Even after manually setting speed, duplex, autonegotiation, and double
+checking the interface types it still didn't come up.
+
 ## Other Helpful Commands
 
 - If you need to close or open the tap you can do so using `taptx <active|passive>` where active pushes traffic to the tool ports and passive only pushes traffic through the network ports.
@@ -185,6 +201,11 @@ Ex:
 
 The speed, duplex and autonegotiation settings are not listed anywhere in the output.
 
-### Other Notes
+### Bizzare Compatibility Errors with SFPs
 
-Maps to em2 on the TFX2
+Even after confirming all setting, fixing the speed at 10Gb/s, duplex at full,
+and turning off autonegation, the fiber interface still didn't come up. I went
+and cross referenced the manual to see what type of SFPs they support and confirmed
+that the wavelength and type matched.
+
+![](images/sfp_compatibilty.JPG)
