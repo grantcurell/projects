@@ -68,6 +68,8 @@ to clear the USB driver and then add space:
 - Investigating ops-nas-daemon
   - There is a file called base_nas_default_init which defines the mirror port and the flow behaviors. I haven't found anything about other stuff yet.
     - `opx-config-global-switch --lag-hash-alg crc` works and is owned by opx_nas_daemon - there must be other things it owns beside this.
+    - There is a file called `hald_init.c`. I think what is happening is all the other services fall under the NAS daemon. The code I'm looking for is somewhere else.
+      - After following that around for a while it looks like the file I'm really interested in is here `https://github.com/open-switch/opx-nas-l2/blob/7e80d3952786f219b8072f1666ff1f16ba353d86/src/switch/nas_hash_cps.cpp`. This bubbles up to the L2 init function, which bubbles back up to `hald_init.c`.
 
 ## Descriptions
 
