@@ -256,11 +256,35 @@ This looks like it should be the docker build command `docker run --rm --name ro
 
 - CORRECT SYNTAX FOR CPS_SET: `cps_set('base-traffic-hash/entry', 'target', {'base-traffic-hash/entry/obj-type': '6', 'base-traffic-hash/entry/std-hash-field': [1,2,8,9,6,5]})`
 
-## Things I've Modded
+## Investigation 4 - Where are the hash values?
 
-- opx-nas-ndi
-- opx-nas-l2
-- opx-base-model
+- Part of the hash seems to be set in [nas_ndi_switch.cpp](https://github.com/open-switch/opx-nas-ndi/blob/1ba4c72309ef33d8600b18dedabc8aed2a8665ac/src/nas_ndi_switch.cpp)
+- There is also a unit test for it in [sai_hash_unit_test.cpp](https://github.com/open-switch/opx-sai-common/blob/9939160482f331a0770fade523c94d607e5a70dc/src/unit_test/hash/sai_hash_unit_test.cpp)
+- This code seems to imply that the hashes themselves are implemented in the SAI:
+
+    static _enum_map _algo_stoy  = {
+        {SAI_HASH_ALGORITHM_XOR, BASE_SWITCH_HASH_ALGORITHM_XOR },
+        {SAI_HASH_ALGORITHM_CRC, BASE_SWITCH_HASH_ALGORITHM_CRC },
+        {SAI_HASH_ALGORITHM_RANDOM, BASE_SWITCH_HASH_ALGORITHM_RANDOM },
+        {SAI_HASH_ALGORITHM_CRC_CCITT, BASE_SWITCH_HASH_ALGORITHM_CRC16CC },
+        {SAI_HASH_ALGORITHM_CRC_32LO, BASE_SWITCH_HASH_ALGORITHM_CRC32LSB },
+        {SAI_HASH_ALGORITHM_CRC_32HI, BASE_SWITCH_HASH_ALGORITHM_CRC32MSB },
+        {SAI_HASH_ALGORITHM_CRC_XOR8, BASE_SWITCH_HASH_ALGORITHM_XOR8 },
+        {SAI_HASH_ALGORITHM_CRC_XOR4, BASE_SWITCH_HASH_ALGORITHM_XOR4 },
+        {SAI_HASH_ALGORITHM_CRC_XOR2, BASE_SWITCH_HASH_ALGORITHM_XOR2 },
+        {SAI_HASH_ALGORITHM_CRC_XOR1, BASE_SWITCH_HASH_ALGORITHM_XOR1 },
+    };
+
+    static bool to_sai_type_hash_algo(sai_attribute_t *param ) {
+        return to_sai_type(_algo_stoy,param);
+    }
+
+    static bool from_sai_type_hash_algo(sai_attribute_t *param ) {
+        return from_sai_type(_algo_stoy,param);
+    }
+- [ECMP Hashing explained](https://docs.cumulusnetworks.com/cumulus-linux-41/Layer-3/Equal-Cost-Multipath-Load-Sharing-Hardware-ECMP/#:~:text=setting%20symmetric_hash_enable%20%3D%20FALSE%20.-,Resilient%20Hashing,this%20can%20create%20session%20failures.)
+- [Broadcom Paper on Hashing](https://docs.broadcom.com/doc/12358326)
+- [Can I do this with openvswitch](http://docs.openvswitch.org/en/latest/tutorials/ovs-conntrack/)
 
 ## Descriptions
 
