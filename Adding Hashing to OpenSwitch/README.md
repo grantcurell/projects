@@ -262,29 +262,69 @@ This looks like it should be the docker build command `docker run --rm --name ro
 - There is also a unit test for it in [sai_hash_unit_test.cpp](https://github.com/open-switch/opx-sai-common/blob/9939160482f331a0770fade523c94d607e5a70dc/src/unit_test/hash/sai_hash_unit_test.cpp)
 - This code seems to imply that the hashes themselves are implemented in the SAI:
 
-    static _enum_map _algo_stoy  = {
-        {SAI_HASH_ALGORITHM_XOR, BASE_SWITCH_HASH_ALGORITHM_XOR },
-        {SAI_HASH_ALGORITHM_CRC, BASE_SWITCH_HASH_ALGORITHM_CRC },
-        {SAI_HASH_ALGORITHM_RANDOM, BASE_SWITCH_HASH_ALGORITHM_RANDOM },
-        {SAI_HASH_ALGORITHM_CRC_CCITT, BASE_SWITCH_HASH_ALGORITHM_CRC16CC },
-        {SAI_HASH_ALGORITHM_CRC_32LO, BASE_SWITCH_HASH_ALGORITHM_CRC32LSB },
-        {SAI_HASH_ALGORITHM_CRC_32HI, BASE_SWITCH_HASH_ALGORITHM_CRC32MSB },
-        {SAI_HASH_ALGORITHM_CRC_XOR8, BASE_SWITCH_HASH_ALGORITHM_XOR8 },
-        {SAI_HASH_ALGORITHM_CRC_XOR4, BASE_SWITCH_HASH_ALGORITHM_XOR4 },
-        {SAI_HASH_ALGORITHM_CRC_XOR2, BASE_SWITCH_HASH_ALGORITHM_XOR2 },
-        {SAI_HASH_ALGORITHM_CRC_XOR1, BASE_SWITCH_HASH_ALGORITHM_XOR1 },
-    };
+        static _enum_map _algo_stoy  = {
+            {SAI_HASH_ALGORITHM_XOR, BASE_SWITCH_HASH_ALGORITHM_XOR },
+            {SAI_HASH_ALGORITHM_CRC, BASE_SWITCH_HASH_ALGORITHM_CRC },
+            {SAI_HASH_ALGORITHM_RANDOM, BASE_SWITCH_HASH_ALGORITHM_RANDOM },
+            {SAI_HASH_ALGORITHM_CRC_CCITT, BASE_SWITCH_HASH_ALGORITHM_CRC16CC },
+            {SAI_HASH_ALGORITHM_CRC_32LO, BASE_SWITCH_HASH_ALGORITHM_CRC32LSB },
+            {SAI_HASH_ALGORITHM_CRC_32HI, BASE_SWITCH_HASH_ALGORITHM_CRC32MSB },
+            {SAI_HASH_ALGORITHM_CRC_XOR8, BASE_SWITCH_HASH_ALGORITHM_XOR8 },
+            {SAI_HASH_ALGORITHM_CRC_XOR4, BASE_SWITCH_HASH_ALGORITHM_XOR4 },
+            {SAI_HASH_ALGORITHM_CRC_XOR2, BASE_SWITCH_HASH_ALGORITHM_XOR2 },
+            {SAI_HASH_ALGORITHM_CRC_XOR1, BASE_SWITCH_HASH_ALGORITHM_XOR1 },
+        };
 
-    static bool to_sai_type_hash_algo(sai_attribute_t *param ) {
-        return to_sai_type(_algo_stoy,param);
-    }
+        static bool to_sai_type_hash_algo(sai_attribute_t *param ) {
+            return to_sai_type(_algo_stoy,param);
+        }
 
-    static bool from_sai_type_hash_algo(sai_attribute_t *param ) {
-        return from_sai_type(_algo_stoy,param);
-    }
+        static bool from_sai_type_hash_algo(sai_attribute_t *param ) {
+            return from_sai_type(_algo_stoy,param);
+        }
+
+  - There is a reference to each of these hash algorithms in `https://github.com/open-switch/opx-base-model/blob/abdf66f813b48a3c8e7682361cdacccd0271866d/history/dell-base-switch-element.yhist`
+  - From the SAI unit test I found:
+
+            set_attr.value.s32 = SAI_HASH_ALGORITHM_XOR;
+            status = switch_api_tbl_get()->set_switch_attribute (switch_id,&set_attr);
+            EXPECT_EQ (SAI_STATUS_SUCCESS, status);
+
+  - This must be where they are setting the hash algorithm and how to set it. But where is this API? How do I find out what the options are? Is symmetric hashing exposed?
+  - The definition for the function is (it happens inside one of the unit tests):
+
+        static inline sai_switch_api_t* switch_api_tbl_get (void)
+        {
+            return p_sai_switch_api_tbl;
+        }
+
+    - This is a pointer to a table. I'm guessing it's a struct. `sai_switch_api_t` is short for SAI switch API table. It is a point to the table with all the API calls.
+      - From [this](https://github.com/opencomputeproject/SAI/blob/master/stub/inc/stub_sai.h) I got a hint - it looks like there is a thing called switch_api - the same name is used in OpenSwitch.
+    - Based on the inputs from [nas_ndi_hash.c](https://github.com/open-switch/opx-nas-ndi/blob/1ba4c72309ef33d8600b18dedabc8aed2a8665ac/src/nas_ndi_hash.c) there must be a series of SAI files with the functionality I want.
+
+            #include "std_error_codes.h"
+            #include "std_assert.h"
+            #include "nas_ndi_event_logs.h"
+            #include "nas_ndi_utils.h"
+            #include "dell-base-hash.h"
+
+            #include "sai.h"
+            #include "saiswitch.h"
+            #include "saihash.h"
+
+            #include <stdio.h>
+            #include <stdlib.h>
+            #include <string.h>
+
+            #include <inttypes.h>
+
+    - 
+### Some related resources
 - [ECMP Hashing explained](https://docs.cumulusnetworks.com/cumulus-linux-41/Layer-3/Equal-Cost-Multipath-Load-Sharing-Hardware-ECMP/#:~:text=setting%20symmetric_hash_enable%20%3D%20FALSE%20.-,Resilient%20Hashing,this%20can%20create%20session%20failures.)
 - [Broadcom Paper on Hashing](https://docs.broadcom.com/doc/12358326)
 - [Can I do this with openvswitch](http://docs.openvswitch.org/en/latest/tutorials/ovs-conntrack/)
+  - This didn't pan out.
+- 
 
 ## Descriptions
 
