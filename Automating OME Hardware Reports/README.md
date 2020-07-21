@@ -15,9 +15,12 @@
 ## For Jacob
 
 1. Create a GitHub account if you don't already have one
-2. [Fork](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo) my [Dell repository](https://github.com/grantcurell/dell)
-3. Open the folder "Automating OME Hardware Reports". All our code will be in the code folder and I have made a folder called "Jacob" for you to work in.
-4. Use Excel to create two dummy files. They'll need a column header and the second should have some bogus data. Basically you just want to artificially recreate a scenario where you can find the delta between two columns that have the same name.
-5. Use [this library](https://docs.python.org/3/library/csv.html) to read the CSV.
-6. Using the column name, identify the two columns you want to compare in the two CSV files.
-7. Output the delta between the two CSV files to a third CSV file
+2. [Download Gitkraken](https://www.gitkraken.com/download) and install it. Next, connect it to your GitHub account.
+3. [Fork](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo) my [Dell repository](https://github.com/grantcurell/dell)
+4. Use GitKraken to download your forked repository to your local machine
+5. Open the folder "Automating OME Hardware Reports". All our code will be in the code folder and I have made a folder called "Jacob" for you to work in.
+6. Use Excel to create two dummy files. They'll need a column header and the second should have some bogus data. Basically you just want to artificially recreate a scenario where you can find the delta between two columns that have the same name.
+7. Use [this library](https://docs.python.org/3/library/csv.html) to read the CSV.
+8. Using the column name, identify the two columns you want to compare in the two CSV files.
+9. Output the delta between the two CSV files to a third CSV file
+10. When you're finished making your code, [pull request](https://support.gitkraken.com/working-with-repositories/pull-requests/)] it to the master branch of my repository.
