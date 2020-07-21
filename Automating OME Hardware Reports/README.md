@@ -2,6 +2,7 @@
 
 ## Tasks
 
+- [ ] Create a utility for running scans against OME
 - [ ] Create a utility for comparing the PCIe changes to a server between two hardware scans
   - [ ] First step is to be able to compare columns of a comma separated file
 - [ ] Create a lightweight API which allows Angular to query for data
@@ -14,9 +15,15 @@
   - [ ] (Optional) Add text boxes for addition of additional columns/information
   - [ ] (Optional) Add a button for rechecking hardware health. Might be convienient?
 
-### Missing Info
+## Missing Info
 
 - We don't know where some of the fields are coming from. We assume customer
+
+## Useful Links
+
+- https://downloads.dell.com/manuals/all-products/esuprt_software/esuprt_ent_sys_mgmt/dell-openmanage-enterprise-v30_white-papers4_en-us.pdf
+- https://www.dell.com/support/home/en-us/product-support/product/dell-openmanage-enterprise/docs
+- https://topics-cdn.dell.com/pdf/poweredge-mx7000_api-guide5_en-us.pdf
 
 ## For Jacob
 
