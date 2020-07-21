@@ -6,11 +6,17 @@
   - [ ] First step is to be able to compare columns of a comma separated file
 - [ ] Create a lightweight API which allows Angular to query for data
   - [ ] Decide how to maintain data - JSON files? More complex option like MongoDB?
+- [ ] Write a method for checking the hardware health on both scans
 - [ ] Create an Angular project
   - [ ] Create functionality for running scan 1
   - [ ] Create functionality for running scan 2
   - [ ] Create functionality for outputting results
   - [ ] (Optional) Add text boxes for addition of additional columns/information
+  - [ ] (Optional) Add a button for rechecking hardware health. Might be convienient?
+
+### Missing Info
+
+- We don't know where some of the fields are coming from. We assume customer
 
 ## For Jacob
 
