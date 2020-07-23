@@ -12,7 +12,9 @@
     Architecture: x86_64
     Up Time: 00:19:57
 
-## Configuration
+![](images/diagram.jpg)
+    
+## Configuration of VLT
 
 ### Device 1
 
@@ -59,6 +61,31 @@
     vlt-mac 00:11:22:33:44:55
     backup destination 192.168.1.24
     end
+
+## Configuration of VLANs for Test
+
+(On both devices)
+
+    configure terminal
+    interface vlan 9
+    no shut
+    exit
+    interface ethernet 1/1/1
+    switchport mode trunk
+    switchport trunk allowed vlan 9
+    end
+
+On ESXi I used two separate virtual switches each with a port group. Each port group was assigned VLAN 9.
+
+## Test Scenario
+
+### Objective
+
+Ping from VM1 to VM2 to show that communication will flow over the VLT and vice versa.
+
+![](images/working.PNG)
+
+Works as expected.
 
 ## Useful Commands
 
