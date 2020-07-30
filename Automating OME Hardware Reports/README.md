@@ -45,3 +45,9 @@
 8. Using the column name, identify the two columns you want to compare in the two CSV files.
 9. Output the delta between the two CSV files to a third CSV file
 10. When you're finished making your code, [pull request](https://support.gitkraken.com/working-with-repositories/pull-requests/)] it to the master branch of my repository.
+
+# README
+
+## Useful
+
+curl -XPUT -d '{"target_ips": "192.168.1.10", "ome_ip_address": "192.168.1.18", "user_name": "admin", "password": "password", "discover_user_name": "root", "discover_password": "password", "device_type": "server"}' 127.0.0.1:5000/api/discover -H "Content-Type: application/json"
