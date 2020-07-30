@@ -2,9 +2,15 @@
 
 ## Tasks
 
-- [ ] Create a utility for running scans against OME
+- [x] Create a utility for running scans against OME
+- [x] Figure out how to extract the hardware status specifically after the scan
+- [ ] Figure out how to separate the servers that were recently added
+- [ ] Figure out how if I need to force sync alerts
+- [ ] Add the ability to remove servers from OME
+  - [ ] (Optional) Determine if we want to put these in a discovery group?
 - [ ] Create a utility for comparing the PCIe changes to a server between two hardware scans
   - [ ] First step is to be able to compare columns of a comma separated file
+  - [x] Figure out how to pull the device hardware tab
 - [ ] Create a lightweight API which allows Angular to query for data
   - [ ] Decide how to maintain data - JSON files? More complex option like MongoDB?
 - [ ] Write a method for checking the hardware health on both scans
@@ -14,6 +20,7 @@
   - [ ] Create functionality for outputting results
   - [ ] (Optional) Add text boxes for addition of additional columns/information
   - [ ] (Optional) Add a button for rechecking hardware health. Might be convienient?
+- [ ] (Optional) Go back and fix exception handling for [Dell code](https://github.com/dell/OpenManage-Enterprise/tree/master/Core/Python)
 
 ## Missing Info
 
@@ -24,6 +31,7 @@
 - https://downloads.dell.com/manuals/all-products/esuprt_software/esuprt_ent_sys_mgmt/dell-openmanage-enterprise-v30_white-papers4_en-us.pdf
 - https://www.dell.com/support/home/en-us/product-support/product/dell-openmanage-enterprise/docs
 - https://topics-cdn.dell.com/pdf/poweredge-mx7000_api-guide5_en-us.pdf
+- https://www.dell.com/support/manuals/us/en/04/dell-openmanage-enterprise-tech-release/lex_techrel_pub/groups-service?guid=guid-894c21ef-14f8-44ea-9e98-9e4e613ca4a3&lang=en-us
 
 ## For Jacob
 
