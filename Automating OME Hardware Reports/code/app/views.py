@@ -32,16 +32,17 @@ CORS(app)
 servers = {'192.168.1.10': 12446}
 
 health_mapping = {
-    "1000": "healthy",
-    "2000": "unknown",
-    "3000": "warning",
-    "4000": "critical",
-    "5000": "nostatus"
+    "1000": "Healthy",
+    "2000": "Unknown",
+    "3000": "Warning",
+    "4000": "Critical",
+    "5000": "No status reported"
 }
 
 # This just stops urllib3 from complaining endlessly that we're making insecure connections. I know. I didn't set it up
 # to do proper encryption. Sue me.
 disable_warnings()
+
 
 def _validate_ome_and_target(json_data: dict) -> bool:
 
@@ -97,7 +98,7 @@ def discover():
     json_data = request.get_json()
 
     if not _validate_ome_and_target(json_data):
-        return 400
+        return "Failed to validate OME and target IP information", 400
     elif "discover_user_name" not in json_data:
         logging.error("JSON data is missing the field \'discover_user_name\'")
         return "JSON data is missing the field \'discover_user_name\'", 400
@@ -154,11 +155,18 @@ def discover():
 
 @app.route('/api/hardware_health', methods=['GET'])
 def hardware_health():
+    """
+    Retrieves the hardware's health
+
+    Example curl:
+    curl -XGET -d '{"target_ips": "192.168.1.10", "ome_ip_address": "192.168.1.18", "user_name": "admin",
+    "password": "password"}' 127.0.0.1:5000/api/hardware_health -H "Content-Type: application/json"
+    """
 
     json_data = request.get_json()
 
     if not _validate_ome_and_target(json_data):
-        return 400
+        return "Failed to validate OME and target IP information", 400
 
     target_ips = get_ips(json_data["target_ips"])
     ome_ip_address = json_data["ome_ip_address"]
@@ -213,13 +221,111 @@ def hardware_inventory():
     json_data = request.get_json()
 
     if not _validate_ome_and_target(json_data):
-        return 400
+        return "Failed to validate OME and target IP information", 400
 
     target_ips = get_ips(json_data["target_ips"])
     ome_ip_address = json_data["ome_ip_address"]
     user_name = json_data["user_name"]
     password = json_data["password"]
+    inventory_type = None
 
     auth_success, headers = authenticate_with_ome(ome_ip_address, user_name, password)
-    server_health = {}
+
+    device_inventories = {}
+
+    for ip in target_ips:
+        inventory_types = {
+            "cpus": "serverProcessors",
+            "os": "serverOperatingSystems",
+            "disks": "serverArrayDisks",
+            "controllers": "serverRaidControllers",
+            "memory": "serverMemoryDevices"}
+
+        inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ome_ip_address, servers[ip])
+        if inventory_type:
+            inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails(\'%s\')" \
+                            % (ome_ip_address, servers[ip], inventory_types[inventory_type])
+        inven_resp = requests.get(inventory_url, headers=headers, verify=False)
+        if inven_resp.status_code == 200:
+            logging.info("\n*** Inventory for device (%s) ***" % ip)
+            content = json.loads(inven_resp.content)
+            if content["@odata.count"] > 0:
+                device_inventories[ip] = {}
+                for item in content['value']:
+                    if item["InventoryType"] == "serverDeviceCards":
+                        device_inventories[ip]["Device Cards"] = {}
+                        for i, card in enumerate(item["InventoryInfo"]):
+                            # Skip disks. Those are covered below.
+                            if "Disk.Bay" in card["SlotNumber"]:
+                                continue
+                            device_inventories[ip]["Device Cards"][i]["ID"] = card["Id"]
+                            device_inventories[ip]["Device Cards"][i]["Slot Number"] = card["SlotNumber"]
+                            device_inventories[ip]["Device Cards"][i]["Manufacturer"] = card["Manufacturer"]
+                            device_inventories[ip]["Device Cards"][i]["Description"] = card["Description"]
+                            device_inventories[ip]["Device Cards"][i]["Databus Width"] = card["DatabusWidth"]
+                            device_inventories[ip]["Device Cards"][i]["Slot Length"] = card["SlotLength"]
+                            device_inventories[ip]["Device Cards"][i]["Slot Type"] = card["SlotType"]
+                    elif item["InventoryType"] == "serverProcessors":
+                        device_inventories[ip]["Processors"] = {}
+                        for i, processor in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["Processors"][i]["ID"] = processor["Id"]
+                            device_inventories[ip]["Processors"][i]["Family"] = processor["Family"]
+                            device_inventories[ip]["Processors"][i]["Max Speed"] = processor["MaxSpeed"]
+                            device_inventories[ip]["Processors"][i]["Slot Number"] = processor["SlotNumber"]
+                            device_inventories[ip]["Processors"][i]["Number of Cores"] \
+                                = processor["NumberOfCores"]
+                            device_inventories[ip]["Processors"][i]["Brand Name"] = processor["BrandName"]
+                            device_inventories[ip]["Processors"][i]["Model Name"] = processor["ModelName"]
+                    elif item["InventoryType"] == "serverPowerSupplies":
+                        device_inventories[ip]["Power Supplies"] = {}
+                        for i, power_supply in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["Power Supplies"][i]["ID"] = power_supply["Id"]
+                            device_inventories[ip]["Power Supplies"][i]["Location"] = power_supply["Location"]
+                            device_inventories[ip]["Power Supplies"][i]["Output Watts"] = power_supply["Output Watts"]
+                            device_inventories[ip]["Power Supplies"][i]["Firmware Version"] \
+                                = power_supply["FirmwareVersion"]
+                            device_inventories[ip]["Power Supplies"][i]["Model"] = power_supply["Model"]
+                            device_inventories[ip]["Power Supplies"][i]["Serial Number"] = power_supply["SerialNumber"]
+                    elif item["InventoryType"] == "serverArrayDisks":
+                        device_inventories[ip]["Disks"] = {}
+                        for i, disk in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["Disks"][i]["ID"] = disk["Id"]
+                            device_inventories[ip]["Disks"][i]["Serial Number"] = disk["SerialNumber"]
+                            device_inventories[ip]["Disks"][i]["Model Number"] = disk["Model Number"]
+                            device_inventories[ip]["Disks"][i]["EnclosureId"] = disk["EnclosureId"]
+                            device_inventories[ip]["Disks"][i]["Size"] = disk["Size"]
+                            device_inventories[ip]["Disks"][i]["Bus Type"] = disk["BusType"]
+                            device_inventories[ip]["Disks"][i]["Media Type"] = disk["MediaType"]
+                    elif item["InventoryType"] == "serverMemoryDevices":
+                        device_inventories[ip]["Memory"] = {}
+                        for i, memory in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["Memory"][i]["ID"] = memory["Id"]
+                            device_inventories[ip]["Memory"][i]["Name"] = memory["Name"]
+                            device_inventories[ip]["Memory"][i]["Size"] = memory["Size"]
+                            device_inventories[ip]["Memory"][i]["Manufacturer"] = memory["Manufacturer"]
+                            device_inventories[ip]["Memory"][i]["Part Number"] = memory["PartNumber"]
+                            device_inventories[ip]["Memory"][i]["Serial Number"] = memory["SerialNumber"]
+                            device_inventories[ip]["Memory"][i]["Speed"] = memory["Speed"]
+                            device_inventories[ip]["Memory"][i]["Current Operating Speed"] \
+                                = memory["CurrentOperatingSpeed"]
+                            device_inventories[ip]["Memory"][i]["Device Description"] = memory["DeviceDescription"]
+                    elif item["InventoryType"] == "serverRaidControllers":
+                        device_inventories[ip]["RAID Controller"] = {}
+                        for i, raid_controller in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["RAID Controller"][i]["ID"] = raid_controller["Id"]
+                            device_inventories[ip]["RAID Controller"][i]["Name"] = raid_controller["Name"]
+                            device_inventories[ip]["RAID Controller"][i]["Device Description"] \
+                                = raid_controller["DeviceDescription"]
+                            device_inventories[ip]["RAID Controller"][i]["Firmware Version"] \
+                                = raid_controller["FirmwareVersion"]
+                            device_inventories[ip]["RAID Controller"][i]["PCI Slot"] = raid_controller["PciSlot"]
+            return 201
+        elif inven_resp.status_code == 400:
+            logging.warning("Inventory type %s not applicable for device with Id %s" % (inventory_type, servers[ip]))
+            return "Inventory type %s not applicable for device with Id %s" % (inventory_type, servers[ip]), 400
+        else:
+            logging.error("Unable to retrieve inventory for device %s due to status code %s"
+                          % (servers[ip], inven_resp.status_code))
+            return "Unable to retrieve inventory for device %s due to status code %s" \
+                   % (servers[ip], inven_resp.status_code), 404
 
