@@ -31,6 +31,13 @@ CORS(app)
 
 servers = {'192.168.1.10': 12446}
 
+health_mapping = {
+    "1000": "healthy",
+    "2000": "UNKNOWN", # TODO - need to figure this out
+    "3000": "critical", # TODO I don't know that this or 4000 is correct either
+    "4000": "critical"
+}
+
 # This just stops urllib3 from complaining endlessly that we're making insecure connections. I know. I didn't set it up
 # to do proper encryption. Sue me.
 disable_warnings()
@@ -167,9 +174,16 @@ def hardware_health():
             logging.error("Failed to retrieve health. Error received " + str(response.content))
             return app.response_class(status=501)
         else:
-            server_health[ip] = json.loads(response.content)
+            for item in json.loads(response.content):
+                if item["@odata.type"] == "#DeviceService.SubSystemHealthFaultModel":
+                    for i, error in enumerate(item["FaultList"]):
+                        server_health[ip]["errors"][i]["messageid"] = error["MessageId"]
+                        server_health[ip]["errors"][i]["message"] = error["Message"]
+                        server_health[ip]["errors"][i]["severity"] = health_mapping[error["Severity"]]
+                        server_health[ip]["errors"][i]["subsystem"] = error["SubSystem"]
+                        server_health[ip]["errors"][i]["recommended_action"] = error["RecommendedAction"]
+                    server_health[ip]["health"] = health_mapping[item["RollupStatus"]]
         logging.info("Retrieved health for " + ip)
-
     return json.dumps(server_health), 201, {'Content-Type': 'application/json'}
 
 
