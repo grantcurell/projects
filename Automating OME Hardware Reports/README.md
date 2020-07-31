@@ -46,8 +46,102 @@
 9. Output the delta between the two CSV files to a third CSV file
 10. When you're finished making your code, [pull request](https://support.gitkraken.com/working-with-repositories/pull-requests/)] it to the master branch of my repository.
 
-# README
+## Helpful things
 
-## Useful
+Testing from command line syntax: `resp = requests.get('https://192.168.1.18/api/DeviceService/Devices(12446)/SubSystemHealth', verify=False,auth=('admin', 'password'))`
 
-curl -XPUT -d '{"target_ips": "192.168.1.10", "ome_ip_address": "192.168.1.18", "user_name": "admin", "password": "password", "discover_user_name": "root", "discover_password": "password", "device_type": "server"}' 127.0.0.1:5000/api/discover -H "Content-Type: application/json"
+## Health
+
+    {
+        "192.168.1.10": {
+            "@odata.context": "/api/$metadata#Collection(DeviceService.SubSystemHealthFaultModel)",
+            "@odata.count": 11,
+            "value": [
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "SEL/Misc",
+                    "RollupStatus": "4000",
+                    "FaultList": [
+                        {
+                            "Fqdd": "Cable.Bay2.SASA0",
+                            "InstanceId": "Fault#03200002#1",
+                            "Message": "The storage BP1 SAS A0 cable is not connected, or is improperly connected.",
+                            "MessageId": "HWC2003",
+                            "Severity": "3000",
+                            "SubSystem": "Miscellaneous",
+                            "TimeStamp": "20200722003153.000000-300",
+                            "DateFormat": "CIM",
+                            "RecommendedAction": "Check presence, then re-install or reconnect."
+                        },
+                        {
+                            "Fqdd": "Cable.Bay2.SASB0",
+                            "InstanceId": "Fault#03200003#1",
+                            "Message": "The storage BP1 SAS B0 cable is not connected, or is improperly connected.",
+                            "MessageId": "HWC2003",
+                            "Severity": "3000",
+                            "SubSystem": "Miscellaneous",
+                            "TimeStamp": "20200722003200.000000-300",
+                            "DateFormat": "CIM",
+                            "RecommendedAction": "Check presence, then re-install or reconnect."
+                        }
+                    ],
+                    "FaultSummaryList": [
+                        {
+                            "Severity": "3000",
+                            "Count": 2
+                        }
+                    ]
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Voltage",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Current",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Intrusion",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "PowerSupply",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Processor",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Memory",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Storage",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Fan",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Battery",
+                    "RollupStatus": "1000"
+                },
+                {
+                    "@odata.type": "#DeviceService.SubSystemHealthFaultModel",
+                    "SubSystem": "Temperature",
+                    "RollupStatus": "1000"
+                }
+            ]
+        }
+    }
