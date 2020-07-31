@@ -258,6 +258,7 @@ def hardware_inventory():
                             # Skip disks. Those are covered below.
                             if "Disk.Bay" in card["SlotNumber"]:
                                 continue
+                            device_inventories[ip]["Device Cards"][i] = {}
                             device_inventories[ip]["Device Cards"][i]["ID"] = card["Id"]
                             device_inventories[ip]["Device Cards"][i]["Slot Number"] = card["SlotNumber"]
                             device_inventories[ip]["Device Cards"][i]["Manufacturer"] = card["Manufacturer"]
@@ -268,6 +269,7 @@ def hardware_inventory():
                     elif item["InventoryType"] == "serverProcessors":
                         device_inventories[ip]["Processors"] = {}
                         for i, processor in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["Processors"][i] = {}
                             device_inventories[ip]["Processors"][i]["ID"] = processor["Id"]
                             device_inventories[ip]["Processors"][i]["Family"] = processor["Family"]
                             device_inventories[ip]["Processors"][i]["Max Speed"] = processor["MaxSpeed"]
@@ -279,9 +281,10 @@ def hardware_inventory():
                     elif item["InventoryType"] == "serverPowerSupplies":
                         device_inventories[ip]["Power Supplies"] = {}
                         for i, power_supply in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["Power Supplies"][i] = {}
                             device_inventories[ip]["Power Supplies"][i]["ID"] = power_supply["Id"]
                             device_inventories[ip]["Power Supplies"][i]["Location"] = power_supply["Location"]
-                            device_inventories[ip]["Power Supplies"][i]["Output Watts"] = power_supply["Output Watts"]
+                            device_inventories[ip]["Power Supplies"][i]["Output Watts"] = power_supply["OutputWatts"]
                             device_inventories[ip]["Power Supplies"][i]["Firmware Version"] \
                                 = power_supply["FirmwareVersion"]
                             device_inventories[ip]["Power Supplies"][i]["Model"] = power_supply["Model"]
@@ -289,16 +292,19 @@ def hardware_inventory():
                     elif item["InventoryType"] == "serverArrayDisks":
                         device_inventories[ip]["Disks"] = {}
                         for i, disk in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["Disks"][i] = {}
                             device_inventories[ip]["Disks"][i]["ID"] = disk["Id"]
-                            device_inventories[ip]["Disks"][i]["Serial Number"] = disk["SerialNumber"]
-                            device_inventories[ip]["Disks"][i]["Model Number"] = disk["Model Number"]
-                            device_inventories[ip]["Disks"][i]["EnclosureId"] = disk["EnclosureId"]
+                            if "SerialNumber" in disk:  # TODO - need to account for this
+                                device_inventories[ip]["Disks"][i]["Serial Number"] = disk["SerialNumber"]
+                            device_inventories[ip]["Disks"][i]["Model Number"] = disk["ModelNumber"]
+                            device_inventories[ip]["Disks"][i]["Enclosure ID"] = disk["EnclosureId"]
                             device_inventories[ip]["Disks"][i]["Size"] = disk["Size"]
                             device_inventories[ip]["Disks"][i]["Bus Type"] = disk["BusType"]
                             device_inventories[ip]["Disks"][i]["Media Type"] = disk["MediaType"]
                     elif item["InventoryType"] == "serverMemoryDevices":
                         device_inventories[ip]["Memory"] = {}
                         for i, memory in enumerate(item["InventoryInfo"]):
+                            device_inventories[ip]["Memory"][i] = {}
                             device_inventories[ip]["Memory"][i]["ID"] = memory["Id"]
                             device_inventories[ip]["Memory"][i]["Name"] = memory["Name"]
                             device_inventories[ip]["Memory"][i]["Size"] = memory["Size"]
@@ -310,15 +316,16 @@ def hardware_inventory():
                                 = memory["CurrentOperatingSpeed"]
                             device_inventories[ip]["Memory"][i]["Device Description"] = memory["DeviceDescription"]
                     elif item["InventoryType"] == "serverRaidControllers":
-                        device_inventories[ip]["RAID Controller"] = {}
+                        device_inventories[ip]["RAID Controllers"] = {}
                         for i, raid_controller in enumerate(item["InventoryInfo"]):
-                            device_inventories[ip]["RAID Controller"][i]["ID"] = raid_controller["Id"]
-                            device_inventories[ip]["RAID Controller"][i]["Name"] = raid_controller["Name"]
-                            device_inventories[ip]["RAID Controller"][i]["Device Description"] \
+                            device_inventories[ip]["RAID Controllers"][i] = {}
+                            device_inventories[ip]["RAID Controllers"][i]["ID"] = raid_controller["Id"]
+                            device_inventories[ip]["RAID Controllers"][i]["Name"] = raid_controller["Name"]
+                            device_inventories[ip]["RAID Controllers"][i]["Device Description"] \
                                 = raid_controller["DeviceDescription"]
-                            device_inventories[ip]["RAID Controller"][i]["Firmware Version"] \
+                            device_inventories[ip]["RAID Controllers"][i]["Firmware Version"] \
                                 = raid_controller["FirmwareVersion"]
-                            device_inventories[ip]["RAID Controller"][i]["PCI Slot"] = raid_controller["PciSlot"]
+                            device_inventories[ip]["RAID Controllers"][i]["PCI Slot"] = raid_controller["PciSlot"]
             return 201
         elif inven_resp.status_code == 400:
             logging.warning("Inventory type %s not applicable for device with Id %s" % (inventory_type, servers[ip]))
