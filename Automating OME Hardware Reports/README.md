@@ -13,7 +13,7 @@
   - [x] Figure out how to pull the device hardware tab
 - [ ] Create a lightweight API which allows Angular to query for data
   - [ ] Decide how to maintain data - JSON files? More complex option like MongoDB?
-- [ ] Write a method for checking the hardware health on both scans
+- [x] Write a method for checking the hardware health on both scans
 - [ ] Create an Angular project
   - [ ] Create functionality for running scan 1
   - [ ] Create functionality for running scan 2

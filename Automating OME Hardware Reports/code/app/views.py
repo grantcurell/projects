@@ -33,9 +33,10 @@ servers = {'192.168.1.10': 12446}
 
 health_mapping = {
     "1000": "healthy",
-    "2000": "UNKNOWN", # TODO - need to figure this out
-    "3000": "critical", # TODO I don't know that this or 4000 is correct either
-    "4000": "critical"
+    "2000": "unknown",
+    "3000": "warning",
+    "4000": "critical",
+    "5000": "nostatus"
 }
 
 # This just stops urllib3 from complaining endlessly that we're making insecure connections. I know. I didn't set it up
@@ -96,16 +97,16 @@ def discover():
     json_data = request.get_json()
 
     if not _validate_ome_and_target(json_data):
-        return app.response_class(status=400)
+        return 400
     elif "discover_user_name" not in json_data:
         logging.error("JSON data is missing the field \'discover_user_name\'")
-        return app.response_class(status=400)
+        return "JSON data is missing the field \'discover_user_name\'", 400
     elif "discover_password" not in json_data:
         logging.error("JSON data is missing the field \'discover_password\'")
-        return app.response_class(status=400)
+        return "JSON data is missing the field \'discover_password\'", 400
     elif "device_type" not in json_data:
         logging.error("JSON data is missing the field \'device_type\'")
-        return app.response_class(status=400)
+        return "JSON data is missing the field \'device_type\'", 400
 
     target_ips = get_ips(json_data["target_ips"])
     ome_ip_address = json_data["ome_ip_address"]
@@ -130,14 +131,15 @@ def discover():
                     track_job_to_completion(ome_ip_address, headers, job_id)
             else:
                 logging.error("unable to discover devices ", discover_resp.text)
-                return app.response_class(status=404)
+                return "unable to discover devices ", discover_resp.text, 400
         else:
             logging.warning("Failed to create a session to OpenManage. Are you sure your username and password for OME"
                             " are correct?")
-            return app.response_class(status=401)
+            return "Failed to create a session to OpenManage. Are you sure your username and password for OME " \
+                   "are correct?", 401
     except Exception as e:
         logging.error("Unexpected error:", str(e))
-        return app.response_class(status=500)
+        return "Unexpected error:" + str(e), 500
 
     for ip in target_ips:
         server_id = get_device_id_by_ip(ome_ip_address, ip, headers)
@@ -145,9 +147,9 @@ def discover():
             servers[ip] = server_id
         else:
             logging.warning("Error: couldn't resolve the name " + ip + " to a device ID.")
-            return app.response_class(status=404)
+            return "Error: couldn't resolve the name " + ip + " to a device ID.", 400
 
-    return app.response_class(status=200)
+    return 200
 
 
 @app.route('/api/hardware_health', methods=['GET'])
@@ -156,7 +158,7 @@ def hardware_health():
     json_data = request.get_json()
 
     if not _validate_ome_and_target(json_data):
-        return app.response_class(status=400)
+        return 400
 
     target_ips = get_ips(json_data["target_ips"])
     ome_ip_address = json_data["ome_ip_address"]
@@ -172,17 +174,35 @@ def hardware_health():
         response = requests.get(url, headers=headers, verify=False)
         if response.status_code == 501:
             logging.error("Failed to retrieve health. Error received " + str(response.content))
-            return app.response_class(status=501)
+            return "Failed to retrieve health. Error received " + str(response.content), 501
         else:
-            for item in json.loads(response.content):
-                if item["@odata.type"] == "#DeviceService.SubSystemHealthFaultModel":
-                    for i, error in enumerate(item["FaultList"]):
-                        server_health[ip]["errors"][i]["messageid"] = error["MessageId"]
-                        server_health[ip]["errors"][i]["message"] = error["Message"]
-                        server_health[ip]["errors"][i]["severity"] = health_mapping[error["Severity"]]
-                        server_health[ip]["errors"][i]["subsystem"] = error["SubSystem"]
-                        server_health[ip]["errors"][i]["recommended_action"] = error["RecommendedAction"]
-                    server_health[ip]["health"] = health_mapping[item["RollupStatus"]]
+            content = json.loads(response.content)
+            if content["@odata.count"] > 0:
+                server_health[ip] = {}
+                for item in content['value']:
+                    if item["@odata.type"] == "#DeviceService.SubSystemHealthFaultModel":
+                        server_health[ip]["errors"] = {}
+                        for i, error in enumerate(item["FaultList"]):
+                            server_health[ip]["errors"][i] = {}
+                            if "Fqdd" in error:
+                                server_health[ip]["errors"][i]["location"] = error["Fqdd"]
+                            if "MessageId" in error:
+                                server_health[ip]["errors"][i]["messageid"] = error["MessageId"]
+                            if "Message" in error:
+                                server_health[ip]["errors"][i]["message"] = error["Message"]
+                            if "Severity" in error:
+                                server_health[ip]["errors"][i]["severity"] = health_mapping[error["Severity"]]
+                            if "SubSystem" in error:
+                                server_health[ip]["errors"][i]["subsystem"] = error["SubSystem"]
+                            if "RecommendedAction" in error:
+                                server_health[ip]["errors"][i]["recommended_action"] = error["RecommendedAction"]
+                        server_health[ip]["health"] = health_mapping[item["RollupStatus"]]
+                        break
+            else:
+                logging.error("We successfully retrieved the server health, but there were no values. We aren't sure"
+                              " why this would happen.")
+                return "We successfully retrieved the server health, but there were no values. We aren't sure " \
+                       "why this would happen.", 400
         logging.info("Retrieved health for " + ip)
     return json.dumps(server_health), 201, {'Content-Type': 'application/json'}
 
@@ -193,7 +213,7 @@ def hardware_inventory():
     json_data = request.get_json()
 
     if not _validate_ome_and_target(json_data):
-        return app.response_class(status=400)
+        return 400
 
     target_ips = get_ips(json_data["target_ips"])
     ome_ip_address = json_data["ome_ip_address"]
