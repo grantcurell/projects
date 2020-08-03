@@ -21,6 +21,9 @@
   - [ ] (Optional) Add text boxes for addition of additional columns/information
   - [ ] (Optional) Add a button for rechecking hardware health. Might be convienient?
 - [ ] (Optional) Go back and fix exception handling for [Dell code](https://github.com/dell/OpenManage-Enterprise/tree/master/Core/Python)
+- [ ] (Optional) Set up a DHCP server
+
+Note: If I need a way to compare the IP address of the idrac and get the ID, you can retrieve it from the device inventory under deviceManagement
 
 ## Missing Info
 

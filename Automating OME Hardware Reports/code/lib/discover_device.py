@@ -151,7 +151,7 @@ def get_job_id(ip_address, headers, discovery_config_group_id):
         else:
             logging.error("unable to get job id " + job_resp_object)
     else:
-        logging.error("unable to get job id.Status code:  " + job_resp.status_code)
+        logging.error("unable to get job id.Status code:  " + str(job_resp.status_code))
     return job_id
 
 

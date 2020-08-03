@@ -15,21 +15,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from datetime import datetime
+import os
+import pickle
 
-from flask import request
+from flask import request, send_file
 from flask_cors import CORS
 from app import app
 from lib.discover_device import discover_device, get_job_id, track_job_to_completion
 from lib.ome import authenticate_with_ome, get_ips
+from urllib3 import disable_warnings
+import pylightxl as xl
 import json
 import logging
 import time
 import requests
-from urllib3 import disable_warnings
 
 CORS(app)
 
-servers = {'192.168.1.10': 12446}
+servers = {'192.168.1.10': "12446"}
 
 health_mapping = {
     "1000": "Healthy",
@@ -144,11 +148,15 @@ def discover():
 
     for ip in target_ips:
         server_id = get_device_id_by_ip(ome_ip_address, ip, headers)
-        if server_id:
-            servers[ip] = server_id
+        if isinstance(server_id, str) and server_id != "":
+            servers[ip] = str(server_id)
         else:
-            logging.warning("Error: couldn't resolve the name " + ip + " to a device ID.")
-            return "Error: couldn't resolve the name " + ip + " to a device ID.", 400
+            logging.warning("Error: couldn't resolve the name " + str(ip) + " to a device ID. This might mean there "
+                                                                            "was a login failure during discovery. "
+                                                                            "Check the OME discovery logs for details.")
+            return ("Error: couldn't resolve the name " + str(ip) + " to a device ID. This might mean there was a "
+                                                                    "login failure during discovery. Check the OME "
+                                                                    "discovery job logs for details.", 400)
 
     return 200
 
@@ -217,6 +225,12 @@ def hardware_health():
 
 @app.route('/api/hardware_inventory', methods=['GET'])
 def hardware_inventory():
+    """
+    Retrieves the hardware inventory for a specified target
+
+    curl -XGET -d '{"target_ips": "192.168.1.10", "ome_ip_address": "192.168.1.18", "user_name": "admin",
+    "password": "I.am.ghost.47"}' 127.0.0.1:5000/api/hardware_inventory -H "Content-Type: application/json"
+    """
 
     json_data = request.get_json()
 
@@ -253,19 +267,21 @@ def hardware_inventory():
                 device_inventories[ip] = {}
                 for item in content['value']:
                     if item["InventoryType"] == "serverDeviceCards":
-                        device_inventories[ip]["Device Cards"] = {}
-                        for i, card in enumerate(item["InventoryInfo"]):
+                        device_inventories[ip]["PCI Cards"] = {}
+                        i = 0
+                        for card in item["InventoryInfo"]:
                             # Skip disks. Those are covered below.
-                            if "Disk.Bay" in card["SlotNumber"]:
+                            if "Disk.Bay" in card["SlotNumber"] or "pci" not in card["SlotType"].lower():
                                 continue
-                            device_inventories[ip]["Device Cards"][i] = {}
-                            device_inventories[ip]["Device Cards"][i]["ID"] = card["Id"]
-                            device_inventories[ip]["Device Cards"][i]["Slot Number"] = card["SlotNumber"]
-                            device_inventories[ip]["Device Cards"][i]["Manufacturer"] = card["Manufacturer"]
-                            device_inventories[ip]["Device Cards"][i]["Description"] = card["Description"]
-                            device_inventories[ip]["Device Cards"][i]["Databus Width"] = card["DatabusWidth"]
-                            device_inventories[ip]["Device Cards"][i]["Slot Length"] = card["SlotLength"]
-                            device_inventories[ip]["Device Cards"][i]["Slot Type"] = card["SlotType"]
+                            device_inventories[ip]["PCI Cards"][i] = {}
+                            device_inventories[ip]["PCI Cards"][i]["ID"] = card["Id"]
+                            device_inventories[ip]["PCI Cards"][i]["Slot Number"] = card["SlotNumber"]
+                            device_inventories[ip]["PCI Cards"][i]["Manufacturer"] = card["Manufacturer"]
+                            device_inventories[ip]["PCI Cards"][i]["Description"] = card["Description"]
+                            device_inventories[ip]["PCI Cards"][i]["Databus Width"] = card["DatabusWidth"]
+                            device_inventories[ip]["PCI Cards"][i]["Slot Length"] = card["SlotLength"]
+                            device_inventories[ip]["PCI Cards"][i]["Slot Type"] = card["SlotType"]
+                            i = i + 1
                     elif item["InventoryType"] == "serverProcessors":
                         device_inventories[ip]["Processors"] = {}
                         for i, processor in enumerate(item["InventoryInfo"]):
@@ -326,7 +342,33 @@ def hardware_inventory():
                             device_inventories[ip]["RAID Controllers"][i]["Firmware Version"] \
                                 = raid_controller["FirmwareVersion"]
                             device_inventories[ip]["RAID Controllers"][i]["PCI Slot"] = raid_controller["PciSlot"]
-            return 201
+
+            logging.info("Writing excel file and pickle database for inventory.")
+            db = xl.Database()
+            for ip_address, inventory in device_inventories.items():
+                logging.info("Processing " + ip_address)
+                db.add_ws(ip_address + servers[ip_address], {'A1': {'v': 10, 'f': '', 's': ''}, 'A2': {'v': 20, 'f': '', 's': ''}})  # TODO - I need to fix this
+                x = 1
+                for subsystem, items in inventory.items():
+                    y = 1
+                    db.ws(ip_address + servers[ip_address]).update_index(row=y, col=x, val=subsystem)
+                    logging.debug("Processing " + subsystem)
+                    for device, values in items.items():
+                        y = y + 1
+                        string = ""
+                        for key, value in values.items():
+                            string = string + key + ": " + str(value) + "\n"
+                        db.ws(ip_address + servers[ip_address]).update_index(row=y, col=x, val=string)
+                    x = x + 1
+            path = os.path.join(os.getcwd(), "inventories")
+            if not os.path.exists(path):
+                os.mkdir(path)
+            dtstring = datetime.now().strftime("%d-%m-%Y-%H%M")
+            xl.writexl(db, dtstring + ".xlsx")
+            os.replace(dtstring + ".xlsx", os.path.join(path, dtstring + ".xlsx"))
+            with open(os.path.join(path, dtstring + ".bin"), 'wb') as inventories:
+                pickle.dump(device_inventories, inventories)
+            return send_file(os.path.join(path, dtstring + ".xlsx"), attachment_filename=dtstring + ".xlsx")
         elif inven_resp.status_code == 400:
             logging.warning("Inventory type %s not applicable for device with Id %s" % (inventory_type, servers[ip]))
             return "Inventory type %s not applicable for device with Id %s" % (inventory_type, servers[ip]), 400
