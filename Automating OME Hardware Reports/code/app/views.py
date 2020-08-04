@@ -232,6 +232,14 @@ def hardware_inventory():
     "password": "I.am.ghost.47"}' 127.0.0.1:5000/api/hardware_inventory -H "Content-Type: application/json"
     """
 
+    def _handle_keys(ome_field, ome_device, dict_field, dict_device):
+        if ome_field in device:
+            device_inventories[identifier][dict_device][i][dict_field] = ome_device[ome_field]
+        else:
+            logging.warning(ome_field + " not present in " + ome_device + " device. Skipping. "
+                            "It will not be used for comparison")
+            device_inventories[identifier][dict_device][i][dict_field] = "None"
+
     json_data = request.get_json()
 
     if not _validate_ome_and_target(json_data):
@@ -279,107 +287,74 @@ def hardware_inventory():
                             if "Disk.Bay" in card["SlotNumber"] or "pci" not in card["SlotType"].lower():
                                 continue
                             device_inventories[identifier]["PCI Cards"][i] = {}
-                            if "Id" in card:
-                                device_inventories[identifier]["PCI Cards"][i]["ID"] = card["Id"]
-                            else:
-                                logging.warning("Id not present for this device. Skipping. "
-                                                "It will not be used for comparison")
-                                device_inventories[identifier]["PCI Cards"][i]["ID"] = "None"
-                            if "SlotNumber" in card:
-                                device_inventories[identifier]["PCI Cards"][i]["Slot Number"] = card["SlotNumber"]
-                            else:
-                                logging.warning("SlotNumber not present for this device. Skipping. "
-                                                "It will not be used for comparison")
-                                device_inventories[identifier]["PCI Cards"][i]["Slot Number"] = "None"
-                            if "Manufacturer" in card:
-                                device_inventories[identifier]["PCI Cards"][i]["Manufacturer"] = card["Manufacturer"]
-                            else:
-                                logging.warning("Manufacturer not present for this device. Skipping. "
-                                                "It will not be used for comparison")
-                                device_inventories[identifier]["PCI Cards"][i]["Manufacturer"] = "None"
-                            if "Description" in card:
-                                device_inventories[identifier]["PCI Cards"][i]["Description"] = card["Description"]
-                            else:
-                                logging.warning("Description not present for this device.")
-                                device_inventories[identifier]["PCI Cards"][i]["Description"] = "None"
-                            if "DatabusWidth":
-                                device_inventories[identifier]["PCI Cards"][i]["Databus Width"] = card["DatabusWidth"]
-                            else:
-                                logging.warning("DatabusWidth not present for this device. Skipping. "
-                                                "It will not be used for comparison")
-                                device_inventories[identifier]["PCI Cards"][i]["DatabusWidth"] = "None"
-                            device_inventories[identifier]["PCI Cards"][i]["Slot Length"] = card["SlotLength"]
-                            device_inventories[identifier]["PCI Cards"][i]["Slot Type"] = card["SlotType"]
+                            _handle_keys("Id", card, "ID", "PCI Cards")
+                            _handle_keys("SlotNumber", card, "Slot Number", "PCI Cards")
+                            _handle_keys("Manufacturer", card, "Manufacturer", "PCI Cards")
+                            _handle_keys("Description", card, "Description", "PCI Cards")
+                            _handle_keys("DatabusWidth", card, "Databus Width", "PCI Cards")
+                            _handle_keys("SlotLength", card, "Slot Length", "PCI Cards")
+                            _handle_keys("SlotType", card, "Slot Type", "PCI Cards")
                             i = i + 1
                     elif item["InventoryType"] == "serverProcessors":
                         logging.debug("Processing processors (haha) for " + ip)
                         device_inventories[identifier]["Processors"] = {}
                         for i, processor in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Processors"][i] = {}
-                            device_inventories[identifier]["Processors"][i]["ID"] = processor["Id"]
-                            device_inventories[identifier]["Processors"][i]["Family"] = processor["Family"]
-                            device_inventories[identifier]["Processors"][i]["Max Speed"] = processor["MaxSpeed"]
-                            device_inventories[identifier]["Processors"][i]["Slot Number"] = processor["SlotNumber"]
-                            device_inventories[identifier]["Processors"][i]["Number of Cores"] \
-                                = processor["NumberOfCores"]
-                            device_inventories[identifier]["Processors"][i]["Brand Name"] = processor["BrandName"]
-                            device_inventories[identifier]["Processors"][i]["Model Name"] = processor["ModelName"]
+                            _handle_keys("Id", processor, "ID", "Processors")
+                            _handle_keys("Family", processor, "Family", "Processors")
+                            _handle_keys("MaxSpeed", processor, "Max Speed", "Processors")
+                            _handle_keys("SlotNumber", processor, "Slot Number", "Processors")
+                            _handle_keys("NumberOfCores", processor, "Number of Cores", "Processors")
+                            _handle_keys("BrandName", processor, "Brand Name", "Processors")
+                            _handle_keys("ModelName", processor, "Model Name", "Processors")
                     elif item["InventoryType"] == "serverPowerSupplies":
                         logging.debug("Processing power supplies for " + ip)
                         device_inventories[identifier]["Power Supplies"] = {}
                         for i, power_supply in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Power Supplies"][i] = {}
-                            device_inventories[identifier]["Power Supplies"][i]["ID"] = power_supply["Id"]
-                            device_inventories[identifier]["Power Supplies"][i]["Location"] = power_supply["Location"]
-                            device_inventories[identifier]["Power Supplies"][i]["Output Watts"] \
-                                = power_supply["OutputWatts"]
-                            device_inventories[identifier]["Power Supplies"][i]["Firmware Version"] \
-                                = power_supply["FirmwareVersion"]
-                            device_inventories[identifier]["Power Supplies"][i]["Model"] = power_supply["Model"]
-                            device_inventories[identifier]["Power Supplies"][i]["Serial Number"] \
-                                = power_supply["SerialNumber"]
+                            _handle_keys("Id", power_supply, "ID", "Power Supplies")
+                            _handle_keys("Location", power_supply, "Location", "Power Supplies")
+                            _handle_keys("OutputWatts", power_supply, "Output Watts", "Power Supplies")
+                            _handle_keys("FirmwareVersion", power_supply, "Firmware Version", "Power Supplies")
+                            _handle_keys("Model", power_supply, "Model", "Power Supplies")
+                            _handle_keys("SerialNumber", power_supply, "Serial Number", "Power Supplies")
                     elif item["InventoryType"] == "serverArrayDisks":
                         logging.debug("Processing disks for " + ip)
                         device_inventories[identifier]["Disks"] = {}
                         for i, disk in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Disks"][i] = {}
-                            device_inventories[identifier]["Disks"][i]["ID"] = disk["Id"]
+                            _handle_keys("Id", disk, "ID", "Disks")
                             if "SerialNumber" in disk:  # TODO - need to account for this
-                                device_inventories[identifier]["Disks"][i]["Serial Number"] = disk["SerialNumber"]
-                            device_inventories[identifier]["Disks"][i]["Model Number"] = disk["ModelNumber"]
-                            device_inventories[identifier]["Disks"][i]["Enclosure ID"] = disk["EnclosureId"]
-                            device_inventories[identifier]["Disks"][i]["Size"] = disk["Size"]
-                            device_inventories[identifier]["Disks"][i]["Bus Type"] = disk["BusType"]
-                            device_inventories[identifier]["Disks"][i]["Media Type"] = disk["MediaType"]
+                                _handle_keys("SerialNumber", disk, "Serial Number", "Disks")
+                            _handle_keys("ModelNumber", disk, "Model Number", "Disks")
+                            _handle_keys("EnclosureId", disk, "Enclosure ID", "Disks")
+                            _handle_keys("Size", disk, "Size", "Disks")
+                            _handle_keys("BusType", disk, "Bus Type", "Disks")
+                            _handle_keys("MediaType", disk, "Media Type", "Disks")
                     elif item["InventoryType"] == "serverMemoryDevices":
                         logging.debug("Processing memory for " + ip)
                         device_inventories[identifier]["Memory"] = {}
                         for i, memory in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Memory"][i] = {}
-                            device_inventories[identifier]["Memory"][i]["ID"] = memory["Id"]
-                            device_inventories[identifier]["Memory"][i]["Name"] = memory["Name"]
-                            device_inventories[identifier]["Memory"][i]["Size"] = memory["Size"]
-                            device_inventories[identifier]["Memory"][i]["Manufacturer"] = memory["Manufacturer"]
-                            device_inventories[identifier]["Memory"][i]["Part Number"] = memory["PartNumber"]
-                            device_inventories[identifier]["Memory"][i]["Serial Number"] = memory["SerialNumber"]
-                            device_inventories[identifier]["Memory"][i]["Speed"] = memory["Speed"]
-                            device_inventories[identifier]["Memory"][i]["Current Operating Speed"] \
-                                = memory["CurrentOperatingSpeed"]
-                            device_inventories[identifier]["Memory"][i]["Device Description"] \
-                                = memory["DeviceDescription"]
+                            _handle_keys("Id", memory, "ID", "Memory")
+                            _handle_keys("Name", memory, "Name", "Memory")
+                            _handle_keys("Size", memory, "Size", "Memory")
+                            _handle_keys("Manufacturer", memory, "Manufacturer", "Memory")
+                            _handle_keys("PartNumber", memory, "Part Number", "Memory")
+                            _handle_keys("SerialNumber", memory, "Serial Number", "Memory")
+                            _handle_keys("Speed", memory, "Speed", "Memory")
+                            _handle_keys("CurrentOperatingSpeed", memory, "Current Operating Speed", "Memory")
+                            _handle_keys("DeviceDescription", memory, "Device Description", "Memory")
                     elif item["InventoryType"] == "serverRaidControllers":
                         logging.debug("Processing RAID controllers for " + ip)
                         device_inventories[identifier]["RAID Controllers"] = {}
                         for i, raid_controller in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["RAID Controllers"][i] = {}
-                            device_inventories[identifier]["RAID Controllers"][i]["ID"] = raid_controller["Id"]
-                            device_inventories[identifier]["RAID Controllers"][i]["Name"] = raid_controller["Name"]
-                            device_inventories[identifier]["RAID Controllers"][i]["Device Description"] \
-                                = raid_controller["DeviceDescription"]
-                            device_inventories[identifier]["RAID Controllers"][i]["Firmware Version"] \
-                                = raid_controller["FirmwareVersion"]
-                            device_inventories[identifier]["RAID Controllers"][i]["PCI Slot"] \
-                                = raid_controller["PciSlot"]
+                            _handle_keys("Id", raid_controller, "ID", "RAID Controllers")
+                            _handle_keys("Name", raid_controller, "Name", "RAID Controllers")
+                            _handle_keys("DeviceDescription", raid_controller, "Device Description", "RAID Controllers")
+                            _handle_keys("FirmwareVersion", raid_controller, "Firmware Version", "RAID Controllers")
+                            _handle_keys("PciSlot", raid_controller, "PCI Slot", "RAID Controllers")
 
                     logging.debug("Finished device loop.")
 
