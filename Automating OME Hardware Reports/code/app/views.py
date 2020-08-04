@@ -247,134 +247,148 @@ def hardware_inventory():
 
     device_inventories = {}
 
-    for ip in target_ips:
-        inventory_types = {
-            "cpus": "serverProcessors",
-            "os": "serverOperatingSystems",
-            "disks": "serverArrayDisks",
-            "controllers": "serverRaidControllers",
-            "memory": "serverMemoryDevices"}
+    inventory_types = {
+        "cpus": "serverProcessors",
+        "os": "serverOperatingSystems",
+        "disks": "serverArrayDisks",
+        "controllers": "serverRaidControllers",
+        "memory": "serverMemoryDevices"}
 
-        inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ome_ip_address, servers[ip])
+    for ip in target_ips:
+
+        identifier = servers[ip]
+
+        inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ome_ip_address, identifier)
         if inventory_type:
             inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails(\'%s\')" \
-                            % (ome_ip_address, servers[ip], inventory_types[inventory_type])
+                            % (ome_ip_address, identifier, inventory_types[inventory_type])
         inven_resp = requests.get(inventory_url, headers=headers, verify=False)
         if inven_resp.status_code == 200:
             logging.info("\n*** Inventory for device (%s) ***" % ip)
             content = json.loads(inven_resp.content)
             if content["@odata.count"] > 0:
-                device_inventories[ip] = {}
+                device_inventories[identifier] = {"idrac IP": ip}
                 for item in content['value']:
                     if item["InventoryType"] == "serverDeviceCards":
-                        device_inventories[ip]["PCI Cards"] = {}
+                        device_inventories[identifier]["PCI Cards"] = {}
                         i = 0
                         for card in item["InventoryInfo"]:
                             # Skip disks. Those are covered below.
                             if "Disk.Bay" in card["SlotNumber"] or "pci" not in card["SlotType"].lower():
                                 continue
-                            device_inventories[ip]["PCI Cards"][i] = {}
-                            device_inventories[ip]["PCI Cards"][i]["ID"] = card["Id"]
-                            device_inventories[ip]["PCI Cards"][i]["Slot Number"] = card["SlotNumber"]
-                            device_inventories[ip]["PCI Cards"][i]["Manufacturer"] = card["Manufacturer"]
-                            device_inventories[ip]["PCI Cards"][i]["Description"] = card["Description"]
-                            device_inventories[ip]["PCI Cards"][i]["Databus Width"] = card["DatabusWidth"]
-                            device_inventories[ip]["PCI Cards"][i]["Slot Length"] = card["SlotLength"]
-                            device_inventories[ip]["PCI Cards"][i]["Slot Type"] = card["SlotType"]
+                            device_inventories[identifier]["PCI Cards"][i] = {}
+                            device_inventories[identifier]["PCI Cards"][i]["ID"] = card["Id"]
+                            device_inventories[identifier]["PCI Cards"][i]["Slot Number"] = card["SlotNumber"]
+                            device_inventories[identifier]["PCI Cards"][i]["Manufacturer"] = card["Manufacturer"]
+                            device_inventories[identifier]["PCI Cards"][i]["Description"] = card["Description"]
+                            device_inventories[identifier]["PCI Cards"][i]["Databus Width"] = card["DatabusWidth"]
+                            device_inventories[identifier]["PCI Cards"][i]["Slot Length"] = card["SlotLength"]
+                            device_inventories[identifier]["PCI Cards"][i]["Slot Type"] = card["SlotType"]
                             i = i + 1
                     elif item["InventoryType"] == "serverProcessors":
-                        device_inventories[ip]["Processors"] = {}
+                        device_inventories[identifier]["Processors"] = {}
                         for i, processor in enumerate(item["InventoryInfo"]):
-                            device_inventories[ip]["Processors"][i] = {}
-                            device_inventories[ip]["Processors"][i]["ID"] = processor["Id"]
-                            device_inventories[ip]["Processors"][i]["Family"] = processor["Family"]
-                            device_inventories[ip]["Processors"][i]["Max Speed"] = processor["MaxSpeed"]
-                            device_inventories[ip]["Processors"][i]["Slot Number"] = processor["SlotNumber"]
-                            device_inventories[ip]["Processors"][i]["Number of Cores"] \
+                            device_inventories[identifier]["Processors"][i] = {}
+                            device_inventories[identifier]["Processors"][i]["ID"] = processor["Id"]
+                            device_inventories[identifier]["Processors"][i]["Family"] = processor["Family"]
+                            device_inventories[identifier]["Processors"][i]["Max Speed"] = processor["MaxSpeed"]
+                            device_inventories[identifier]["Processors"][i]["Slot Number"] = processor["SlotNumber"]
+                            device_inventories[identifier]["Processors"][i]["Number of Cores"] \
                                 = processor["NumberOfCores"]
-                            device_inventories[ip]["Processors"][i]["Brand Name"] = processor["BrandName"]
-                            device_inventories[ip]["Processors"][i]["Model Name"] = processor["ModelName"]
+                            device_inventories[identifier]["Processors"][i]["Brand Name"] = processor["BrandName"]
+                            device_inventories[identifier]["Processors"][i]["Model Name"] = processor["ModelName"]
                     elif item["InventoryType"] == "serverPowerSupplies":
-                        device_inventories[ip]["Power Supplies"] = {}
+                        device_inventories[identifier]["Power Supplies"] = {}
                         for i, power_supply in enumerate(item["InventoryInfo"]):
-                            device_inventories[ip]["Power Supplies"][i] = {}
-                            device_inventories[ip]["Power Supplies"][i]["ID"] = power_supply["Id"]
-                            device_inventories[ip]["Power Supplies"][i]["Location"] = power_supply["Location"]
-                            device_inventories[ip]["Power Supplies"][i]["Output Watts"] = power_supply["OutputWatts"]
-                            device_inventories[ip]["Power Supplies"][i]["Firmware Version"] \
+                            device_inventories[identifier]["Power Supplies"][i] = {}
+                            device_inventories[identifier]["Power Supplies"][i]["ID"] = power_supply["Id"]
+                            device_inventories[identifier]["Power Supplies"][i]["Location"] = power_supply["Location"]
+                            device_inventories[identifier]["Power Supplies"][i]["Output Watts"] \
+                                = power_supply["OutputWatts"]
+                            device_inventories[identifier]["Power Supplies"][i]["Firmware Version"] \
                                 = power_supply["FirmwareVersion"]
-                            device_inventories[ip]["Power Supplies"][i]["Model"] = power_supply["Model"]
-                            device_inventories[ip]["Power Supplies"][i]["Serial Number"] = power_supply["SerialNumber"]
+                            device_inventories[identifier]["Power Supplies"][i]["Model"] = power_supply["Model"]
+                            device_inventories[identifier]["Power Supplies"][i]["Serial Number"] \
+                                = power_supply["SerialNumber"]
                     elif item["InventoryType"] == "serverArrayDisks":
-                        device_inventories[ip]["Disks"] = {}
+                        device_inventories[identifier]["Disks"] = {}
                         for i, disk in enumerate(item["InventoryInfo"]):
-                            device_inventories[ip]["Disks"][i] = {}
-                            device_inventories[ip]["Disks"][i]["ID"] = disk["Id"]
+                            device_inventories[identifier]["Disks"][i] = {}
+                            device_inventories[identifier]["Disks"][i]["ID"] = disk["Id"]
                             if "SerialNumber" in disk:  # TODO - need to account for this
-                                device_inventories[ip]["Disks"][i]["Serial Number"] = disk["SerialNumber"]
-                            device_inventories[ip]["Disks"][i]["Model Number"] = disk["ModelNumber"]
-                            device_inventories[ip]["Disks"][i]["Enclosure ID"] = disk["EnclosureId"]
-                            device_inventories[ip]["Disks"][i]["Size"] = disk["Size"]
-                            device_inventories[ip]["Disks"][i]["Bus Type"] = disk["BusType"]
-                            device_inventories[ip]["Disks"][i]["Media Type"] = disk["MediaType"]
+                                device_inventories[identifier]["Disks"][i]["Serial Number"] = disk["SerialNumber"]
+                            device_inventories[identifier]["Disks"][i]["Model Number"] = disk["ModelNumber"]
+                            device_inventories[identifier]["Disks"][i]["Enclosure ID"] = disk["EnclosureId"]
+                            device_inventories[identifier]["Disks"][i]["Size"] = disk["Size"]
+                            device_inventories[identifier]["Disks"][i]["Bus Type"] = disk["BusType"]
+                            device_inventories[identifier]["Disks"][i]["Media Type"] = disk["MediaType"]
                     elif item["InventoryType"] == "serverMemoryDevices":
-                        device_inventories[ip]["Memory"] = {}
+                        device_inventories[identifier]["Memory"] = {}
                         for i, memory in enumerate(item["InventoryInfo"]):
-                            device_inventories[ip]["Memory"][i] = {}
-                            device_inventories[ip]["Memory"][i]["ID"] = memory["Id"]
-                            device_inventories[ip]["Memory"][i]["Name"] = memory["Name"]
-                            device_inventories[ip]["Memory"][i]["Size"] = memory["Size"]
-                            device_inventories[ip]["Memory"][i]["Manufacturer"] = memory["Manufacturer"]
-                            device_inventories[ip]["Memory"][i]["Part Number"] = memory["PartNumber"]
-                            device_inventories[ip]["Memory"][i]["Serial Number"] = memory["SerialNumber"]
-                            device_inventories[ip]["Memory"][i]["Speed"] = memory["Speed"]
-                            device_inventories[ip]["Memory"][i]["Current Operating Speed"] \
+                            device_inventories[identifier]["Memory"][i] = {}
+                            device_inventories[identifier]["Memory"][i]["ID"] = memory["Id"]
+                            device_inventories[identifier]["Memory"][i]["Name"] = memory["Name"]
+                            device_inventories[identifier]["Memory"][i]["Size"] = memory["Size"]
+                            device_inventories[identifier]["Memory"][i]["Manufacturer"] = memory["Manufacturer"]
+                            device_inventories[identifier]["Memory"][i]["Part Number"] = memory["PartNumber"]
+                            device_inventories[identifier]["Memory"][i]["Serial Number"] = memory["SerialNumber"]
+                            device_inventories[identifier]["Memory"][i]["Speed"] = memory["Speed"]
+                            device_inventories[identifier]["Memory"][i]["Current Operating Speed"] \
                                 = memory["CurrentOperatingSpeed"]
-                            device_inventories[ip]["Memory"][i]["Device Description"] = memory["DeviceDescription"]
+                            device_inventories[identifier]["Memory"][i]["Device Description"] \
+                                = memory["DeviceDescription"]
                     elif item["InventoryType"] == "serverRaidControllers":
-                        device_inventories[ip]["RAID Controllers"] = {}
+                        device_inventories[identifier]["RAID Controllers"] = {}
                         for i, raid_controller in enumerate(item["InventoryInfo"]):
-                            device_inventories[ip]["RAID Controllers"][i] = {}
-                            device_inventories[ip]["RAID Controllers"][i]["ID"] = raid_controller["Id"]
-                            device_inventories[ip]["RAID Controllers"][i]["Name"] = raid_controller["Name"]
-                            device_inventories[ip]["RAID Controllers"][i]["Device Description"] \
+                            device_inventories[identifier]["RAID Controllers"][i] = {}
+                            device_inventories[identifier]["RAID Controllers"][i]["ID"] = raid_controller["Id"]
+                            device_inventories[identifier]["RAID Controllers"][i]["Name"] = raid_controller["Name"]
+                            device_inventories[identifier]["RAID Controllers"][i]["Device Description"] \
                                 = raid_controller["DeviceDescription"]
-                            device_inventories[ip]["RAID Controllers"][i]["Firmware Version"] \
+                            device_inventories[identifier]["RAID Controllers"][i]["Firmware Version"] \
                                 = raid_controller["FirmwareVersion"]
-                            device_inventories[ip]["RAID Controllers"][i]["PCI Slot"] = raid_controller["PciSlot"]
+                            device_inventories[identifier]["RAID Controllers"][i]["PCI Slot"] \
+                                = raid_controller["PciSlot"]
 
-            logging.info("Writing excel file and pickle database for inventory.")
-            db = xl.Database()
-            for ip_address, inventory in device_inventories.items():
-                logging.info("Processing " + ip_address)
-                db.add_ws(ip_address + servers[ip_address], {'A1': {'v': 10, 'f': '', 's': ''}, 'A2': {'v': 20, 'f': '', 's': ''}})  # TODO - I need to fix this
-                x = 1
-                for subsystem, items in inventory.items():
-                    y = 1
-                    db.ws(ip_address + servers[ip_address]).update_index(row=y, col=x, val=subsystem)
-                    logging.debug("Processing " + subsystem)
-                    for device, values in items.items():
-                        y = y + 1
-                        string = ""
-                        for key, value in values.items():
-                            string = string + key + ": " + str(value) + "\n"
-                        db.ws(ip_address + servers[ip_address]).update_index(row=y, col=x, val=string)
-                    x = x + 1
-            path = os.path.join(os.getcwd(), "inventories")
-            if not os.path.exists(path):
-                os.mkdir(path)
-            dtstring = datetime.now().strftime("%d-%m-%Y-%H%M")
-            xl.writexl(db, dtstring + ".xlsx")
-            os.replace(dtstring + ".xlsx", os.path.join(path, dtstring + ".xlsx"))
-            with open(os.path.join(path, dtstring + ".bin"), 'wb') as inventories:
-                pickle.dump(device_inventories, inventories)
-            return send_file(os.path.join(path, dtstring + ".xlsx"), attachment_filename=dtstring + ".xlsx")
         elif inven_resp.status_code == 400:
-            logging.warning("Inventory type %s not applicable for device with Id %s" % (inventory_type, servers[ip]))
-            return "Inventory type %s not applicable for device with Id %s" % (inventory_type, servers[ip]), 400
+            logging.warning("Inventory type %s not applicable for device with ID %s" % (inventory_type, identifier))
+            return "Inventory type %s not applicable for device with Id %s" % (inventory_type, identifier), 400
         else:
             logging.error("Unable to retrieve inventory for device %s due to status code %s"
-                          % (servers[ip], inven_resp.status_code))
+                          % (identifier, inven_resp.status_code))
             return "Unable to retrieve inventory for device %s due to status code %s" \
-                   % (servers[ip], inven_resp.status_code), 404
+                   % (identifier, inven_resp.status_code), 404
+
+    logging.info("Writing excel file and pickle database for inventory.")
+    db = xl.Database()
+    for identifier, inventory in device_inventories.items():
+        logging.info("Processing " + identifier)
+        sheet_name = identifier + "-" + inventory["idrac IP"]
+        db.add_ws(sheet_name,
+                  {'A1': {'v': 10, 'f': '', 's': ''}, 'A2': {'v': 20, 'f': '', 's': ''}})  # TODO - I need to fix this
+        x = 1
+        for subsystem, items in inventory.items():
+            if subsystem == "idrac IP":
+                continue
+            y = 1
+            db.ws(sheet_name).update_index(row=y, col=x, val=subsystem)
+            logging.debug("Processing " + subsystem)
+            for device, values in items.items():
+                y = y + 1
+                string = ""
+                for key, value in values.items():
+                    string = string + key + ": " + str(value) + "\n"
+                db.ws(sheet_name).update_index(row=y, col=x, val=string)
+            x = x + 1
+    path = os.path.join(os.getcwd(), "inventories")
+    if not os.path.exists(path):
+        os.mkdir(path)
+    dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
+    xl.writexl(db, dtstring + ".xlsx")
+    os.replace(dtstring + ".xlsx", os.path.join(path, dtstring + ".xlsx"))
+    with open(os.path.join(path, dtstring + ".bin"), 'wb') as inventories:
+        pickle.dump(device_inventories, inventories)
+    with open(os.path.join(path, "last_inventory.bin"), 'wb') as inventories:
+        pickle.dump(device_inventories, inventories)
+    return send_file(os.path.join(path, dtstring + ".xlsx"), attachment_filename=dtstring + ".xlsx")
 
