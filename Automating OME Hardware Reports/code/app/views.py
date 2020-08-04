@@ -257,6 +257,7 @@ def hardware_inventory():
     for ip in target_ips:
 
         identifier = servers[ip]
+        logging.info("Processing inventory for " + ip)
 
         inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ome_ip_address, identifier)
         if inventory_type:
@@ -270,6 +271,7 @@ def hardware_inventory():
                 device_inventories[identifier] = {"idrac IP": ip}
                 for item in content['value']:
                     if item["InventoryType"] == "serverDeviceCards":
+                        logging.debug("Processing PCI cards for " + ip)
                         device_inventories[identifier]["PCI Cards"] = {}
                         i = 0
                         for card in item["InventoryInfo"]:
@@ -277,15 +279,40 @@ def hardware_inventory():
                             if "Disk.Bay" in card["SlotNumber"] or "pci" not in card["SlotType"].lower():
                                 continue
                             device_inventories[identifier]["PCI Cards"][i] = {}
-                            device_inventories[identifier]["PCI Cards"][i]["ID"] = card["Id"]
-                            device_inventories[identifier]["PCI Cards"][i]["Slot Number"] = card["SlotNumber"]
-                            device_inventories[identifier]["PCI Cards"][i]["Manufacturer"] = card["Manufacturer"]
-                            device_inventories[identifier]["PCI Cards"][i]["Description"] = card["Description"]
-                            device_inventories[identifier]["PCI Cards"][i]["Databus Width"] = card["DatabusWidth"]
+                            if "Id" in card:
+                                device_inventories[identifier]["PCI Cards"][i]["ID"] = card["Id"]
+                            else:
+                                logging.warning("Id not present for this device. Skipping. "
+                                                "It will not be used for comparison")
+                                device_inventories[identifier]["PCI Cards"][i]["ID"] = "None"
+                            if "SlotNumber" in card:
+                                device_inventories[identifier]["PCI Cards"][i]["Slot Number"] = card["SlotNumber"]
+                            else:
+                                logging.warning("SlotNumber not present for this device. Skipping. "
+                                                "It will not be used for comparison")
+                                device_inventories[identifier]["PCI Cards"][i]["Slot Number"] = "None"
+                            if "Manufacturer" in card:
+                                device_inventories[identifier]["PCI Cards"][i]["Manufacturer"] = card["Manufacturer"]
+                            else:
+                                logging.warning("Manufacturer not present for this device. Skipping. "
+                                                "It will not be used for comparison")
+                                device_inventories[identifier]["PCI Cards"][i]["Manufacturer"] = "None"
+                            if "Description" in card:
+                                device_inventories[identifier]["PCI Cards"][i]["Description"] = card["Description"]
+                            else:
+                                logging.warning("Description not present for this device.")
+                                device_inventories[identifier]["PCI Cards"][i]["Description"] = "None"
+                            if "DatabusWidth":
+                                device_inventories[identifier]["PCI Cards"][i]["Databus Width"] = card["DatabusWidth"]
+                            else:
+                                logging.warning("DatabusWidth not present for this device. Skipping. "
+                                                "It will not be used for comparison")
+                                device_inventories[identifier]["PCI Cards"][i]["DatabusWidth"] = "None"
                             device_inventories[identifier]["PCI Cards"][i]["Slot Length"] = card["SlotLength"]
                             device_inventories[identifier]["PCI Cards"][i]["Slot Type"] = card["SlotType"]
                             i = i + 1
                     elif item["InventoryType"] == "serverProcessors":
+                        logging.debug("Processing processors (haha) for " + ip)
                         device_inventories[identifier]["Processors"] = {}
                         for i, processor in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Processors"][i] = {}
@@ -298,6 +325,7 @@ def hardware_inventory():
                             device_inventories[identifier]["Processors"][i]["Brand Name"] = processor["BrandName"]
                             device_inventories[identifier]["Processors"][i]["Model Name"] = processor["ModelName"]
                     elif item["InventoryType"] == "serverPowerSupplies":
+                        logging.debug("Processing power supplies for " + ip)
                         device_inventories[identifier]["Power Supplies"] = {}
                         for i, power_supply in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Power Supplies"][i] = {}
@@ -311,6 +339,7 @@ def hardware_inventory():
                             device_inventories[identifier]["Power Supplies"][i]["Serial Number"] \
                                 = power_supply["SerialNumber"]
                     elif item["InventoryType"] == "serverArrayDisks":
+                        logging.debug("Processing disks for " + ip)
                         device_inventories[identifier]["Disks"] = {}
                         for i, disk in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Disks"][i] = {}
@@ -323,6 +352,7 @@ def hardware_inventory():
                             device_inventories[identifier]["Disks"][i]["Bus Type"] = disk["BusType"]
                             device_inventories[identifier]["Disks"][i]["Media Type"] = disk["MediaType"]
                     elif item["InventoryType"] == "serverMemoryDevices":
+                        logging.debug("Processing memory for " + ip)
                         device_inventories[identifier]["Memory"] = {}
                         for i, memory in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Memory"][i] = {}
@@ -338,6 +368,7 @@ def hardware_inventory():
                             device_inventories[identifier]["Memory"][i]["Device Description"] \
                                 = memory["DeviceDescription"]
                     elif item["InventoryType"] == "serverRaidControllers":
+                        logging.debug("Processing RAID controllers for " + ip)
                         device_inventories[identifier]["RAID Controllers"] = {}
                         for i, raid_controller in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["RAID Controllers"][i] = {}
@@ -349,6 +380,8 @@ def hardware_inventory():
                                 = raid_controller["FirmwareVersion"]
                             device_inventories[identifier]["RAID Controllers"][i]["PCI Slot"] \
                                 = raid_controller["PciSlot"]
+
+                    logging.debug("Finished device loop.")
 
         elif inven_resp.status_code == 400:
             logging.warning("Inventory type %s not applicable for device with ID %s" % (inventory_type, identifier))
