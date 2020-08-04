@@ -198,20 +198,21 @@ def hardware_health():
                 for item in content['value']:
                     if item["@odata.type"] == "#DeviceService.SubSystemHealthFaultModel":
                         server_health[ip]["errors"] = {}
-                        for i, error in enumerate(item["FaultList"]):
-                            server_health[ip]["errors"][i] = {}
-                            if "Fqdd" in error:
-                                server_health[ip]["errors"][i]["location"] = error["Fqdd"]
-                            if "MessageId" in error:
-                                server_health[ip]["errors"][i]["messageid"] = error["MessageId"]
-                            if "Message" in error:
-                                server_health[ip]["errors"][i]["message"] = error["Message"]
-                            if "Severity" in error:
-                                server_health[ip]["errors"][i]["severity"] = health_mapping[error["Severity"]]
-                            if "SubSystem" in error:
-                                server_health[ip]["errors"][i]["subsystem"] = error["SubSystem"]
-                            if "RecommendedAction" in error:
-                                server_health[ip]["errors"][i]["recommended_action"] = error["RecommendedAction"]
+                        if "FaultList" in item:
+                            for i, error in enumerate(item["FaultList"]):
+                                server_health[ip]["errors"][i] = {}
+                                if "Fqdd" in error:
+                                    server_health[ip]["errors"][i]["location"] = error["Fqdd"]
+                                if "MessageId" in error:
+                                    server_health[ip]["errors"][i]["messageid"] = error["MessageId"]
+                                if "Message" in error:
+                                    server_health[ip]["errors"][i]["message"] = error["Message"]
+                                if "Severity" in error:
+                                    server_health[ip]["errors"][i]["severity"] = health_mapping[error["Severity"]]
+                                if "SubSystem" in error:
+                                    server_health[ip]["errors"][i]["subsystem"] = error["SubSystem"]
+                                if "RecommendedAction" in error:
+                                    server_health[ip]["errors"][i]["recommended_action"] = error["RecommendedAction"]
                         server_health[ip]["health"] = health_mapping[item["RollupStatus"]]
                         break
             else:
@@ -433,40 +434,111 @@ def compare_inventories():
 
     db = xl.Database()
 
+    device_inventory_2["12446"]["PCI Cards"][1]["Manufacturer"] = "BALLS"
+    device_inventory_2["12902"]["Processors"].pop(2)
+    device_inventory_2["12902"]["Power Supplies"][2] = {"ID": 984, "Location": "PSU.Slot.3", "Output Watts": 9000, "Firmware Version": "00.3D.67", "Model": 'PWR SPLY,1600W,RDNT,DELTA', "Serial Number": "Stuff"}
+    db.add_ws("Inventory Deltas",
+              {'A1': {'v': "Service Tag", 'f': '', 's': ''},
+               'B1': {'v': "System idrac IP", 'f': '', 's': ''},
+               'C1': {'v': "System Identifier", 'f': '', 's': ''},
+               'D1': {'v': "Effected Subsystem", 'f': '', 's': ''},
+               'E1': {'v': "Change Made", 'f': '', 's': ''},
+               'F1': {'v': "Details", 'f': '', 's': ''}})
+
+    y = 1
+
     for identifier, inventory in device_inventory_1.items():
 
         logging.info("Comparing inventory for device which had idrac IP of " + inventory["idrac IP"])
 
-        sheet_name = identifier + "-" + inventory["idrac IP"]
-        db.add_ws(sheet_name, {'A1': {'v': 10, 'f': '', 's': ''}, 'A2': {'v': 20, 'f': '', 's': ''}})  # TODO - I need to fix this
-
         if identifier in device_inventory_2:
-            x = 1
             for subsystem, items in inventory.items():
                 if subsystem == "idrac IP":
                     continue
-                y = 1
-                db.ws(sheet_name).update_index(row=y, col=x, val=subsystem)
+
                 logging.debug("Processing " + subsystem)
                 for device, values in items.items():
+                    device_found = False
                     for comparison_device, comparison_device_values in device_inventory_2[identifier][subsystem].items():
                         if device_inventory_2[identifier][subsystem][comparison_device]["ID"] == values["ID"]:
+                            device_found = True
                             logging.debug("Found match with device " + str(values["ID"]) + ". Processing comparison.")
+                            changed_string = ""
+                            change_made = False
                             for key, value in values.items():
                                 if device_inventory_2[identifier][subsystem][comparison_device][key] != value:
-                                    logging.info("Difference found in subsystem " + subsystem + " on device " +
-                                                 comparison_device + " in key " + str(key))
-                                    update_string = key + " changed to " + \
-                                                    str(device_inventory_2[identifier][subsystem][comparison_device][key])
-                                    db.ws(sheet_name).update_index(row=y, col=x, val=update_string)
-                                    y = y + 1
-                x = x + 1
+                                    change_made = True
+                                    logging.info("Difference found in subsystem " + str(subsystem) + " on device " +
+                                                 str(comparison_device) + " in key " + str(key))
+                                    changed_string = changed_string + key + ": " + str(value) + " --> CHANGED TO --> " \
+                                                     + device_inventory_2[identifier][subsystem][comparison_device][key]\
+                                                     + "\n"
+                                else:
+                                    changed_string = changed_string + key + ": " + str(value) + "\n"
+
+                            if change_made:
+                                y = y + 1
+                                db.ws("Inventory Deltas").update_index(row=y, col=2,
+                                                                       val=device_inventory_2[identifier]["idrac IP"])
+                                db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
+                                db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
+                                db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Updated")
+                                db.ws("Inventory Deltas").update_index(row=y, col=6, val=changed_string)
+
+                    if not device_found:
+                        y = y + 1
+                        db.ws("Inventory Deltas").update_index(row=y, col=2, val=device_inventory_2[identifier]["idrac IP"])
+                        db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
+                        db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
+                        db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Removed")
+
+                        string = ""
+                        for key, value in values.items():
+                            string = string + key + ": " + str(value) + "\n"
+
+                        db.ws("Inventory Deltas").update_index(row=y, col=6, val=string)
 
         else:
             warning = "Device identifier " + identifier + " was found in inventory 1, but not in inventory 2. This " \
                       "corresponds to idrac IP " + inventory["idrac IP"] + ". This probably shouldn't have happened. " \
                       "The error is not fatal, but should be investigated]."
             logging.warning(warning)
-            db.ws(sheet_name).update_index(row=1, col=1, val=warning)
+            db.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
 
+    for identifier, inventory in device_inventory_2.items():
+        if identifier in device_inventory_1:
+            for subsystem, items in inventory.items():
+                if subsystem == "idrac IP":
+                    continue
+                for device, values in items.items():
+                    device_found = False
+                    for comparison_device, comparison_device_values in device_inventory_1[identifier][
+                        subsystem].items():
+                        if device_inventory_1[identifier][subsystem][comparison_device]["ID"] == values["ID"]:
+                            device_found = True
+
+                    if not device_found:
+                        y = y + 1
+                        db.ws("Inventory Deltas").update_index(row=y, col=2,
+                                                               val=device_inventory_2[identifier]["idrac IP"])
+                        db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
+                        db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
+                        db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Added")
+
+                        string = ""
+                        for key, value in values.items():
+                            string = string + key + ": " + str(value) + "\n"
+
+                        db.ws("Inventory Deltas").update_index(row=y, col=6, val=string)
+
+        else:
+            warning = "Device identifier " + identifier + " was found in inventory 2, but not in inventory 1. This " \
+                      "corresponds to idrac IP " + inventory["idrac IP"] + ". This probably shouldn't have happened. " \
+                      "The error is not fatal, but should be investigated]."
+            logging.warning(warning)
+            db.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
+
+    os.remove("comparison.xlsx")
+    xl.writexl(db, "comparison.xlsx")
     return "Jobs done!", 200
+
