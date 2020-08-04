@@ -233,11 +233,13 @@ def hardware_inventory():
     """
 
     def _handle_keys(ome_field, ome_device, dict_field, dict_device):
-        if ome_field in device:
+        if ome_field in ome_device:
             device_inventories[identifier][dict_device][i][dict_field] = ome_device[ome_field]
         else:
-            logging.warning(ome_field + " not present in " + ome_device + " device. Skipping. "
-                            "It will not be used for comparison")
+            logging.warning(ome_field + " was not in OpenManage's database for device with ID " +
+                            str(device_inventories[identifier][dict_device][i]["ID"]) + ". The device type was "
+                            + dict_device + ". The host has idrac IP " + ip +
+                            ". We are skipping the device. It will not be used for comparison.")
             device_inventories[identifier][dict_device][i][dict_field] = "None"
 
     json_data = request.get_json()
@@ -324,8 +326,7 @@ def hardware_inventory():
                         for i, disk in enumerate(item["InventoryInfo"]):
                             device_inventories[identifier]["Disks"][i] = {}
                             _handle_keys("Id", disk, "ID", "Disks")
-                            if "SerialNumber" in disk:  # TODO - need to account for this
-                                _handle_keys("SerialNumber", disk, "Serial Number", "Disks")
+                            _handle_keys("SerialNumber", disk, "Serial Number", "Disks")
                             _handle_keys("ModelNumber", disk, "Model Number", "Disks")
                             _handle_keys("EnclosureId", disk, "Enclosure ID", "Disks")
                             _handle_keys("Size", disk, "Size", "Disks")
@@ -372,8 +373,7 @@ def hardware_inventory():
     for identifier, inventory in device_inventories.items():
         logging.info("Processing " + identifier)
         sheet_name = identifier + "-" + inventory["idrac IP"]
-        db.add_ws(sheet_name,
-                  {'A1': {'v': 10, 'f': '', 's': ''}, 'A2': {'v': 20, 'f': '', 's': ''}})  # TODO - I need to fix this
+        db.add_ws(sheet_name, {'A1': {'v': 10, 'f': '', 's': ''}, 'A2': {'v': 20, 'f': '', 's': ''}})  # TODO - I need to fix this
         x = 1
         for subsystem, items in inventory.items():
             if subsystem == "idrac IP":
@@ -400,3 +400,73 @@ def hardware_inventory():
         pickle.dump(device_inventories, inventories)
     return send_file(os.path.join(path, dtstring + ".xlsx"), attachment_filename=dtstring + ".xlsx")
 
+
+@app.route('/api/get_inventories', methods=['GET'])
+def get_inventories():
+    print("GET A LIST OF INVENTORIES HERE")  # TODO
+
+
+@app.route('/api/compare_inventories', methods=['GET'])
+def compare_inventories():
+
+    json_data = request.get_json()
+
+    if "inventory1" in json_data:
+        inventory1 = json_data["inventory1"]
+    else:
+        return "inventory1 missing. This is a required argument", 400
+
+    if "inventory2" in json_data:
+        inventory2 = json_data["inventory2"]
+    else:
+        return "inventory2 missing. This is a required argument", 400
+
+    path = os.path.join(os.getcwd(), "inventories")
+
+    logging.info("Reading binary database from the file \"" + str(os.path.join(path, inventory1)) + "\" from disk.")
+    with open(os.path.join(path, inventory1), 'rb') as database:
+        device_inventory_1 = pickle.load(database)
+
+    logging.info("Reading binary database from the file \"" + str(os.path.join(path, inventory2)) + "\" from disk.")
+    with open(os.path.join(path, inventory2), 'rb') as database:
+        device_inventory_2 = pickle.load(database)
+
+    db = xl.Database()
+
+    for identifier, inventory in device_inventory_1.items():
+
+        logging.info("Comparing inventory for device which had idrac IP of " + inventory["idrac IP"])
+
+        sheet_name = identifier + "-" + inventory["idrac IP"]
+        db.add_ws(sheet_name, {'A1': {'v': 10, 'f': '', 's': ''}, 'A2': {'v': 20, 'f': '', 's': ''}})  # TODO - I need to fix this
+
+        if identifier in device_inventory_2:
+            x = 1
+            for subsystem, items in inventory.items():
+                if subsystem == "idrac IP":
+                    continue
+                y = 1
+                db.ws(sheet_name).update_index(row=y, col=x, val=subsystem)
+                logging.debug("Processing " + subsystem)
+                for device, values in items.items():
+                    for comparison_device, comparison_device_values in device_inventory_2[identifier][subsystem].items():
+                        if device_inventory_2[identifier][subsystem][comparison_device]["ID"] == values["ID"]:
+                            logging.debug("Found match with device " + str(values["ID"]) + ". Processing comparison.")
+                            for key, value in values.items():
+                                if device_inventory_2[identifier][subsystem][comparison_device][key] != value:
+                                    logging.info("Difference found in subsystem " + subsystem + " on device " +
+                                                 comparison_device + " in key " + str(key))
+                                    update_string = key + " changed to " + \
+                                                    str(device_inventory_2[identifier][subsystem][comparison_device][key])
+                                    db.ws(sheet_name).update_index(row=y, col=x, val=update_string)
+                                    y = y + 1
+                x = x + 1
+
+        else:
+            warning = "Device identifier " + identifier + " was found in inventory 1, but not in inventory 2. This " \
+                      "corresponds to idrac IP " + inventory["idrac IP"] + ". This probably shouldn't have happened. " \
+                      "The error is not fatal, but should be investigated]."
+            logging.warning(warning)
+            db.ws(sheet_name).update_index(row=1, col=1, val=warning)
+
+    return "Jobs done!", 200
