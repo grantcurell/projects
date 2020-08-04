@@ -33,7 +33,7 @@ import requests
 
 CORS(app)
 
-servers = {'192.168.1.10': "12446"}
+servers = {"192.168.1.10": "12446", "192.168.1.45": "12902"}
 
 health_mapping = {
     "1000": "Healthy",
@@ -79,7 +79,7 @@ def get_device_id_by_ip(ome_ip_address: str, target_ip_address: str, headers: di
         elif json_data['@odata.count'] > 1:
             logging.warning("WARNING: We found more than one name that matched " + target_ip_address + ". Returning "
                                                                                                        "the first.")
-            return json_data['value'][0]['Id']
+            return str(json_data['value'][0]['Id'])
         else:
             logging.error("Not results returned for device ID look up for name " + target_ip_address)
             return ""
@@ -147,9 +147,9 @@ def discover():
         return "Unexpected error:" + str(e), 500
 
     for ip in target_ips:
-        server_id = get_device_id_by_ip(ome_ip_address, ip, headers)
-        if isinstance(server_id, str) and server_id != "":
-            servers[ip] = str(server_id)
+        server_id = str(get_device_id_by_ip(ome_ip_address, ip, headers))
+        if server_id != "":
+            servers[ip] = server_id
         else:
             logging.warning("Error: couldn't resolve the name " + str(ip) + " to a device ID. This might mean there "
                                                                             "was a login failure during discovery. "
@@ -158,7 +158,7 @@ def discover():
                                                                     "login failure during discovery. Check the OME "
                                                                     "discovery job logs for details.", 400)
 
-    return 200
+    return "Successfully discovered all servers", 200
 
 
 @app.route('/api/hardware_health', methods=['GET'])
