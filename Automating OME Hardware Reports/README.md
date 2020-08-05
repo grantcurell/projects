@@ -4,15 +4,15 @@
 
 - [x] Create a utility for running scans against OME
 - [x] Figure out how to extract the hardware status specifically after the scan
-- [ ] Figure out how to separate the servers that were recently added
+- [x] Figure out how to separate the servers that were recently added
 - [ ] Figure out how if I need to force sync alerts
 - [ ] Add the ability to remove servers from OME
-  - [ ] (Optional) Determine if we want to put these in a discovery group?
-- [ ] Create a utility for comparing the PCIe changes to a server between two hardware scans
-  - [ ] First step is to be able to compare columns of a comma separated file
+  - [x] (Optional) Determine if we want to put these in a discovery group?
+- [x] Create a utility for comparing the PCIe changes to a server between two hardware scans
+  - [x] First step is to be able to compare columns of a comma separated file
   - [x] Figure out how to pull the device hardware tab
-- [ ] Create a lightweight API which allows Angular to query for data
-  - [ ] Decide how to maintain data - JSON files? More complex option like MongoDB?
+- [x] Create a lightweight API which allows Angular to query for data
+  - [x] ] Decide how to maintain data - JSON files? More complex option like MongoDB?
 - [x] Write a method for checking the hardware health on both scans
 - [ ] Create an Angular project
   - [ ] Create functionality for running scan 1
@@ -23,6 +23,9 @@
 - [ ] (Optional) Go back and fix exception handling for [Dell code](https://github.com/dell/OpenManage-Enterprise/tree/master/Core/Python)
 - [ ] Set up a DHCP server
 - [ ] Figure out how to retrieve the service tag
+- [ ] Update readme with actual instructions
+  - [ ] Add the bit about the file names for inventory and discoveries
+  - [ ] Tell people how to manipulate them if needed
 
 Note: If I need a way to compare the IP address of the idrac and get the ID, you can retrieve it from the device inventory under deviceManagement
 

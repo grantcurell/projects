@@ -33,7 +33,12 @@ import requests
 
 CORS(app)
 
-servers = {"192.168.1.10": "12446", "192.168.1.45": "12902"}
+path = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
+if os.path.isfile(path):
+    with open(path, 'rb') as database:
+        servers = pickle.load(database)
+else:
+    servers = {"192.168.1.10": "12446", "192.168.1.45": "12902"}  # TODO - this will need to be reverted
 
 health_mapping = {
     "1000": "Healthy",
@@ -158,6 +163,14 @@ def discover():
                                                                     "login failure during discovery. Check the OME "
                                                                     "discovery job logs for details.", 400)
 
+    path = os.path.join(os.getcwd(), "discovery_scans")
+    if not os.path.exists(path):
+        os.mkdir(path)
+    dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
+    with open(os.path.join(path, dtstring + ".bin"), 'wb') as database:
+        pickle.dump(servers, database)
+    with open(os.path.join(path, "lastest_discovery.bin"), 'wb') as database:
+        pickle.dump(servers, database)
     return "Successfully discovered all servers", 200
 
 
@@ -230,7 +243,7 @@ def hardware_inventory():
     Retrieves the hardware inventory for a specified target
 
     curl -XGET -d '{"target_ips": "192.168.1.10", "ome_ip_address": "192.168.1.18", "user_name": "admin",
-    "password": "I.am.ghost.47"}' 127.0.0.1:5000/api/hardware_inventory -H "Content-Type: application/json"
+    "password": "password"}' 127.0.0.1:5000/api/hardware_inventory -H "Content-Type: application/json"
     """
 
     def _handle_keys(ome_field, ome_device, dict_field, dict_device):
@@ -409,6 +422,12 @@ def get_inventories():
 
 @app.route('/api/compare_inventories', methods=['GET'])
 def compare_inventories():
+    """
+    Compare two inventories and produce an excel sheet with the results
+
+    curl -XGET -d '{"inventory1": "04-Aug-2020-1325.bin", "inventory2": "04-Aug-2020-1325.bin"}'
+    127.0.0.1:5000/api/compare_inventories -H "Content-Type: application/json"
+    """
 
     json_data = request.get_json()
 
@@ -554,4 +573,24 @@ def compare_inventories():
     os.remove("comparison.xlsx")
     xl.writexl(db, "comparison.xlsx")
     return "Jobs done!", 200
+
+
+@app.route('/api/remove_servers_from_ome', methods=['PUT'])
+def remove_servers_from_ome():
+    """
+    Removes a set of servers from OME
+
+    curl -XGET -d '{"target_ips": "192.168.1.45", "ome_ip_address": "192.168.1.18", "user_name": "admin",
+    "password": "I.am.ghost.47"}' 127.0.0.1:5000/api/hardware_inventory -H "Content-Type: application/json"
+    """
+
+    json_data = request.get_json()
+
+    if not _validate_ome_and_target(json_data):
+        return "Failed to validate OME and target IP information", 400
+
+    target_ips = get_ips(json_data["target_ips"])
+    ome_ip_address = json_data["ome_ip_address"]
+    user_name = json_data["user_name"]
+    password = json_data["password"]
 
