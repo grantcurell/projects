@@ -374,7 +374,7 @@ def hardware_inventory():
     for identifier, inventory in device_inventories.items():
         logging.info("Processing " + identifier)
         sheet_name = identifier + "-" + inventory["idrac IP"]
-        db.add_ws(sheet_name, {'A1': {'v': 10, 'f': '', 's': ''}, 'A2': {'v': 20, 'f': '', 's': ''}})  # TODO - I need to fix this
+        db.add_ws(sheet_name, {'A1': {'v': '', 'f': '', 's': ''}})
         x = 1
         for subsystem, items in inventory.items():
             if subsystem == "idrac IP":
@@ -434,16 +434,23 @@ def compare_inventories():
 
     db = xl.Database()
 
-    device_inventory_2["12446"]["PCI Cards"][1]["Manufacturer"] = "BALLS"
+    device_inventory_2["12446"]["PCI Cards"][1]["Manufacturer"] = "New Manufacturer"
+    device_inventory_2["12446"]["PCI Cards"][1]["Slot Number"] = "AHCI.Slot.2-2"
+    device_inventory_2["12446"]["PCI Cards"][1]["Databus Width"] = "8x or x 8"
+    device_inventory_2["12446"]["PCI Cards"][2]["Manufacturer"] = "New Manufacturer"
+    device_inventory_2["12446"]["PCI Cards"][2]["Slot Number"] = "AHCI.Slot.2-2"
+    device_inventory_2["12446"]["PCI Cards"][2]["Databus Width"] = "8x or x 8"
     device_inventory_2["12902"]["Processors"].pop(2)
     device_inventory_2["12902"]["Power Supplies"][2] = {"ID": 984, "Location": "PSU.Slot.3", "Output Watts": 9000, "Firmware Version": "00.3D.67", "Model": 'PWR SPLY,1600W,RDNT,DELTA', "Serial Number": "Stuff"}
     db.add_ws("Inventory Deltas",
               {'A1': {'v': "Service Tag", 'f': '', 's': ''},
                'B1': {'v': "System idrac IP", 'f': '', 's': ''},
-               'C1': {'v': "System Identifier", 'f': '', 's': ''},
+               'C1': {'v': "OME System Identifier", 'f': '', 's': ''},
                'D1': {'v': "Effected Subsystem", 'f': '', 's': ''},
                'E1': {'v': "Change Made", 'f': '', 's': ''},
-               'F1': {'v': "Details", 'f': '', 's': ''}})
+               'F1': {'v': "Component Details", 'f': '', 's': ''},
+               'G1': {'v': "Updated Component Details", 'f': '', 's': ''},
+               'H1': {'v': "Deltas", 'f': '', 's': ''}})
 
     y = 1
 
@@ -464,6 +471,8 @@ def compare_inventories():
                             device_found = True
                             logging.debug("Found match with device " + str(values["ID"]) + ". Processing comparison.")
                             changed_string = ""
+                            original_string = ""
+                            updated_string = ""
                             change_made = False
                             for key, value in values.items():
                                 if device_inventory_2[identifier][subsystem][comparison_device][key] != value:
@@ -473,8 +482,10 @@ def compare_inventories():
                                     changed_string = changed_string + key + ": " + str(value) + " --> CHANGED TO --> " \
                                                      + device_inventory_2[identifier][subsystem][comparison_device][key]\
                                                      + "\n"
-                                else:
-                                    changed_string = changed_string + key + ": " + str(value) + "\n"
+                                original_string = original_string + key + ": " + str(value) + "\n"
+                                updated_string = updated_string + key + ": " + \
+                                                 str(device_inventory_2[identifier][subsystem][comparison_device][key])\
+                                                 + "\n"
 
                             if change_made:
                                 y = y + 1
@@ -483,7 +494,9 @@ def compare_inventories():
                                 db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
                                 db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
                                 db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Updated")
-                                db.ws("Inventory Deltas").update_index(row=y, col=6, val=changed_string)
+                                db.ws("Inventory Deltas").update_index(row=y, col=6, val=original_string)
+                                db.ws("Inventory Deltas").update_index(row=y, col=7, val=updated_string)
+                                db.ws("Inventory Deltas").update_index(row=y, col=8, val=changed_string)
 
                     if not device_found:
                         y = y + 1
