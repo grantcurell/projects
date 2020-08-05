@@ -1,0 +1,21 @@
+ 
+  .character-card {
+    max-width: 400px;
+  }
+
+  .mat-card-title {
+    font-size: 80px;
+    font-family: Kaiti;
+    text-align: center;
+    height: .3em;
+    display: block;
+    margin: 10pt 10pt 10pt 10pt;
+  }
+
+  .mat-card-header-text {
+    width: 100%;
+  }
+
+  .mat-card-header {
+    justify-content: center;
+  }

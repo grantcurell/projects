@@ -1,0 +1,82 @@
+<mat-toolbar [ngStyle]="{'background-color': '#137db5'}">
+  <span class="white-text">Gelante Traffic Shaper</span>
+
+  <!-- This fills the remaining space of the current row -->
+  <span class="fill-remaining-space"></span>
+
+  <img src="assets/img/DellEMC_Logo_Prm_Wht_rgb.png" style="width: 20%;">
+</mat-toolbar>
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #sidenav class="sidenav"
+      [attr.role]="'navigation'"
+      [mode]="'side'"
+      [opened]="true"
+      [disableClose]="true"
+      [fixedInViewport]="false"
+      [ngStyle]="{'background-color': '#F5F5F5'}">
+    <mat-toolbar>
+      <span class="title-center hard-black">Switches</span>
+    </mat-toolbar>
+    <mat-divider></mat-divider>
+    <span *ngIf='switches.length > 0; else noSwitchesBlock'>
+    <mat-nav-list *ngFor="let switch of switches; ; let i=index">
+      <div style="text-align: center;">
+        <button class="app-button" (click)="selectSwitch(i)" mat-button mat-raised-button>{{switch}}</button>
+      </div>
+    </mat-nav-list>
+    </span>
+    <ng-template #noSwitchesBlock>
+      <mat-nav-list>
+        <div style="text-align: center;">None</div>
+      </mat-nav-list>
+    </ng-template>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <div *ngIf='switchSelected; else setControllerAddressBlock'>
+      <app-switch [switchdpid]="updateportsService.dpid"></app-switch>
+    </div>
+    <ng-template #setControllerAddressBlock>
+      <mat-card class="example-card">
+        <mat-card-header>
+          <div mat-card-avatar class="example-header-image"></div>
+          <mat-card-title>Set OpenFlow Controller Address</mat-card-title>
+          <mat-card-subtitle>Before you can continue you need to set the OpenFlow controller's IP/port combination.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <form class="example-form" style="text-align:center;">
+            <mat-form-field class="example-full-width">
+              <mat-label>Controller Address</mat-label>
+              <input matInput [formControl]="controllerAddressFormControl" placeholder="Ex. http://127.0.0.1:8080">
+              <mat-error *ngIf="controllerAddressFormControl.hasError('pattern') && !controllerAddressFormControl.hasError('required')">
+                You must enter a valid URL
+              </mat-error>
+              <mat-error *ngIf="controllerAddressFormControl.hasError('required')">
+                Controller address is <strong>required</strong> to continue
+              </mat-error>
+            </mat-form-field>
+          </form>
+        </mat-card-content>
+        <mat-card-actions style="text-align:center;">
+          <button (click)="testConnection()" class="app-button" mat-button mat-raised-button [disabled]="controllerAddressFormControl.invalid">Test Connection</button>
+          <div *ngIf="controllerTestFailed" body-2 [ngStyle]="{'color': 'red'}">
+            <br>
+            Controller failed to connect! <span *ngIf='controllerError!==undefined'>The controller returned the following:
+            <br>
+            "{{controllerError.name}}: {{controllerError.message}}". </span>
+            <br>
+            The url we are testing against is {{controllerError.url}}. You can try 
+            a manual test with "curl -XGET {{controllerAddress}}/gelante/ryuapi/stats/switches". 
+            You should receive an array with at least one value in response. If 
+            you do not, this could mean that no switches are attached to the 
+            controller. The service will not connect before the controller manages
+             at least one switch.
+          </div>
+          <div *ngIf="!controllerTestFailed && controllerValidated && controllerAddressFormControl.valid" [ngStyle]="{'color': 'green'}">
+            <br>
+            Controller test succeeded!
+          </div>
+        </mat-card-actions>
+      </mat-card>
+    </ng-template>
+  </mat-sidenav-content>
+</mat-sidenav-container>

@@ -1,0 +1,62 @@
+<div class="grid-container">
+	<mat-grid-list cols="1" rowHeight="200px">
+		<mat-grid-tile >
+			<form [formGroup]="characterForm">
+				<br><br>
+				<mat-form-field [ngStyle]="{'font-size': '25px', 'width': '400px', 'font-family': 'Kaiti', 'text-align': 'center'}">
+					<mat-label>Enter a character!</mat-label>
+					<input formControlName="characterInput" matInput placeholder="請輸入一個漢字！"/>
+				</mat-form-field>
+				<button (click)="onSubmit()" mat-fab color="primary"> 
+					<mat-icon>chevron_right</mat-icon>
+				</button>
+			</form>
+		</mat-grid-tile>
+	</mat-grid-list>
+	<div *ngIf="charactersService.charactersBehaviorSubject.value.length > 0">
+		<mat-grid-list cols="1" rowHeight="600px">
+			<mat-grid-tile *ngFor="let character of charactersService.charactersBehaviorSubject | async">
+				<mat-card class="character-card">
+					<mat-card-header>
+						<!-- TODO READD THIS WITH A NICE PICTURE?
+					<div mat-card-avatar class="example-header-image"></div>-->
+					<mat-card-title>{{character.simplified}}</mat-card-title>
+					</mat-card-header>
+					<div *ngIf="character.thumbnail !== undefined else noImageBlock">
+						<br>
+						<img mat-card-image [src]="character.thumbnail" alt="Character data">
+					</div>
+					<ng-template #noImageBlock><br><mat-divider></mat-divider></ng-template>
+					<mat-card-content>
+					<p *ngIf="character.simplified !== character.traditional else pinyinBlock">
+						<br>
+						<span [ngStyle]="{'font-weight': 'bold'}">Traditional Version: </span>
+						<span [ngStyle]="{'font-family': 'Kaiti', 'font-size': '40px'}">{{character.traditional}}</span>
+					</p>
+					<ng-template #pinyinBlock><br></ng-template>
+					<p>
+						<span [ngStyle]="{'font-weight': 'bold'}">Pinyin: </span>{{character.pinyin}}
+					</p>
+					<p>
+						<span [ngStyle]="{'font-weight': 'bold'}">Definition: </span>{{character.definitions}}
+					</p>
+					<p>
+						<span [ngStyle]="{'font-weight': 'bold'}">History: </span>{{character.explanation}}
+					</p>
+					<div *ngIf="character.examples !== undefined && character.examples.length > 0">
+						<p>
+							<span [ngStyle]="{'font-weight': 'bold'}">Examples: </span>
+						</p>
+						<p *ngFor="let example of character.examples; let i = index">
+							<span>{{example}}</span>
+						</p>
+					</div>
+					</mat-card-content>
+				</mat-card>
+			</mat-grid-tile>
+			<mat-grid-tile *ngIf="charactersService.charactersSearchError!==undefined" [ngStyle]="{'font-size': '20px'}">
+				We could not find the character you were looking for!
+			</mat-grid-tile>
+		</mat-grid-list>
+	</div>
+</div>
