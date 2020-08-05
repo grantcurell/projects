@@ -21,9 +21,7 @@ import argparse
 import logging
 from app import app
 
-# urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-parser = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
+parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('--port', dest="port", required=False, type=int, default=5000,
                     help='Specify the port you want Flask to run on')
 parser.add_argument('--log-level', metavar='LOG_LEVEL', dest="log_level", required=False, type=str, default="info",

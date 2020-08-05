@@ -23,6 +23,8 @@ from flask import request, send_file
 from flask_cors import CORS
 from app import app
 from lib.discover_device import discover_device, get_job_id, track_job_to_completion
+from lib.create_static_group import create_static_group
+from lib.get_group_list import get_group_list
 from lib.ome import authenticate_with_ome, get_ips
 from urllib3 import disable_warnings
 import pylightxl as xl
@@ -53,7 +55,38 @@ health_mapping = {
 disable_warnings()
 
 
+def _get_default_group_ids(ome_username, ome_password, ome_ip):
+
+    groups, status_code = get_group_list(ome_ip, ome_username, ome_password, "In-Progress Servers")
+
+    if status_code == 404:
+        c_return_message, c_status_code = create_static_group(ome_ip, ome_username, ome_password, "In-Progress Servers")
+        if c_status_code != 200:
+            return c_return_message, c_status_code
+    elif status_code != 200:
+        # I abused types here. groups can also be an error message if it wasn't successful. This is probably a bad idea
+        return groups, status_code
+
+    in_progress_id = groups["Id"]
+
+    groups, status_code = get_group_list(ome_ip, ome_username, ome_password, "Completed Servers")
+
+    if status_code == 404:
+        c_return_message, c_status_code = create_static_group(ome_ip, ome_username, ome_password, "Completed Servers")
+        if c_status_code != 200:
+            return c_return_message, c_status_code
+    elif status_code != 200:
+        # I abused types here. groups can also be an error message if it wasn't successful. This is probably a bad idea
+        return groups, status_code
+
+    completed_id = groups["Id"]
+
+    return (in_progress_id, completed_id), 200
+
 def _validate_ome_and_target(json_data: dict) -> bool:
+    """
+    Determines if well-formatted credentials were passed for OME
+    """
 
     if "target_ips" not in json_data:
         logging.error("JSON data is missing the field \'target_ips\'")
@@ -167,10 +200,14 @@ def discover():
     if not os.path.exists(path):
         os.mkdir(path)
     dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
+    servers["GROUP_NAME"] = dtstring
     with open(os.path.join(path, dtstring + ".bin"), 'wb') as database:
         pickle.dump(servers, database)
     with open(os.path.join(path, "lastest_discovery.bin"), 'wb') as database:
         pickle.dump(servers, database)
+
+    create_static_group(ome_ip_address, user_name, password, servers["GROUP_NAME"])
+
     return "Successfully discovered all servers", 200
 
 
@@ -581,7 +618,7 @@ def remove_servers_from_ome():
     Removes a set of servers from OME
 
     curl -XGET -d '{"target_ips": "192.168.1.45", "ome_ip_address": "192.168.1.18", "user_name": "admin",
-    "password": "I.am.ghost.47"}' 127.0.0.1:5000/api/hardware_inventory -H "Content-Type: application/json"
+    "password": "password"}' 127.0.0.1:5000/api/hardware_inventory -H "Content-Type: application/json"
     """
 
     json_data = request.get_json()
