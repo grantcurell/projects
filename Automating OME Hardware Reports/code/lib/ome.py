@@ -115,3 +115,59 @@ def get_ips(ip_array: str, csv_file_path: str = None, ) -> list:
                                                           "192.168.1.0")
 
     return list_of_ips
+
+
+def add_devices_to_static_group(ip_address: str, user_name: str, password: str, group_name: str, devices: list):
+    """ Authenticate with OME and enumerate groups """
+    try:
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
+        group_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % ip_address
+        headers = {'content-type': 'application/json'}
+        user_details = {'UserName': user_name,
+                        'Password': password,
+                        'SessionType': 'API'}
+
+        session_info = requests.post(session_url, verify=False,
+                                     data=json.dumps(user_details),
+                                     headers=headers)
+        if session_info.status_code == 201:
+            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+            response = requests.get(group_url, headers=headers, verify=False)
+            if response.status_code == 200:
+                json_data = response.json()
+                if json_data['@odata.count'] > 0:
+                    # Technically there should be only one result in the filter
+                    group_id = json_data['value'][0]['Id']
+                    if parent_id:
+                        group_payload = {"GroupModel": {
+                            "Name": group_name,
+                            "Description": "",
+                            "MembershipTypeId": 12,
+                            "ParentId": parent_id}
+                        }
+                    else:
+                        group_payload = {"GroupModel": {
+                            "Name": group_name,
+                            "Description": "",
+                            "MembershipTypeId": 12,
+                            "ParentId": int(group_id)}
+                        }
+                    create_url = 'https://%s/api/GroupService/Actions/GroupService.CreateGroup' % ip_address
+                    create_resp = requests.post(create_url, headers=headers,
+                                                verify=False,
+                                                data=json.dumps(group_payload))
+                    if create_resp.status_code == 200:
+                        logging.info("New group created : ID =", create_resp.text)
+                        return ("New group created : ID =", create_resp.text), 200
+                    elif create_resp.status_code == 400:
+                        logging.error("Group creation failed. Bad input parameters passed.")
+                        return "Group creation failed. Bad input parameters passed.", 400
+            else:
+                logging.error("Unable to retrieve group list from %s" % ip_address)
+                return ("Unable to retrieve group list from %s" % ip_address), 400
+        else:
+            logging.error("Unable to create a session with appliance %s" % ip_address)
+            return ("Unable to create a session with appliance %s" % ip_address), 400
+    except Exception as e:
+        logging.error("Unexpected error:", str(e))
+        return ("Unexpected error:", str(e)), 500

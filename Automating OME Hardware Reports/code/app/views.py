@@ -35,10 +35,10 @@ import requests
 
 CORS(app)
 
-path = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
-if os.path.isfile(path):
-    with open(path, 'rb') as database:
-        servers = pickle.load(database)
+discovery_scan_path = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
+if os.path.isfile(discovery_scan_path):
+    with open(discovery_scan_path, 'rb') as discovery_database:
+        servers = pickle.load(discovery_database)
 else:
     servers = {"192.168.1.10": "12446", "192.168.1.45": "12902"}  # TODO - this will need to be reverted
 
@@ -55,7 +55,16 @@ health_mapping = {
 disable_warnings()
 
 
-def _get_default_group_ids(ome_username, ome_password, ome_ip):
+def _get_default_group_ids(ome_username: str, ome_password: str, ome_ip: str) -> tuple:
+    """
+    This internal function does a couple of things. It checks to see if the two default groups, In-Progress Servers and
+    Completed Servers, already exist. If they don't it creates them. The outcome is it either creates them and returns
+    their IDs or it gets the existing IDs.
+
+    return if successful is of format (In-Progress Servers' ID, Completed Servers' ID), 200. If failure it is
+    (failure text, status code)
+
+    """
 
     groups, status_code = get_group_list(ome_ip, ome_username, ome_password, "In-Progress Servers")
 
@@ -83,6 +92,7 @@ def _get_default_group_ids(ome_username, ome_password, ome_ip):
 
     return (in_progress_id, completed_id), 200
 
+
 def _validate_ome_and_target(json_data: dict) -> bool:
     """
     Determines if well-formatted credentials were passed for OME
@@ -105,6 +115,10 @@ def _validate_ome_and_target(json_data: dict) -> bool:
 
 
 def get_device_id_by_ip(ome_ip_address: str, target_ip_address: str, headers: dict) -> str:
+    """
+    Takes as input the IP of a device and resolves that to an ID. This hinges on the device's name being the IP
+    which may not always be the case.
+    """
 
     url = "https://%s/api/DeviceService/Devices?$filter=DeviceName eq \'%s\'" % (ome_ip_address, target_ip_address)
 
@@ -152,26 +166,26 @@ def discover():
         return "JSON data is missing the field \'device_type\'", 400
 
     target_ips = get_ips(json_data["target_ips"])
-    ome_ip_address = json_data["ome_ip_address"]
-    user_name = json_data["user_name"]
-    password = json_data["password"]
+    ome_ip = json_data["ome_ip_address"]
+    ome_username = json_data["user_name"]
+    ome_password = json_data["password"]
     discover_user_name = json_data["discover_user_name"]
     discover_password = json_data["discover_password"]
     device_type = json_data["device_type"]
 
     try:
-        auth_success, headers = authenticate_with_ome(ome_ip_address, user_name, password)
+        auth_success, headers = authenticate_with_ome(ome_ip, ome_username, ome_password)
         if auth_success:
-            discover_resp = discover_device(ome_ip_address, headers,
+            discover_resp = discover_device(ome_ip, headers,
                                             discover_user_name, discover_password,
                                             target_ips, device_type)
             if discover_resp.status_code == 201:
                 logging.info("Discovering devices.....")
                 time.sleep(30)
                 discovery_config_group_id = (discover_resp.json())["DiscoveryConfigGroupId"]
-                job_id = get_job_id(ome_ip_address, headers, discovery_config_group_id)
+                job_id = get_job_id(ome_ip, headers, discovery_config_group_id)
                 if job_id != -1:
-                    track_job_to_completion(ome_ip_address, headers, job_id)
+                    track_job_to_completion(ome_ip, headers, job_id)
             else:
                 logging.error("unable to discover devices ", discover_resp.text)
                 return "unable to discover devices ", discover_resp.text, 400
@@ -185,7 +199,7 @@ def discover():
         return "Unexpected error:" + str(e), 500
 
     for ip in target_ips:
-        server_id = str(get_device_id_by_ip(ome_ip_address, ip, headers))
+        server_id = str(get_device_id_by_ip(ome_ip, ip, headers))
         if server_id != "":
             servers[ip] = server_id
         else:
@@ -206,7 +220,12 @@ def discover():
     with open(os.path.join(path, "lastest_discovery.bin"), 'wb') as database:
         pickle.dump(servers, database)
 
-    create_static_group(ome_ip_address, user_name, password, servers["GROUP_NAME"])
+    groups, status_code = _get_default_group_ids(ome_username, ome_password, ome_ip)
+
+    if status_code == 200:
+        create_static_group(ome_ip, ome_username, ome_password, servers["GROUP_NAME"], groups[0])
+    else:
+        return groups, status_code
 
     return "Successfully discovered all servers", 200
 

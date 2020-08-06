@@ -5,7 +5,6 @@
 - [x] Create a utility for running scans against OME
 - [x] Figure out how to extract the hardware status specifically after the scan
 - [x] Figure out how to separate the servers that were recently added
-- [ ] Figure out how if I need to force sync alerts
 - [ ] Add the ability to remove servers from OME
   - [x] (Optional) Determine if we want to put these in a discovery group?
 - [x] Create a utility for comparing the PCIe changes to a server between two hardware scans
@@ -21,6 +20,7 @@
   - [ ] (Optional) Add text boxes for addition of additional columns/information
   - [ ] (Optional) Add a button for rechecking hardware health. Might be convienient?
 - [ ] (Optional) Go back and fix exception handling for [Dell code](https://github.com/dell/OpenManage-Enterprise/tree/master/Core/Python)
+- [ ] (Optional) Go back and fix the defaults for the Dell Code on username. It shouldn't be required.
 - [ ] Set up a DHCP server
 - [ ] Figure out how to retrieve the service tag
 - [ ] Update readme with actual instructions
