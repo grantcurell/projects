@@ -191,8 +191,8 @@ def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) ->
         if group_response.status_code == 200:
             data = group_response.json()
             if data['@odata.count'] <= 0:
-                logging.error("No subgroups of static groups found on OME server: " + ome_ip_address + ". Exiting.")
-                return -1
+                logging.error("No subgroups of static groups found on OME server: " + ome_ip_address)
+                return 0
             if '@odata.nextLink' in data:
                 next_link_url = "https://%s" + data['@odata.nextLink']
             if group_data is None:

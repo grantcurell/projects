@@ -67,15 +67,18 @@ def _get_default_group_ids(headers: dict, ome_ip: str, ome_username: str, ome_pa
 
     in_progress_id = lib.ome.get_group_id_by_name(ome_ip, "In-Progress Servers", headers)
 
+    # TODO need to double check this - it doesn't look like we're returning IDs
     if in_progress_id == 0:
         c_return_message, c_status_code = create_static_group(ome_ip, ome_username, ome_password, "In-Progress Servers")
         if c_status_code != 200:
             return c_return_message, c_status_code
+        else:
+            in_progress_id = lib.ome.get_group_id_by_name(ome_ip, "In-Progress Servers", headers)
     elif in_progress_id > 0:
         return "Successfully retrieved group ID for In-Progress Servers", in_progress_id
     else:
         logging.error("Something went wrong retrieving the default groups.")
-        exit(1)
+        return "Something went wrong retrieving the default groups.", 400
 
     completed_id = lib.ome.get_group_id_by_name(ome_ip, "Completed Servers", headers)
 
@@ -83,13 +86,18 @@ def _get_default_group_ids(headers: dict, ome_ip: str, ome_username: str, ome_pa
         c_return_message, c_status_code = create_static_group(ome_ip, ome_username, ome_password, "Completed Servers")
         if c_status_code != 200:
             return c_return_message, c_status_code
+        else:
+            completed_id = lib.ome.get_group_id_by_name(ome_ip, "Completed Servers", headers)
     elif completed_id > 0:
         return "Successfully retrieved group ID for Completed Servers", completed_id
     else:
         logging.error("Something went wrong retrieving the default groups.")
-        exit(1)
+        return "Something went wrong retrieving the default groups.", 400
 
-    return (in_progress_id, completed_id), 200
+    if in_progress_id > 0 and completed_id > 0:
+        return (in_progress_id, completed_id), 200
+    else:
+        return "Something went wrong retrieving the default groups.", 400
 
 
 def _validate_ome_and_target(json_data: dict) -> bool:
@@ -144,11 +152,13 @@ def discover():
     Discovers a list of devices based on input
 
     Example curl:
-    
-    curl -XPUT -d '{"target_ips": "192.168.1.10", "ome_ip_address": "192.168.1.18", "user_name": "admin", 
-    "password": "password", "discover_user_name": "root", "discover_password": "password", 
+
+    curl -XPUT -d '{"target_ips": "192.168.1.10", "ome_ip_address": "192.168.1.18", "user_name": "admin",
+    "password": "password", "discover_user_name": "root", "discover_password": "password",
     "device_type": "server"}' 127.0.0.1:5000/api/discover -H "Content-Type: application/json"
     """
+
+    # TODO - need to change this to resolve to an ID instead of using an IP address
 
     json_data = request.get_json()
 
@@ -164,7 +174,7 @@ def discover():
         logging.error("JSON data is missing the field \'device_type\'")
         return "JSON data is missing the field \'device_type\'", 400
 
-    target_ips = get_ips(json_data["target_ips"])
+    target_ips = lib.ome.get_ips(json_data["target_ips"])
     ome_ip = json_data["ome_ip_address"]
     ome_username = json_data["user_name"]
     ome_password = json_data["password"]
@@ -173,7 +183,7 @@ def discover():
     device_type = json_data["device_type"]
 
     try:
-        auth_success, headers = authenticate_with_ome(ome_ip, ome_username, ome_password)
+        auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
         if auth_success:
             discover_resp = discover_device(ome_ip, headers,
                                             discover_user_name, discover_password,
@@ -219,14 +229,22 @@ def discover():
     with open(os.path.join(path, "lastest_discovery.bin"), 'wb') as database:
         pickle.dump(servers, database)
 
+    # I abused types here which I shouldn't have done, but did. groups is either a tuple with the ID of In-Progress
+    # Servers and Completed Servers in a tuple or it is an error message.
     groups, status_code = _get_default_group_ids(headers, ome_ip, ome_username, ome_password)
 
     if status_code == 200:
-        create_static_group(ome_ip, ome_username, ome_password, servers["GROUP_NAME"], groups[0])
+        c_return_message, c_status_code = create_static_group(ome_ip, ome_username, ome_password,
+                                                              servers["GROUP_NAME"], groups[0])
+        if c_status_code != 200:
+            return c_return_message, c_status_code
     else:
         return groups, status_code
 
-    return "Successfully discovered all servers", 200
+    lib.ome.add_device_to_static_group(ome_ip, ome_username, ome_password, servers["GROUP_NAME"],
+                                       device_names=target_ips)
+
+    return ("Successfully discovered all servers. Check the group " + servers["GROUP_NAME"] + " for a list."), 200
 
 
 @app.route('/api/hardware_health', methods=['GET'])
@@ -244,12 +262,12 @@ def hardware_health():
     if not _validate_ome_and_target(json_data):
         return "Failed to validate OME and target IP information", 400
 
-    target_ips = get_ips(json_data["target_ips"])
+    target_ips = lib.ome.get_ips(json_data["target_ips"])
     ome_ip_address = json_data["ome_ip_address"]
     user_name = json_data["user_name"]
     password = json_data["password"]
 
-    auth_success, headers = authenticate_with_ome(ome_ip_address, user_name, password)
+    auth_success, headers = lib.ome.authenticate_with_ome(ome_ip_address, user_name, password)
     server_health = {}
 
     for ip in target_ips:
@@ -316,13 +334,13 @@ def hardware_inventory():
     if not _validate_ome_and_target(json_data):
         return "Failed to validate OME and target IP information", 400
 
-    target_ips = get_ips(json_data["target_ips"])
+    target_ips = lib.ome.get_ips(json_data["target_ips"])
     ome_ip_address = json_data["ome_ip_address"]
     user_name = json_data["user_name"]
     password = json_data["password"]
     inventory_type = None
 
-    auth_success, headers = authenticate_with_ome(ome_ip_address, user_name, password)
+    auth_success, headers = lib.ome.authenticate_with_ome(ome_ip_address, user_name, password)
 
     device_inventories = {}
 
@@ -644,8 +662,9 @@ def remove_servers_from_ome():
     if not _validate_ome_and_target(json_data):
         return "Failed to validate OME and target IP information", 400
 
-    target_ips = get_ips(json_data["target_ips"])
+    target_ips = lib.ome.get_ips(json_data["target_ips"])
     ome_ip_address = json_data["ome_ip_address"]
     user_name = json_data["user_name"]
     password = json_data["password"]
 
+    # TODO

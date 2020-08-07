@@ -26,6 +26,7 @@
 - [ ] Update readme with actual instructions
   - [ ] Add the bit about the file names for inventory and discoveries
   - [ ] Tell people how to manipulate them if needed
+- [ ] Add instructions for manipulated the DHCP config file
 
 Note: If I need a way to compare the IP address of the idrac and get the ID, you can retrieve it from the device inventory under deviceManagement
 
