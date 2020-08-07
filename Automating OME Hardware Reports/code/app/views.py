@@ -24,8 +24,7 @@ from flask_cors import CORS
 from app import app
 from lib.discover_device import discover_device, get_job_id, track_job_to_completion
 from lib.create_static_group import create_static_group
-from lib.get_group_list import get_group_list
-from lib.ome import authenticate_with_ome, get_ips
+import lib.ome
 from urllib3 import disable_warnings
 import pylightxl as xl
 import json
@@ -55,7 +54,7 @@ health_mapping = {
 disable_warnings()
 
 
-def _get_default_group_ids(ome_username: str, ome_password: str, ome_ip: str) -> tuple:
+def _get_default_group_ids(headers: dict, ome_ip: str, ome_username: str, ome_password: str) -> tuple:
     """
     This internal function does a couple of things. It checks to see if the two default groups, In-Progress Servers and
     Completed Servers, already exist. If they don't it creates them. The outcome is it either creates them and returns
@@ -66,29 +65,29 @@ def _get_default_group_ids(ome_username: str, ome_password: str, ome_ip: str) ->
 
     """
 
-    groups, status_code = get_group_list(ome_ip, ome_username, ome_password, "In-Progress Servers")
+    in_progress_id = lib.ome.get_group_id_by_name(ome_ip, "In-Progress Servers", headers)
 
-    if status_code == 404:
+    if in_progress_id == 0:
         c_return_message, c_status_code = create_static_group(ome_ip, ome_username, ome_password, "In-Progress Servers")
         if c_status_code != 200:
             return c_return_message, c_status_code
-    elif status_code != 200:
-        # I abused types here. groups can also be an error message if it wasn't successful. This is probably a bad idea
-        return groups, status_code
+    elif in_progress_id > 0:
+        return "Successfully retrieved group ID for In-Progress Servers", in_progress_id
+    else:
+        logging.error("Something went wrong retrieving the default groups.")
+        exit(1)
 
-    in_progress_id = groups["Id"]
+    completed_id = lib.ome.get_group_id_by_name(ome_ip, "Completed Servers", headers)
 
-    groups, status_code = get_group_list(ome_ip, ome_username, ome_password, "Completed Servers")
-
-    if status_code == 404:
+    if completed_id == 0:
         c_return_message, c_status_code = create_static_group(ome_ip, ome_username, ome_password, "Completed Servers")
         if c_status_code != 200:
             return c_return_message, c_status_code
-    elif status_code != 200:
-        # I abused types here. groups can also be an error message if it wasn't successful. This is probably a bad idea
-        return groups, status_code
-
-    completed_id = groups["Id"]
+    elif completed_id > 0:
+        return "Successfully retrieved group ID for Completed Servers", completed_id
+    else:
+        logging.error("Something went wrong retrieving the default groups.")
+        exit(1)
 
     return (in_progress_id, completed_id), 200
 
@@ -220,7 +219,7 @@ def discover():
     with open(os.path.join(path, "lastest_discovery.bin"), 'wb') as database:
         pickle.dump(servers, database)
 
-    groups, status_code = _get_default_group_ids(ome_username, ome_password, ome_ip)
+    groups, status_code = _get_default_group_ids(headers, ome_ip, ome_username, ome_password)
 
     if status_code == 200:
         create_static_group(ome_ip, ome_username, ome_password, servers["GROUP_NAME"], groups[0])
