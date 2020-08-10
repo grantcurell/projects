@@ -23,6 +23,7 @@ from flask import request, send_file
 from flask_cors import CORS
 from app import app
 from lib.discover_device import discover_device, get_job_id, track_job_to_completion
+from lib.get_device_list import GetDeviceList
 from lib.create_static_group import create_static_group
 import lib.ome
 from urllib3 import disable_warnings
@@ -75,11 +76,15 @@ def _get_default_group_ids(headers: dict, ome_ip: str, ome_username: str, ome_pa
         else:
             in_progress_id = lib.ome.get_group_id_by_name(ome_ip, "In-Progress Servers", headers)
     elif in_progress_id > 0:
-        return "Successfully retrieved group ID for In-Progress Servers", in_progress_id
+        logging.info("Successfully retrieved group ID for In-Progress Servers")
     else:
         logging.error("Something went wrong retrieving the default groups.")
         return "Something went wrong retrieving the default groups.", 400
 
+    """
+    # TODO - This is for future use. See
+    # https://github.com/dell/OpenManage-Enterprise/issues/32
+    # Before I add the completed group I want the ability to delete groups and move servers
     completed_id = lib.ome.get_group_id_by_name(ome_ip, "Completed Servers", headers)
 
     if completed_id == 0:
@@ -89,11 +94,12 @@ def _get_default_group_ids(headers: dict, ome_ip: str, ome_username: str, ome_pa
         else:
             completed_id = lib.ome.get_group_id_by_name(ome_ip, "Completed Servers", headers)
     elif completed_id > 0:
-        return "Successfully retrieved group ID for Completed Servers", completed_id
+        logging.info("Successfully retrieved group ID for Completed Servers")
     else:
         logging.error("Something went wrong retrieving the default groups.")
         return "Something went wrong retrieving the default groups.", 400
-
+    """
+    completed_id = -1
     if in_progress_id > 0 and completed_id > 0:
         return (in_progress_id, completed_id), 200
     else:
@@ -121,7 +127,7 @@ def _validate_ome_and_target(json_data: dict) -> bool:
     return True
 
 
-def get_device_id_by_ip(ome_ip_address: str, target_ip_address: str, headers: dict) -> str:
+def get_device_id_by_ip(ome_ip_address: str, ome_user: str, ome_password: str, target_ip_address: str) -> str:
     """
     Takes as input the IP of a device and resolves that to an ID. This hinges on the device's name being the IP
     which may not always be the case.
@@ -129,7 +135,12 @@ def get_device_id_by_ip(ome_ip_address: str, target_ip_address: str, headers: di
 
     url = "https://%s/api/DeviceService/Devices?$filter=DeviceName eq \'%s\'" % (ome_ip_address, target_ip_address)
 
+    url = "https://%s/api/DeviceService/Devices?$filter=DeviceServiceTag eq \'%s\'" % (ome_ip_address, "5QWJ613")
+    url = "https://%s/api/DeviceService/Devices?$filter=contains(DeviceManagement/Address, 'San Francisco')" % ome_ip_address
     response = requests.get(url, headers=headers, verify=False)
+
+    GetDeviceList(GetDeviceList({"ip": ome_ip_address, "user": ome_user, "password": ome_password},
+                  {"format": "json", "path": ""}))
 
     if response.status_code == 200:
         json_data = response.json()
@@ -182,6 +193,7 @@ def discover():
     discover_password = json_data["discover_password"]
     device_type = json_data["device_type"]
 
+    """
     try:
         auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
         if auth_success:
@@ -206,9 +218,17 @@ def discover():
     except Exception as e:
         logging.error("Unexpected error:", str(e))
         return "Unexpected error:" + str(e), 500
+    """
 
+    device_list = GetDeviceList({"ip": ome_ip, "user": ome_username, "password": ome_password},
+                                {"format": "json", "path": ""})
+    json_data = device_list.format_json()
+
+    if json_data["@odata.count"]
     for ip in target_ips:
-        server_id = str(get_device_id_by_ip(ome_ip, ip, headers))
+        # TODO - this is a bad way of doing things. We should instead get a list of all servers and then find
+        # TODO - which ones have this idrac IP
+        server_id = str(get_device_id_by_ip(ome_ip, ome_username, ome_password, ip))
         if server_id != "":
             servers[ip] = server_id
         else:
@@ -219,6 +239,7 @@ def discover():
                                                                     "login failure during discovery. Check the OME "
                                                                     "discovery job logs for details.", 400)
 
+    auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
     path = os.path.join(os.getcwd(), "discovery_scans")
     if not os.path.exists(path):
         os.mkdir(path)
@@ -226,7 +247,7 @@ def discover():
     servers["GROUP_NAME"] = dtstring
     with open(os.path.join(path, dtstring + ".bin"), 'wb') as database:
         pickle.dump(servers, database)
-    with open(os.path.join(path, "lastest_discovery.bin"), 'wb') as database:
+    with open(os.path.join(path, "latest_discovery.bin"), 'wb') as database:
         pickle.dump(servers, database)
 
     # I abused types here which I shouldn't have done, but did. groups is either a tuple with the ID of In-Progress

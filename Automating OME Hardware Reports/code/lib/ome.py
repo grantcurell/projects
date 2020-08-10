@@ -167,48 +167,29 @@ def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) ->
 
     """
 
-    logging.info("Getting a list of static groups...")
-    group_id = -1
-    static_groups_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % ome_ip_address
-    group_data = None
+    print("Searching for the requested group.")
+    groups_url = "https://%s/api/GroupService/Groups?$filter=Name eq '%s'" % (ome_ip_address, group_name)
 
-    group_response = requests.get(static_groups_url, headers=headers, verify=False)
+    group_response = requests.get(groups_url, headers=headers, verify=False)
 
     if group_response.status_code == 200:
-        static_group_data = json.loads(group_response.content)["value"][0]
-        next_link_url = ("https://%s" + static_group_data["SubGroups@odata.navigationLink"]) % ome_ip_address
-    else:
-        logging.error("Unable to retrieve the subgroups for static groups. Exiting...")
-        return -1
+        json_data = json.loads(group_response.content)
 
-    # Resolve group ID from name
-    logging.info("Getting the ID for group with name: " + group_name + "...")
-
-    while next_link_url is not None:
-        group_response = requests.get(next_link_url, headers=headers, verify=False)
-        next_link_url = None
-
-        if group_response.status_code == 200:
-            data = group_response.json()
-            if data['@odata.count'] <= 0:
-                logging.error("No subgroups of static groups found on OME server: " + ome_ip_address)
-                return 0
-            if '@odata.nextLink' in data:
-                next_link_url = "https://%s" + data['@odata.nextLink']
-            if group_data is None:
-                group_data = data["value"]
-            else:
-                group_data += data["value"]
+        if json_data['@odata.count'] > 1:
+            logging.warning("WARNING: We found more than one name that matched the group name: " + group_name +
+                            ". We are picking the first entry.")
+        if json_data['@odata.count'] == 1 or json_data['@odata.count'] > 1:
+            group_id = json_data['value'][0]['Id']
+            if not isinstance(group_id, int):
+                logging.error("The server did not return an integer ID. Something went wrong.")
+                return -1
+            return group_id
         else:
-            logging.error("Unable to retrieve group list from %s" % ome_ip_address)
-            return -1
-
-    for group in group_data:
-        if group["Name"] == group_name:
-            return group["Id"]
-    if group_id == -1:
-        logging.error("Could not find group " + group_name + " in the OME group list.")
-        return 0
+            logging.error("Error: We could not find the group " + group_name)
+            return 0
+    else:
+        logging.error("Unable to retrieve groups.")
+        return -1
 
 
 def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) -> int:
@@ -234,7 +215,7 @@ def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) 
 
         if json_data['@odata.count'] > 1:
             logging.warning("WARNING: We found more than one name that matched the device name: " + device_name +
-                  ". We are skipping this entry.")
+                            ". We are skipping this entry.")
         elif json_data['@odata.count'] == 1:
             server_id = json_data['value'][0]['Id']
             if not isinstance(server_id, int):
@@ -321,8 +302,9 @@ def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_passw
                         and "Unable to update group members because the entered ID(s)" in \
                         json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]["Message"]:
                     logging.error("The IDs " +
-                          str(json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]["MessageArgs"]) +
-                          " were invalid. This usually means the servers were already in the requested group.")
+                                  str(json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]
+                                      ["MessageArgs"]) + " were invalid. This usually means the servers were already "
+                                                         "in the requested group.")
                 elif create_resp.status_code == 400:
                     logging.error("Device add failed. Error:")
                     logging.error(json.dumps(create_resp.json(), indent=4, sort_keys=False))

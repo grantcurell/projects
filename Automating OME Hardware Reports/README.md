@@ -20,9 +20,10 @@
   - [ ] (Optional) Add text boxes for addition of additional columns/information
   - [ ] (Optional) Add a button for rechecking hardware health. Might be convienient?
 - [ ] (Optional) Go back and fix exception handling for [Dell code](https://github.com/dell/OpenManage-Enterprise/tree/master/Core/Python)
-- [ ] (Optional) Go back and fix the defaults for the Dell Code on username. It shouldn't be required.
+- [x] (Optional) Go back and fix the defaults for the Dell Code on username. It shouldn't be required.
 - [ ] Set up a DHCP server
-- [ ] Figure out how to retrieve the service tag
+- [x] Figure out how to retrieve the service tag
+  - [ ] Add the service tag to the data output
 - [ ] Update readme with actual instructions
   - [ ] Add the bit about the file names for inventory and discoveries
   - [ ] Tell people how to manipulate them if needed

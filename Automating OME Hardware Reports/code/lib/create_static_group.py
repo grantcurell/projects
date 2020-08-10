@@ -75,8 +75,8 @@ def create_static_group(ip_address: str, user_name: str, password: str, group_na
                                                 verify=False,
                                                 data=json.dumps(group_payload))
                     if create_resp.status_code == 200:
-                        logging.info("New group created : ID =", create_resp.text)
-                        return ("New group created : ID =", create_resp.text), 200
+                        logging.info("New group created : ID = " + str(create_resp.text))
+                        return ("New group created : ID =", str(create_resp.text)), 200
                     elif create_resp.status_code == 400:
                         logging.error("Group creation failed. Bad input parameters passed.")
                         return "Group creation failed. Bad input parameters passed.", 400
