@@ -23,7 +23,7 @@ from flask import request, send_file
 from flask_cors import CORS
 from app import app
 from lib.discover_device import discover_device, get_job_id, track_job_to_completion
-from lib.get_device_list import GetDeviceList
+from lib.ome import get_device_ids_by_idrac_ip
 from lib.create_static_group import create_static_group
 import lib.ome
 from urllib3 import disable_warnings
@@ -127,36 +127,6 @@ def _validate_ome_and_target(json_data: dict) -> bool:
     return True
 
 
-def get_device_id_by_ip(ome_ip_address: str, ome_user: str, ome_password: str, target_ip_address: str) -> str:
-    """
-    Takes as input the IP of a device and resolves that to an ID. This hinges on the device's name being the IP
-    which may not always be the case.
-    """
-
-    url = "https://%s/api/DeviceService/Devices?$filter=DeviceName eq \'%s\'" % (ome_ip_address, target_ip_address)
-
-    url = "https://%s/api/DeviceService/Devices?$filter=DeviceServiceTag eq \'%s\'" % (ome_ip_address, "5QWJ613")
-    url = "https://%s/api/DeviceService/Devices?$filter=contains(DeviceManagement/Address, 'San Francisco')" % ome_ip_address
-    response = requests.get(url, headers=headers, verify=False)
-
-    GetDeviceList(GetDeviceList({"ip": ome_ip_address, "user": ome_user, "password": ome_password},
-                  {"format": "json", "path": ""}))
-
-    if response.status_code == 200:
-        json_data = response.json()
-        if json_data['@odata.count'] == 1:
-            return json_data['value'][0]['Id']
-        elif json_data['@odata.count'] > 1:
-            logging.warning("WARNING: We found more than one name that matched " + target_ip_address + ". Returning "
-                                                                                                       "the first.")
-            return str(json_data['value'][0]['Id'])
-        else:
-            logging.error("Not results returned for device ID look up for name " + target_ip_address)
-            return ""
-    else:
-        return ""
-
-
 @app.route('/api/discover', methods=['PUT'])
 def discover():
     """
@@ -193,7 +163,6 @@ def discover():
     discover_password = json_data["discover_password"]
     device_type = json_data["device_type"]
 
-    """
     try:
         auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
         if auth_success:
@@ -218,17 +187,12 @@ def discover():
     except Exception as e:
         logging.error("Unexpected error:", str(e))
         return "Unexpected error:" + str(e), 500
-    """
 
-    device_list = GetDeviceList({"ip": ome_ip, "user": ome_username, "password": ome_password},
-                                {"format": "json", "path": ""})
-    json_data = device_list.format_json()
+    logging.info("Getting list of IDs by idrac IP")
+    device_ids_by_idrac = get_device_ids_by_idrac_ip(ome_ip, ome_username, ome_password)
 
-    if json_data["@odata.count"]
     for ip in target_ips:
-        # TODO - this is a bad way of doing things. We should instead get a list of all servers and then find
-        # TODO - which ones have this idrac IP
-        server_id = str(get_device_id_by_ip(ome_ip, ome_username, ome_password, ip))
+        server_id = device_ids_by_idrac[ip]
         if server_id != "":
             servers[ip] = server_id
         else:
@@ -688,4 +652,6 @@ def remove_servers_from_ome():
     user_name = json_data["user_name"]
     password = json_data["password"]
 
-    # TODO
+    # TODO - this is not currently in use. Need to add the code for moving servers between groups.
+
+

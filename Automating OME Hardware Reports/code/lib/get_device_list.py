@@ -2,10 +2,10 @@
 #  Python script using OME API to get device list.
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
-# _version_ = 0.1
+# _modified_by_ = Grant Curell <grant_curell@dell.com>
 #
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,9 @@ DESCRIPTION:
    is used over Basic Authentication
    Note that the credentials entered are not stored to disk.
 
+   Grant Curell made minor modifications to this version for it to work
+   in this program.
+
 EXAMPLE:
    python get_device_list.py --ip <xx> --user <username> --password <pwd>
 """
@@ -42,6 +45,7 @@ import os
 import sys
 import requests
 import urllib3
+import logging
 from urllib3.exceptions import InsecureRequestWarning
 urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -61,18 +65,17 @@ class GetDeviceList:
             if self.__authenticate_with_ome() is False:
                 return
         except requests.exceptions.RequestException as auth_ex:
-            print("Unable to connect to OME appliance %s" % self.__session_input["ip"])
-            print(auth_ex)
+            logging.error("Unable to connect to OME appliance %s" % self.__session_input["ip"])
+            logging.error(auth_ex)
             return
 
         try:
             if self.__get_device_list() is False:
                 return
         except requests.exceptions.RequestException as get_ex:
-            print("Unable to get device list from OME appliance %s" % self.__session_input["ip"])
-            print(get_ex)
+            logging.error("Unable to get device list from OME appliance %s" % self.__session_input["ip"])
+            logging.error(get_ex)
             return
-
 
     def __authenticate_with_ome(self):
         session_url = self.__base_uri + '/api/SessionService/Sessions'
@@ -86,7 +89,7 @@ class GetDeviceList:
             self.__headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
             return True
         else:
-            print("Unable to create a session with appliance %s" % self.__session_input["ip"])
+            logging.error("Unable to create a session with appliance %s" % self.__session_input["ip"])
             return False
 
     def __get_device_from_uri(self, uri):
@@ -96,7 +99,7 @@ class GetDeviceList:
         if device_response.status_code == 200:
             json_data = device_response.json()
         else:
-            print("Unable to retrieve device list from %s" % self.__session_input["ip"])
+            logging.error("Unable to retrieve device list from %s" % self.__session_input["ip"])
 
         return json_data
 
@@ -108,7 +111,7 @@ class GetDeviceList:
             data = self.__get_device_from_uri(next_link_url)
             next_link_url = None
             if data['@odata.count'] <= 0:
-                print("No devices managed by %s" % self.__session_input["ip"])
+                logging.error("No devices managed by %s" % self.__session_input["ip"])
                 return False
             if '@odata.nextLink' in data:
                 next_link_url = self.__base_uri + data['@odata.nextLink']
@@ -122,8 +125,8 @@ class GetDeviceList:
         # print to console in the absence of a specified file path
         json_object = json.dumps(self.json_data, indent=4, sort_keys=True)
         if self.__output_details["path"] == '':
-            print("*** Device List ***")
-            print(json_object)
+            logging.debug("*** Device List ***")
+            logging.debug(json_object)
             return json.loads(json_object)
         # If file path is specified then write to file.
         modified_filepath = self.__get_unique_filename()
@@ -134,7 +137,7 @@ class GetDeviceList:
                             "ChassisServiceTag", "Model", "DeviceName"]
         csv_file = None
         if self.__output_details["path"] == '':
-            print("*** Device List ***")
+            logging.debug("*** Device List ***")
             writer = csv.writer(sys.stdout, lineterminator=os.linesep)
         else:
             modified_filepath = self.__get_unique_filename()
@@ -160,14 +163,14 @@ class GetDeviceList:
             new_filepath = root + "({0})".format(i) + ext
             i += 1
         if exists:
-            print("Output file exists. Writing to {}".format(new_filepath))
+            logging.debug("Output file exists. Writing to {}".format(new_filepath))
         return new_filepath
 
     def __validateargs(self):
         if self.__output_details["path"] != '' and \
                 os.path.splitext(self.__output_details["path"])[1] != '' and \
                 os.path.splitext(self.__output_details["path"])[1][1:] != self.__output_details["format"]:
-            print("Output filename must match requested file format")
+            logging.debug("Output filename must match requested file format")
             return False
         return True
 

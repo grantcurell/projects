@@ -380,7 +380,6 @@ class HostDatabase(object):
 
     def add(self, host):
         self.db.add(host.to_tuple())
-        print("BALLS")
 
     def delete(self, host = None, **kw):
         if host is None:

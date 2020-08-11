@@ -22,6 +22,7 @@ import json
 import os
 import csv
 import logging
+from lib.get_device_list import GetDeviceList
 
 
 def authenticate_with_ome(ip_address: str, user_name: str, password: str) -> tuple:
@@ -167,7 +168,7 @@ def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) ->
 
     """
 
-    print("Searching for the requested group.")
+    logging.info("Searching for the requested group.")
     groups_url = "https://%s/api/GroupService/Groups?$filter=Name eq '%s'" % (ome_ip_address, group_name)
 
     group_response = requests.get(groups_url, headers=headers, verify=False)
@@ -313,3 +314,17 @@ def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_passw
                                   + str(create_resp.status_code) + " with error: " + create_resp.text)
     except Exception as e:
         logging.error("Unexpected error:", str(e))
+
+
+def get_device_ids_by_idrac_ip(ome_ip: str, ome_username: str, ome_password: str) -> dict:
+    device_list = GetDeviceList({"ip": ome_ip, "user": ome_username, "password": ome_password},
+                                {"format": "json", "path": ""})
+    json_data = device_list.format_json()
+    device_ids_by_ip = {}
+
+    # Create a dictionary
+    if json_data["@odata.count"] > 0:
+        for device_dictionary in json_data["value"]:
+            device_ids_by_ip[device_dictionary["DeviceManagement"][0]["NetworkAddress"]] = device_dictionary["Id"]
+
+    return device_ids_by_ip
