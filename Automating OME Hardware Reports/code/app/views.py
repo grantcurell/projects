@@ -19,11 +19,11 @@ from datetime import datetime
 import os
 import pickle
 
-from flask import request, send_file
+from flask import request
 from flask_cors import CORS
 from app import app
 from lib.discover_device import discover_device, get_job_id, track_job_to_completion
-from lib.ome import get_device_ids_by_idrac_ip
+from lib.ome import get_device_ids_by_idrac_ip, get_device_list
 from lib.create_static_group import create_static_group
 import lib.ome
 from urllib3 import disable_warnings
@@ -35,6 +35,7 @@ import requests
 
 CORS(app)
 
+# The servers dictionary has all servers listed by both ID->service tag and
 discovery_scan_path = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
 if os.path.isfile(discovery_scan_path):
     with open(discovery_scan_path, 'rb') as discovery_database:
@@ -190,10 +191,19 @@ def discover():
     logging.info("Getting list of IDs by idrac IP")
     device_ids_by_idrac = get_device_ids_by_idrac_ip(ome_ip, ome_username, ome_password)
 
+    device_list = get_device_list(ome_ip, headers)
+
+    # Create id - service tag index to avoid O(n) lookups on each search
+    # This is relevant when operating on hundreds of devices
+    id_service_tag_dict = {}
+    for device in device_list:
+        id_service_tag_dict[device["Id"]] = device["DeviceServiceTag"]
+
     for ip in target_ips:
         server_id = device_ids_by_idrac[ip]
         if server_id != "":
             servers[ip] = server_id
+            servers[server_id] = id_service_tag_dict[servers[ip]]
         else:
             logging.warning("Error: couldn't resolve the name " + str(ip) + " to a device ID. This might mean there "
                                                                             "was a login failure during discovery. "
@@ -431,7 +441,8 @@ def hardware_inventory():
                                 device_inventories[identifier]["RAID Controllers"][i] = {}
                                 _handle_keys("Id", raid_controller, "ID", "RAID Controllers")
                                 _handle_keys("Name", raid_controller, "Name", "RAID Controllers")
-                                _handle_keys("DeviceDescription", raid_controller, "Device Description", "RAID Controllers")
+                                _handle_keys("DeviceDescription", raid_controller, "Device Description",
+                                             "RAID Controllers")
                                 _handle_keys("FirmwareVersion", raid_controller, "Firmware Version", "RAID Controllers")
                                 _handle_keys("PciSlot", raid_controller, "PCI Slot", "RAID Controllers")
 
@@ -446,11 +457,11 @@ def hardware_inventory():
                 return "Unable to retrieve inventory for device %s due to status code %s" \
                        % (str(identifier), inven_resp.status_code), 404
 
-    logging.info("Writing excel file and pickle database for inventory.")
+    logging.info("Writing pickle database for inventory.")
     db = xl.Database()
     for identifier, inventory in device_inventories.items():
         logging.info("Processing " + str(identifier))
-        sheet_name = str(identifier) + "-" + inventory["idrac IP"]
+        sheet_name = servers[identifier] + " - Inventory"
         db.add_ws(sheet_name, {'A1': {'v': '', 'f': '', 's': ''}})
         x = 1
         for subsystem, items in inventory.items():
@@ -466,17 +477,22 @@ def hardware_inventory():
                     string = string + key + ": " + str(value) + "\n"
                 db.ws(sheet_name).update_index(row=y, col=x, val=string)
             x = x + 1
+
     path = os.path.join(os.getcwd(), "inventories")
     if not os.path.exists(path):
         os.mkdir(path)
     dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
     xl.writexl(db, dtstring + ".xlsx")
     os.replace(dtstring + ".xlsx", os.path.join(path, dtstring + ".xlsx"))
+    if not os.path.exists(path):
+        os.mkdir(path)
+    dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
     with open(os.path.join(path, dtstring + ".bin"), 'wb') as inventories:
         pickle.dump(device_inventories, inventories)
     with open(os.path.join(path, "last_inventory.bin"), 'wb') as inventories:
         pickle.dump(device_inventories, inventories)
-    return send_file(os.path.join(path, dtstring + ".xlsx"), attachment_filename=dtstring + ".xlsx")
+    return_dict = {"servers": servers, "device_inventories": device_inventories, "excel_file": db}
+    return json.dumps(return_dict), 200
 
 
 @app.route('/api/get_inventories', methods=['GET'])
@@ -524,7 +540,9 @@ def compare_inventories():
     device_inventory_2["12446"]["PCI Cards"][2]["Slot Number"] = "AHCI.Slot.2-2"
     device_inventory_2["12446"]["PCI Cards"][2]["Databus Width"] = "8x or x 8"
     device_inventory_2["12902"]["Processors"].pop(2)
-    device_inventory_2["12902"]["Power Supplies"][2] = {"ID": 984, "Location": "PSU.Slot.3", "Output Watts": 9000, "Firmware Version": "00.3D.67", "Model": 'PWR SPLY,1600W,RDNT,DELTA', "Serial Number": "Stuff"}
+    device_inventory_2["12902"]["Power Supplies"][2] = {"ID": 984, "Location": "PSU.Slot.3", "Output Watts": 9000,
+                                                        "Firmware Version": "00.3D.67",
+                                                        "Model": 'PWR SPLY,1600W,RDNT,DELTA', "Serial Number": "Stuff"}
     db.add_ws("Inventory Deltas",
               {'A1': {'v': "Service Tag", 'f': '', 's': ''},
                'B1': {'v': "System idrac IP", 'f': '', 's': ''},
@@ -608,8 +626,8 @@ def compare_inventories():
                     continue
                 for device, values in items.items():
                     device_found = False
-                    for comparison_device, comparison_device_values in device_inventory_1[identifier][
-                        subsystem].items():
+                    for comparison_device, comparison_device_values in device_inventory_1[identifier][subsystem]\
+                            .items():
                         if device_inventory_1[identifier][subsystem][comparison_device]["ID"] == values["ID"]:
                             device_found = True
 
@@ -636,7 +654,7 @@ def compare_inventories():
 
     os.remove("comparison.xlsx")
     xl.writexl(db, "comparison.xlsx")
-    return "Jobs done!", 200
+    return json.dumps(db), 200
 
 
 @app.route('/api/remove_servers_from_ome', methods=['PUT'])
