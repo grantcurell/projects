@@ -31,6 +31,8 @@ import json
 import logging
 import time
 import requests
+import subprocess
+import socket
 
 # The servers dictionary has all servers listed by both ID->service tag and
 discovery_scan_path = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
@@ -105,7 +107,7 @@ def _get_default_group_ids(headers: dict, ome_ip: str, ome_username: str, ome_pa
         return "Something went wrong retrieving the default groups.", 400
 
 
-def discover(target_ips: str, ome_ip: str, ome_username: str, ome_password: str, discover_username: str,
+def discover(target_ips: list, ome_ip: str, ome_username: str, ome_password: str, discover_username: str,
              discover_password: str, device_type: str = "server") -> dict:
     """
     Discovers a list of devices based on input
@@ -116,8 +118,6 @@ def discover(target_ips: str, ome_ip: str, ome_username: str, ome_password: str,
     "password": "password", "discover_user_name": "root", "discover_password": "password",
     "device_type": "server"}' 127.0.0.1:5000/api/discover -H "Content-Type: application/json"
     """
-
-    target_ips = lib.ome.get_ips(target_ips)
 
     try:
         auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
@@ -212,7 +212,7 @@ def hardware_health(target_ips: str, ome_ip: str, ome_username: str, ome_passwor
     server_health = {}
 
     for ip in target_ips:
-        if not ip in servers:
+        if ip not in servers:
             logging.warning("WARNING: " + str(ip) + " not in the database. Has it been discovered? We're skipping "
                                                     "its health check.")
         else:
@@ -243,7 +243,8 @@ def hardware_health(target_ips: str, ome_ip: str, ome_username: str, ome_passwor
                                     if "SubSystem" in error:
                                         server_health[ip]["errors"][i]["subsystem"] = error["SubSystem"]
                                     if "RecommendedAction" in error:
-                                        server_health[ip]["errors"][i]["recommended_action"] = error["RecommendedAction"]
+                                        server_health[ip]["errors"][i]["recommended_action"] = error[
+                                            "RecommendedAction"]
                             server_health[ip]["health"] = health_mapping[item["RollupStatus"]]
                             break
                 else:
@@ -431,10 +432,6 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
     return device_inventories, db
 
 
-def get_inventories():
-    print("GET A LIST OF INVENTORIES HERE")  # TODO
-
-
 def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> xl.Database:
     """
     Compare two inventories and produce an excel sheet with the results
@@ -445,9 +442,8 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
 
     # TODO - This can probably get removed
 
-    path = os.path.join(os.getcwd(), "inventories")
-
     """
+    path = os.path.join(os.getcwd(), "inventories")
     logging.info("Reading binary database from the file \"" + str(os.path.join(path, inventory1)) + "\" from disk.")
     with open(os.path.join(path, inventory1), 'rb') as database:
         device_inventory_1 = pickle.load(database)
@@ -493,7 +489,8 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
                 logging.debug("Processing " + subsystem)
                 for device, values in items.items():
                     device_found = False
-                    for comparison_device, comparison_device_values in device_inventory_2[identifier][subsystem].items():
+                    for comparison_device, comparison_device_values in device_inventory_2[identifier][
+                        subsystem].items():
                         if device_inventory_2[identifier][subsystem][comparison_device]["ID"] == values["ID"]:
                             device_found = True
                             logging.debug("Found match with device " + str(values["ID"]) + ". Processing comparison.")
@@ -527,7 +524,8 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
 
                     if not device_found:
                         y = y + 1
-                        db.ws("Inventory Deltas").update_index(row=y, col=2, val=device_inventory_2[identifier]["idrac IP"])
+                        db.ws("Inventory Deltas").update_index(row=y, col=2, val=device_inventory_2[identifier]
+                        ["idrac IP"])
                         db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
                         db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
                         db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Removed")
@@ -539,9 +537,10 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
                         db.ws("Inventory Deltas").update_index(row=y, col=6, val=string)
 
         else:
-            warning = "Device identifier " + str(identifier) + " was found in inventory 1, but not in inventory 2. This " \
-                      "corresponds to idrac IP " + inventory["idrac IP"] + ". This probably shouldn't have happened. " \
-                      "The error is not fatal, but should be investigated]."
+            warning = "Device identifier " + str(identifier) + " was found in inventory 1, but not in inventory 2. " \
+                                                               "This corresponds to idrac IP " + inventory[
+                          "idrac IP"] + ". This probably shouldn't have " \
+                                        "happened. The error is not fatal, but should be investigated]."
             logging.warning(warning)
             db.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
 
@@ -552,7 +551,7 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
                     continue
                 for device, values in items.items():
                     device_found = False
-                    for comparison_device, comparison_device_values in device_inventory_1[identifier][subsystem]\
+                    for comparison_device, comparison_device_values in device_inventory_1[identifier][subsystem] \
                             .items():
                         if device_inventory_1[identifier][subsystem][comparison_device]["ID"] == values["ID"]:
                             device_found = True
@@ -572,9 +571,11 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
                         db.ws("Inventory Deltas").update_index(row=y, col=6, val=string)
 
         else:
-            warning = "Device identifier " + str(identifier) + " was found in inventory 2, but not in inventory 1. This " \
-                      "corresponds to idrac IP " + inventory["idrac IP"] + ". This probably shouldn't have happened. " \
-                      "The error is not fatal, but should be investigated]."
+            warning = "Device identifier " + str(
+                identifier) + " was found in inventory 2, but not in inventory 1. This " \
+                              "corresponds to idrac IP " + inventory[
+                          "idrac IP"] + ". This probably shouldn't have happened. " \
+                                        "The error is not fatal, but should be investigated]."
             logging.warning(warning)
             db.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
 
@@ -587,8 +588,38 @@ parser.add_argument('--port', dest="port", required=False, type=int, default=500
 parser.add_argument('--log-level', metavar='LOG_LEVEL', dest="log_level", required=False, type=str, default="info",
                     choices=['debug', 'info', 'warning', 'error', 'critical'],
                     help='The log level at which you want to run.')
+parser.add_argument('--start-dhcp-server', dest="dhcp", required=False, action='store_true', default=False,
+                    help="Starts a DHCP server in the background that is used to assign IP addresses to the servers. "
+                         "If you want to update the settings for the DHCP server browse to the file "
+                         "lib/dhcpserv/dhcpgui.conf and edit it there. You can also skip this step altogether and"
+                         " manually add servers by using the --servers <filename> switch. If you want to see the"
+                         " hosts found by the DHCP server you can check lib/dhcpserv/hosts.csv.")
+parser.add_argument("--servers", dest="servers", required=False, default=None,
+                    help="If you do not want to use the DHCP server you can instead pass a file with a list of servers."
+                         " The format is one server per line. Ex:\n192.168.1.1\n192.168.1.2\n192.168.1.3")
+parser.add_argument('--scan', dest="scan", required=False, type=str, default="initial",
+                    choices=['initial'],
+                    help='Determines which scan you want to run. This is the core of the program. The scans have the'
+                         'following behavior:\n    - Initial: Collects all of the IPs in the DHCP server\'s registry, '
+                         'then it runs an OME discovery scan against all of those IPs. After it finishes the discovery '
+                         'scan it collects an inventory of those machines and writes it out to disk.')
+parser.add_argument("--omeip", "-i", required=True, help="OME Appliance IP")
+parser.add_argument("--omeuser", "-u", required=False,
+                    help="Username for OME Appliance", default="admin")
+parser.add_argument("--omepass", "-p", required=True,
+                    help="Password for OME Appliance")
+parser.add_argument("--idracuser", required=False, default="root",
+                    help="This command is only used for the initial scan. It is the username for the servers' idracs.")
+parser.add_argument("--idracpass", required=False,
+                    help="This command is only used for the initial scan. It is the password for the servers' idracs.")
 
 args = parser.parse_args()
+
+try:
+    socket.inet_aton(args.omeip)
+except socket.error:
+    logging.error("The OME IP address " + str(args.omeip) + " is not a valid IP address. Exiting.")
+    exit(1)
 
 if args.log_level:
     if args.log_level == "debug":
@@ -604,3 +635,73 @@ if args.log_level:
 else:
     logging.basicConfig(level=logging.INFO)
 
+if args.dhcp:
+    # Change the working directory to the DHCP server's directory
+    os.chdir(os.path.join(os.getcwd(), "lib", "dhcpserv"))
+    os.remove("hosts.csv")
+    process = subprocess.Popen(["python", "dhcp.py"], stdout=subprocess.PIPE)
+    while True:
+        output = process.stdout.readline()
+        if output == '' and process.poll() is not None:
+            break
+        if output:
+            test = output
+            logging.info(output.strip().decode("utf-8"))
+    rc = process.poll()
+
+ips = None
+
+if args.servers:
+    if os.path.isfile(args.servers):
+        with open(args.servers, 'r') as ip_file:
+            ips = ip_file.readlines()
+
+            # Strip whitespace characters
+            ips[:] = map(str.strip, ips)
+
+        for ip in ips:
+            try:
+                socket.inet_aton(ip)
+            except socket.error:
+                logging.error(str(ip) + " is not a valid IP address. Exiting.")
+                exit(1)
+    else:
+        logging.error("Could not find a file at path " + args.servers + ". Are you sure that's a valid file path?")
+        exit(1)
+
+if args.scan == "initial":
+
+    if not args.idracuser:
+        logging.error("For the initial scan you must provide the argument --idracuser.")
+        exit(1)
+    elif not args.idracpass:
+        logging.error("For the initial scan you must provide the argument --idracpassword.")
+        exit(1)
+
+    if ips is not None:
+        logging.info("--servers argument provided. Ignoring hosts assigned by DHCP server.")
+    else:
+        logging.info("--servers argument not provided. Using lib/dhcpserv/hosts.csv from DHCP server.")
+        path = os.path.join(os.getcwd(), "lib", "dhcpserv", "hosts.csv")
+        if os.path.isfile(path):
+            with open(path, 'r') as ip_file:
+                ips = ip_file.readlines()
+
+                # Change something with the format '00:50:56:C0:00:01;192.168.173.6;precisionworkstation;1597178186'
+                # to just an IP
+                for i, ip in enumerate(ips):
+                    ips[i] = ip.split(';')[1].strip()
+
+            for ip in ips:
+                try:
+                    socket.inet_aton(ip)
+                except socket.error:
+                    logging.error(str(ip) + " is not a valid IP address. Exiting.")
+                    exit(1)
+        else:
+            logging.error("It looks like you didn't provide the --servers argument and lib/dhcpserv/hosts.csv"
+                          " doesn't exist. You need to either provide the argument --servers or you need to run the"
+                          " dhcp server first.")
+            exit(1)
+
+    discover(ips, args.omeip, args.omeuser, args.omepass, args.idracuser, args.idracpass)
