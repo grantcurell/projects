@@ -1,0 +1,5 @@
+Flask_Cors
+requests
+Flask
+urllib3
+pylightxl
