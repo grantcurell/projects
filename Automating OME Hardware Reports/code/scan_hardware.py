@@ -150,28 +150,27 @@ def discover(target_ips: list, ome_ip: str, ome_username: str, ome_password: str
     servers["id_list"] = []
     servers["id_to_ip"] = {}
 
-    for ip in target_ips:
-        server_id = str(device_ids_by_idrac[ip])
+    for ip_address in target_ips:
+        server_id = str(device_ids_by_idrac[ip_address])
         if server_id != "":
-            servers[ip] = server_id
+            servers[ip_address] = server_id
             servers[server_id] = id_service_tag_dict[server_id]
             servers["id_list"].append(server_id)
-            servers["id_to_ip"][server_id] = ip
+            servers["id_to_ip"][server_id] = ip_address
         else:
-            logging.warning("Error: couldn't resolve the name " + str(ip) + " to a device ID. This might mean there "
-                                                                            "was a login failure during discovery. "
-                                                                            "Check the OME discovery logs for details.")
+            logging.warning("Error: couldn't resolve the name " + str(ip_address) + " to a device ID. This might mean "
+                            "there was a login failure during discovery. Check the OME discovery logs for details.")
             return {}
 
     auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
-    path = os.path.join(os.getcwd(), "discovery_scans")
-    if not os.path.exists(path):
-        os.mkdir(path)
+    discovery_path = os.path.join(os.getcwd(), "discovery_scans")
+    if not os.path.exists(discovery_path):
+        os.mkdir(discovery_path)
     dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
     servers["GROUP_NAME"] = dtstring
-    with open(os.path.join(path, dtstring + ".bin"), 'wb') as database:
+    with open(os.path.join(discovery_path, dtstring + ".bin"), 'wb') as database:
         pickle.dump(servers, database)
-    with open(os.path.join(path, "latest_discovery.bin"), 'wb') as database:
+    with open(os.path.join(discovery_path, "latest_discovery.bin"), 'wb') as database:
         pickle.dump(servers, database)
 
     # I abused types here which I shouldn't have done, but did. groups is either a tuple with the ID of In-Progress
@@ -195,7 +194,7 @@ def discover(target_ips: list, ome_ip: str, ome_username: str, ome_password: str
     return servers
 
 
-def hardware_health(target_ips: str, ome_ip: str, ome_username: str, ome_password: str) -> dict:
+def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_password: str) -> dict:
     """
     Retrieves the hardware's health
 
@@ -204,56 +203,51 @@ def hardware_health(target_ips: str, ome_ip: str, ome_username: str, ome_passwor
     "password": "password"}' 127.0.0.1:5000/api/hardware_health -H "Content-Type: application/json"
     """
 
-    target_ips = lib.ome.get_ips(target_ips)
-
     auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
-    server_health = {}
+    health = {}
 
-    for ip in target_ips:
-        if ip not in servers:
-            logging.warning("WARNING: " + str(ip) + " not in the database. Has it been discovered? We're skipping "
-                                                    "its health check.")
+    for device_id in servers_to_check["id_list"]:
+
+        logging.info("Getting the health for " + servers_to_check[device_id])
+        url = 'https://%s/api/DeviceService/Devices(%s)/SubSystemHealth' % (ome_ip, device_id)
+        response = requests.get(url, headers=headers, verify=False)
+        if response.status_code != 200:
+            logging.error("Failed to retrieve health. Error received " + str(json.loads(response.content)))
+            return {}
         else:
-            logging.info("Getting the health for " + ip)
-            url = 'https://%s/api/DeviceService/Devices(%s)/SubSystemHealth' % (ome_ip, servers[ip])
-            response = requests.get(url, headers=headers, verify=False)
-            if response.status_code != 200:
-                logging.error("Failed to retrieve health. Error received " + str(json.loads(response.content)))
-                return {}
+            content = json.loads(response.content)
+            if content["@odata.count"] > 0:
+                health[device_id] = {}
+                for item in content['value']:
+                    if item["@odata.type"] == "#DeviceService.SubSystemHealthFaultModel":
+                        health[device_id]["errors"] = {}
+                        if "FaultList" in item:
+                            for index, error in enumerate(item["FaultList"]):
+                                health[device_id]["errors"][index] = {}
+                                if "Fqdd" in error:
+                                    health[device_id]["errors"][index]["location"] = error["Fqdd"]
+                                if "MessageId" in error:
+                                    health[device_id]["errors"][index]["messageid"] = error["MessageId"]
+                                if "Message" in error:
+                                    health[device_id]["errors"][index]["message"] = error["Message"]
+                                if "Severity" in error:
+                                    health[device_id]["errors"][index]["severity"] = health_mapping[error["Severity"]]
+                                if "SubSystem" in error:
+                                    health[device_id]["errors"][index]["subsystem"] = error["SubSystem"]
+                                if "RecommendedAction" in error:
+                                    health[device_id]["errors"][index]["recommended_action"] = error[
+                                        "RecommendedAction"]
+                        health[device_id]["health"] = health_mapping[item["RollupStatus"]]
+                        break
             else:
-                content = json.loads(response.content)
-                if content["@odata.count"] > 0:
-                    server_health[ip] = {}
-                    for item in content['value']:
-                        if item["@odata.type"] == "#DeviceService.SubSystemHealthFaultModel":
-                            server_health[ip]["errors"] = {}
-                            if "FaultList" in item:
-                                for i, error in enumerate(item["FaultList"]):
-                                    server_health[ip]["errors"][i] = {}
-                                    if "Fqdd" in error:
-                                        server_health[ip]["errors"][i]["location"] = error["Fqdd"]
-                                    if "MessageId" in error:
-                                        server_health[ip]["errors"][i]["messageid"] = error["MessageId"]
-                                    if "Message" in error:
-                                        server_health[ip]["errors"][i]["message"] = error["Message"]
-                                    if "Severity" in error:
-                                        server_health[ip]["errors"][i]["severity"] = health_mapping[error["Severity"]]
-                                    if "SubSystem" in error:
-                                        server_health[ip]["errors"][i]["subsystem"] = error["SubSystem"]
-                                    if "RecommendedAction" in error:
-                                        server_health[ip]["errors"][i]["recommended_action"] = error[
-                                            "RecommendedAction"]
-                            server_health[ip]["health"] = health_mapping[item["RollupStatus"]]
-                            break
-                else:
-                    logging.error("We successfully retrieved the server health, but there were no values. "
-                                  "We aren't sure why this would happen.")
-                    return {}
-                logging.info("Retrieved health for " + ip)
-    return server_health
+                logging.error("We successfully retrieved the server health, but there were no values. "
+                              "We aren't sure why this would happen.")
+                return {}
+            logging.info("Retrieved health for " + servers_to_check[device_id])
+    return health
 
 
-def hardware_inventory(servers: dict, ome_ip: str, ome_username: str, ome_password: str) -> tuple:
+def hardware_inventory(servers_to_retrieve: dict, ome_ip: str, ome_username: str, ome_password: str) -> tuple:
     """
     Retrieves the hardware inventory for a specified target
 
@@ -263,14 +257,14 @@ def hardware_inventory(servers: dict, ome_ip: str, ome_username: str, ome_passwo
 
     def _handle_keys(ome_field, ome_device, dict_field, dict_device):
         if ome_field in ome_device:
-            device_inventories[device_id][dict_device][i][dict_field] = ome_device[ome_field]
+            device_inventories[device_id][dict_device][index][dict_field] = ome_device[ome_field]
         else:
             logging.warning(ome_field + " was not in OpenManage's database for device with ID " +
-                            str(device_inventories[device_id][dict_device][i]["ID"]) + ". The device type was "
-                            + dict_device + ". The host has idrac IP " + servers["id_to_ip"][device_id] +
-                            " and service tag " + servers[device_id] + ". We are skipping the field. It will not be "
-                            "used for comparison.")
-            device_inventories[device_id][dict_device][i][dict_field] = "None"
+                            str(device_inventories[device_id][dict_device][index]["ID"]) + ". The device type was "
+                            + dict_device + ". The host has idrac IP " + servers_to_retrieve["id_to_ip"][device_id] +
+                            " and service tag " + servers_to_retrieve[device_id] +
+                            ". We are skipping the field. It will not be used for comparison.")
+            device_inventories[device_id][dict_device][index][dict_field] = "None"
 
     inventory_type = None
 
@@ -285,103 +279,100 @@ def hardware_inventory(servers: dict, ome_ip: str, ome_username: str, ome_passwo
         "controllers": "serverRaidControllers",
         "memory": "serverMemoryDevices"}
 
-    for device_id in servers["id_list"]:
+    for device_id in servers_to_retrieve["id_list"]:
 
-        if device_id not in servers:
-            logging.error("IP " + str(device_id) + " not in the local database. Has it been previously discovered?")
-        else:
-            logging.info("Processing inventory for " + device_id)
+        logging.info("Processing inventory for " + device_id)
 
-            inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ome_ip, device_id)
-            if inventory_type:
-                inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails(\'%s\')" \
-                                % (ome_ip, str(device_id), inventory_types[inventory_type])
-            inven_resp = requests.get(inventory_url, headers=headers, verify=False)
-            if inven_resp.status_code == 200:
-                logging.info("\n*** Inventory for device (%s) ***" % device_id)
-                content = json.loads(inven_resp.content)
-                if content["@odata.count"] > 0:
-                    device_inventories[device_id] = {"idrac IP": servers["id_to_ip"][device_id]}
-                    for item in content['value']:
-                        if item["InventoryType"] == "serverDeviceCards":
-                            logging.debug("Processing PCI cards for " + device_id)
-                            device_inventories[device_id]["PCI Cards"] = {}
-                            i = 0
-                            for card in item["InventoryInfo"]:
-                                # Skip disks. Those are covered below.
-                                if "Disk.Bay" in card["SlotNumber"] or "pci" not in card["SlotType"].lower():
-                                    continue
-                                device_inventories[device_id]["PCI Cards"][i] = {}
-                                _handle_keys("Id", card, "ID", "PCI Cards")
-                                _handle_keys("SlotNumber", card, "Slot Number", "PCI Cards")
-                                _handle_keys("Manufacturer", card, "Manufacturer", "PCI Cards")
-                                _handle_keys("Description", card, "Description", "PCI Cards")
-                                _handle_keys("DatabusWidth", card, "Databus Width", "PCI Cards")
-                                _handle_keys("SlotLength", card, "Slot Length", "PCI Cards")
-                                _handle_keys("SlotType", card, "Slot Type", "PCI Cards")
-                                i = i + 1
-                        elif item["InventoryType"] == "serverProcessors":
-                            logging.debug("Processing processors (haha) for " + device_id)
-                            device_inventories[device_id]["Processors"] = {}
-                            for i, processor in enumerate(item["InventoryInfo"]):
-                                device_inventories[device_id]["Processors"][i] = {}
-                                _handle_keys("Id", processor, "ID", "Processors")
-                                _handle_keys("Family", processor, "Family", "Processors")
-                                _handle_keys("MaxSpeed", processor, "Max Speed", "Processors")
-                                _handle_keys("SlotNumber", processor, "Slot Number", "Processors")
-                                _handle_keys("NumberOfCores", processor, "Number of Cores", "Processors")
-                                _handle_keys("BrandName", processor, "Brand Name", "Processors")
-                                _handle_keys("ModelName", processor, "Model Name", "Processors")
-                        elif item["InventoryType"] == "serverPowerSupplies":
-                            logging.debug("Processing power supplies for " + device_id)
-                            device_inventories[device_id]["Power Supplies"] = {}
-                            for i, power_supply in enumerate(item["InventoryInfo"]):
-                                device_inventories[device_id]["Power Supplies"][i] = {}
-                                _handle_keys("Id", power_supply, "ID", "Power Supplies")
-                                _handle_keys("Location", power_supply, "Location", "Power Supplies")
-                                _handle_keys("OutputWatts", power_supply, "Output Watts", "Power Supplies")
-                                _handle_keys("FirmwareVersion", power_supply, "Firmware Version", "Power Supplies")
-                                _handle_keys("Model", power_supply, "Model", "Power Supplies")
-                                _handle_keys("SerialNumber", power_supply, "Serial Number", "Power Supplies")
-                        elif item["InventoryType"] == "serverArrayDisks":
-                            logging.debug("Processing disks for " + device_id)
-                            device_inventories[device_id]["Disks"] = {}
-                            for i, disk in enumerate(item["InventoryInfo"]):
-                                device_inventories[device_id]["Disks"][i] = {}
-                                _handle_keys("Id", disk, "ID", "Disks")
-                                _handle_keys("SerialNumber", disk, "Serial Number", "Disks")
-                                _handle_keys("ModelNumber", disk, "Model Number", "Disks")
-                                _handle_keys("EnclosureId", disk, "Enclosure ID", "Disks")
-                                _handle_keys("Size", disk, "Size", "Disks")
-                                _handle_keys("BusType", disk, "Bus Type", "Disks")
-                                _handle_keys("MediaType", disk, "Media Type", "Disks")
-                        elif item["InventoryType"] == "serverMemoryDevices":
-                            logging.debug("Processing memory for " + device_id)
-                            device_inventories[device_id]["Memory"] = {}
-                            for i, memory in enumerate(item["InventoryInfo"]):
-                                device_inventories[device_id]["Memory"][i] = {}
-                                _handle_keys("Id", memory, "ID", "Memory")
-                                _handle_keys("Name", memory, "Name", "Memory")
-                                _handle_keys("Size", memory, "Size", "Memory")
-                                _handle_keys("Manufacturer", memory, "Manufacturer", "Memory")
-                                _handle_keys("PartNumber", memory, "Part Number", "Memory")
-                                _handle_keys("SerialNumber", memory, "Serial Number", "Memory")
-                                _handle_keys("Speed", memory, "Speed", "Memory")
-                                _handle_keys("CurrentOperatingSpeed", memory, "Current Operating Speed", "Memory")
-                                _handle_keys("DeviceDescription", memory, "Device Description", "Memory")
-                        elif item["InventoryType"] == "serverRaidControllers":
-                            logging.debug("Processing RAID controllers for " + device_id)
-                            device_inventories[device_id]["RAID Controllers"] = {}
-                            for i, raid_controller in enumerate(item["InventoryInfo"]):
-                                device_inventories[device_id]["RAID Controllers"][i] = {}
-                                _handle_keys("Id", raid_controller, "ID", "RAID Controllers")
-                                _handle_keys("Name", raid_controller, "Name", "RAID Controllers")
-                                _handle_keys("DeviceDescription", raid_controller, "Device Description",
-                                             "RAID Controllers")
-                                _handle_keys("FirmwareVersion", raid_controller, "Firmware Version", "RAID Controllers")
-                                _handle_keys("PciSlot", raid_controller, "PCI Slot", "RAID Controllers")
+        inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ome_ip, device_id)
+        if inventory_type:
+            inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails(\'%s\')" \
+                            % (ome_ip, str(device_id), inventory_types[inventory_type])
+        inven_resp = requests.get(inventory_url, headers=headers, verify=False)
+        if inven_resp.status_code == 200:
+            logging.info("\n*** Inventory for device (%s) ***" % device_id)
+            content = json.loads(inven_resp.content)
+            if content["@odata.count"] > 0:
+                device_inventories[device_id] = {"idrac IP": servers_to_retrieve["id_to_ip"][device_id]}
+                for item in content['value']:
+                    if item["InventoryType"] == "serverDeviceCards":
+                        logging.debug("Processing PCI cards for " + device_id)
+                        device_inventories[device_id]["PCI Cards"] = {}
+                        index = 0
+                        for card in item["InventoryInfo"]:
+                            # Skip disks. Those are covered below.
+                            if "Disk.Bay" in card["SlotNumber"] or "pci" not in card["SlotType"].lower():
+                                continue
+                            device_inventories[device_id]["PCI Cards"][index] = {}
+                            _handle_keys("Id", card, "ID", "PCI Cards")
+                            _handle_keys("SlotNumber", card, "Slot Number", "PCI Cards")
+                            _handle_keys("Manufacturer", card, "Manufacturer", "PCI Cards")
+                            _handle_keys("Description", card, "Description", "PCI Cards")
+                            _handle_keys("DatabusWidth", card, "Databus Width", "PCI Cards")
+                            _handle_keys("SlotLength", card, "Slot Length", "PCI Cards")
+                            _handle_keys("SlotType", card, "Slot Type", "PCI Cards")
+                            index = index + 1
+                    elif item["InventoryType"] == "serverProcessors":
+                        logging.debug("Processing processors (haha) for " + device_id)
+                        device_inventories[device_id]["Processors"] = {}
+                        for index, processor in enumerate(item["InventoryInfo"]):
+                            device_inventories[device_id]["Processors"][index] = {}
+                            _handle_keys("Id", processor, "ID", "Processors")
+                            _handle_keys("Family", processor, "Family", "Processors")
+                            _handle_keys("MaxSpeed", processor, "Max Speed", "Processors")
+                            _handle_keys("SlotNumber", processor, "Slot Number", "Processors")
+                            _handle_keys("NumberOfCores", processor, "Number of Cores", "Processors")
+                            _handle_keys("BrandName", processor, "Brand Name", "Processors")
+                            _handle_keys("ModelName", processor, "Model Name", "Processors")
+                    elif item["InventoryType"] == "serverPowerSupplies":
+                        logging.debug("Processing power supplies for " + device_id)
+                        device_inventories[device_id]["Power Supplies"] = {}
+                        for index, power_supply in enumerate(item["InventoryInfo"]):
+                            device_inventories[device_id]["Power Supplies"][index] = {}
+                            _handle_keys("Id", power_supply, "ID", "Power Supplies")
+                            _handle_keys("Location", power_supply, "Location", "Power Supplies")
+                            _handle_keys("OutputWatts", power_supply, "Output Watts", "Power Supplies")
+                            _handle_keys("FirmwareVersion", power_supply, "Firmware Version", "Power Supplies")
+                            _handle_keys("Model", power_supply, "Model", "Power Supplies")
+                            _handle_keys("SerialNumber", power_supply, "Serial Number", "Power Supplies")
+                    elif item["InventoryType"] == "serverArrayDisks":
+                        logging.debug("Processing disks for " + device_id)
+                        device_inventories[device_id]["Disks"] = {}
+                        for index, disk in enumerate(item["InventoryInfo"]):
+                            device_inventories[device_id]["Disks"][index] = {}
+                            _handle_keys("Id", disk, "ID", "Disks")
+                            _handle_keys("SerialNumber", disk, "Serial Number", "Disks")
+                            _handle_keys("ModelNumber", disk, "Model Number", "Disks")
+                            _handle_keys("EnclosureId", disk, "Enclosure ID", "Disks")
+                            _handle_keys("Size", disk, "Size", "Disks")
+                            _handle_keys("BusType", disk, "Bus Type", "Disks")
+                            _handle_keys("MediaType", disk, "Media Type", "Disks")
+                    elif item["InventoryType"] == "serverMemoryDevices":
+                        logging.debug("Processing memory for " + device_id)
+                        device_inventories[device_id]["Memory"] = {}
+                        for index, memory in enumerate(item["InventoryInfo"]):
+                            device_inventories[device_id]["Memory"][index] = {}
+                            _handle_keys("Id", memory, "ID", "Memory")
+                            _handle_keys("Name", memory, "Name", "Memory")
+                            _handle_keys("Size", memory, "Size", "Memory")
+                            _handle_keys("Manufacturer", memory, "Manufacturer", "Memory")
+                            _handle_keys("PartNumber", memory, "Part Number", "Memory")
+                            _handle_keys("SerialNumber", memory, "Serial Number", "Memory")
+                            _handle_keys("Speed", memory, "Speed", "Memory")
+                            _handle_keys("CurrentOperatingSpeed", memory, "Current Operating Speed", "Memory")
+                            _handle_keys("DeviceDescription", memory, "Device Description", "Memory")
+                    elif item["InventoryType"] == "serverRaidControllers":
+                        logging.debug("Processing RAID controllers for " + device_id)
+                        device_inventories[device_id]["RAID Controllers"] = {}
+                        for index, raid_controller in enumerate(item["InventoryInfo"]):
+                            device_inventories[device_id]["RAID Controllers"][index] = {}
+                            _handle_keys("Id", raid_controller, "ID", "RAID Controllers")
+                            _handle_keys("Name", raid_controller, "Name", "RAID Controllers")
+                            _handle_keys("DeviceDescription", raid_controller, "Device Description",
+                                         "RAID Controllers")
+                            _handle_keys("FirmwareVersion", raid_controller, "Firmware Version", "RAID Controllers")
+                            _handle_keys("PciSlot", raid_controller, "PCI Slot", "RAID Controllers")
 
-                        logging.debug("Finished device loop.")
+                    logging.debug("Finished device loop.")
 
             elif inven_resp.status_code == 400:
                 logging.warning("Inventory type %s not applicable for device with ID %s" % (inventory_type,
@@ -396,7 +387,7 @@ def hardware_inventory(servers: dict, ome_ip: str, ome_username: str, ome_passwo
     db = xl.Database()
     for device_id, inventory in device_inventories.items():
         logging.info("Processing " + str(device_id))
-        sheet_name = servers[device_id] + " - Inventory"
+        sheet_name = servers_to_retrieve[device_id] + " - Inventory"
         db.add_ws(sheet_name, {'A1': {'v': '', 'f': '', 's': ''}})
         x = 1
         for subsystem, items in inventory.items():
@@ -413,19 +404,19 @@ def hardware_inventory(servers: dict, ome_ip: str, ome_username: str, ome_passwo
                 db.ws(sheet_name).update_index(row=y, col=x, val=string)
             x = x + 1
 
-    path = os.path.join(os.getcwd(), "inventories")
-    if not os.path.exists(path):
-        os.mkdir(path)
+    inventory_path = os.path.join(os.getcwd(), "inventories")
+    if not os.path.exists(inventory_path):
+        os.mkdir(inventory_path)
     dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
     xl.writexl(db, dtstring + ".xlsx")
-    os.replace(dtstring + ".xlsx", os.path.join(path, dtstring + ".xlsx"))
-    if not os.path.exists(path):
-        os.mkdir(path)
+    os.replace(dtstring + ".xlsx", os.path.join(inventory_path, dtstring + ".xlsx"))
+    if not os.path.exists(inventory_path):
+        os.mkdir(inventory_path)
     dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
-    with open(os.path.join(path, dtstring + ".bin"), 'wb') as inventories:
-        pickle.dump(device_inventories, inventories)
-    with open(os.path.join(path, "last_inventory.bin"), 'wb') as inventories:
-        pickle.dump(device_inventories, inventories)
+    with open(os.path.join(inventory_path, dtstring + ".bin"), 'wb') as inventories_to_write:
+        pickle.dump(device_inventories, inventories_to_write)
+    with open(os.path.join(inventory_path, "last_inventory.bin"), 'wb') as inventories_to_write:
+        pickle.dump(device_inventories, inventories_to_write)
     return device_inventories, db
 
 
@@ -486,8 +477,8 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
                 logging.debug("Processing " + subsystem)
                 for device, values in items.items():
                     device_found = False
-                    for comparison_device, comparison_device_values in device_inventory_2[identifier][
-                        subsystem].items():
+                    for comparison_device, comparison_device_values in \
+                            device_inventory_2[identifier][subsystem].items():
                         if device_inventory_2[identifier][subsystem][comparison_device]["ID"] == values["ID"]:
                             device_found = True
                             logging.debug("Found match with device " + str(values["ID"]) + ". Processing comparison.")
@@ -521,8 +512,8 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
 
                     if not device_found:
                         y = y + 1
-                        db.ws("Inventory Deltas").update_index(row=y, col=2, val=device_inventory_2[identifier]
-                        ["idrac IP"])
+                        db.ws("Inventory Deltas").update_index(row=y, col=2,
+                                                               val=device_inventory_2[identifier]["idrac IP"])
                         db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
                         db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
                         db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Removed")
@@ -759,5 +750,7 @@ if __name__ == "__main__":
             with open(os.path.join(path, "last_inventory.bin"), 'rb') as inventories:
                 device_inventories_global = pickle.load(inventories)
 
-        for device_identifier in device_inventories_global.keys():
-            pass
+        server_health = hardware_health(servers, args.omeip, args.omeuser, args.omepass)
+        device_inventories_global_2, inventory_spreadsheet = \
+            hardware_inventory(servers, args.omeip, args.omeuser, args.omepass)
+        print(server_health)
