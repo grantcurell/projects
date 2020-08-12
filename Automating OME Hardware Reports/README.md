@@ -30,6 +30,7 @@
 - [ ] Add instructions for manipulated the DHCP config file
 - [ ] Go back and look into the 204 error in the add_to_static_group code
 - [ ] If I'm not going to add a UI I need to go back and add in a command line tool
+- [ ] Need to go back and add inventory to the initial scan
 
 Note: If I need a way to compare the IP address of the idrac and get the ID, you can retrieve it from the device inventory under deviceManagement
 

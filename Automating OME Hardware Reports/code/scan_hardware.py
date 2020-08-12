@@ -18,6 +18,7 @@
 #
 
 import argparse
+import sys
 from datetime import datetime
 import os
 import pickle
@@ -33,14 +34,6 @@ import time
 import requests
 import subprocess
 import socket
-
-# The servers dictionary has all servers listed by both ID->service tag and
-discovery_scan_path = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
-if os.path.isfile(discovery_scan_path):
-    with open(discovery_scan_path, 'rb') as discovery_database:
-        servers = pickle.load(discovery_database)
-else:
-    servers = {}
 
 health_mapping = {
     "1000": "Healthy",
@@ -152,13 +145,18 @@ def discover(target_ips: list, ome_ip: str, ome_username: str, ome_password: str
     # This is relevant when operating on hundreds of devices
     id_service_tag_dict = {}
     for device in device_list:
-        id_service_tag_dict[device["Id"]] = device["DeviceServiceTag"]
+        id_service_tag_dict[str(device["Id"])] = device["DeviceServiceTag"]
+
+    servers["id_list"] = []
+    servers["id_to_ip"] = {}
 
     for ip in target_ips:
-        server_id = device_ids_by_idrac[ip]
+        server_id = str(device_ids_by_idrac[ip])
         if server_id != "":
             servers[ip] = server_id
-            servers[server_id] = id_service_tag_dict[servers[ip]]
+            servers[server_id] = id_service_tag_dict[server_id]
+            servers["id_list"].append(server_id)
+            servers["id_to_ip"][server_id] = ip
         else:
             logging.warning("Error: couldn't resolve the name " + str(ip) + " to a device ID. This might mean there "
                                                                             "was a login failure during discovery. "
@@ -255,7 +253,7 @@ def hardware_health(target_ips: str, ome_ip: str, ome_username: str, ome_passwor
     return server_health
 
 
-def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_password: str) -> tuple:
+def hardware_inventory(servers: dict, ome_ip: str, ome_username: str, ome_password: str) -> tuple:
     """
     Retrieves the hardware inventory for a specified target
 
@@ -265,15 +263,15 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
 
     def _handle_keys(ome_field, ome_device, dict_field, dict_device):
         if ome_field in ome_device:
-            device_inventories[identifier][dict_device][i][dict_field] = ome_device[ome_field]
+            device_inventories[device_id][dict_device][i][dict_field] = ome_device[ome_field]
         else:
             logging.warning(ome_field + " was not in OpenManage's database for device with ID " +
-                            str(device_inventories[identifier][dict_device][i]["ID"]) + ". The device type was "
-                            + dict_device + ". The host has idrac IP " + ip +
-                            ". We are skipping the device. It will not be used for comparison.")
-            device_inventories[identifier][dict_device][i][dict_field] = "None"
+                            str(device_inventories[device_id][dict_device][i]["ID"]) + ". The device type was "
+                            + dict_device + ". The host has idrac IP " + servers["id_to_ip"][device_id] +
+                            " and service tag " + servers[device_id] + ". We are skipping the field. It will not be "
+                            "used for comparison.")
+            device_inventories[device_id][dict_device][i][dict_field] = "None"
 
-    target_ips = lib.ome.get_ips(target_ips)
     inventory_type = None
 
     auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
@@ -287,34 +285,33 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
         "controllers": "serverRaidControllers",
         "memory": "serverMemoryDevices"}
 
-    for ip in target_ips:
+    for device_id in servers["id_list"]:
 
-        if ip not in servers:
-            logging.warning("IP " + str(ip) + " not in the local database. Has it been previously discovered?")
+        if device_id not in servers:
+            logging.error("IP " + str(device_id) + " not in the local database. Has it been previously discovered?")
         else:
-            identifier = servers[ip]
-            logging.info("Processing inventory for " + ip)
+            logging.info("Processing inventory for " + device_id)
 
-            inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ome_ip, identifier)
+            inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ome_ip, device_id)
             if inventory_type:
                 inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails(\'%s\')" \
-                                % (ome_ip, str(identifier), inventory_types[inventory_type])
+                                % (ome_ip, str(device_id), inventory_types[inventory_type])
             inven_resp = requests.get(inventory_url, headers=headers, verify=False)
             if inven_resp.status_code == 200:
-                logging.info("\n*** Inventory for device (%s) ***" % ip)
+                logging.info("\n*** Inventory for device (%s) ***" % device_id)
                 content = json.loads(inven_resp.content)
                 if content["@odata.count"] > 0:
-                    device_inventories[identifier] = {"idrac IP": ip}
+                    device_inventories[device_id] = {"idrac IP": servers["id_to_ip"][device_id]}
                     for item in content['value']:
                         if item["InventoryType"] == "serverDeviceCards":
-                            logging.debug("Processing PCI cards for " + ip)
-                            device_inventories[identifier]["PCI Cards"] = {}
+                            logging.debug("Processing PCI cards for " + device_id)
+                            device_inventories[device_id]["PCI Cards"] = {}
                             i = 0
                             for card in item["InventoryInfo"]:
                                 # Skip disks. Those are covered below.
                                 if "Disk.Bay" in card["SlotNumber"] or "pci" not in card["SlotType"].lower():
                                     continue
-                                device_inventories[identifier]["PCI Cards"][i] = {}
+                                device_inventories[device_id]["PCI Cards"][i] = {}
                                 _handle_keys("Id", card, "ID", "PCI Cards")
                                 _handle_keys("SlotNumber", card, "Slot Number", "PCI Cards")
                                 _handle_keys("Manufacturer", card, "Manufacturer", "PCI Cards")
@@ -324,10 +321,10 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
                                 _handle_keys("SlotType", card, "Slot Type", "PCI Cards")
                                 i = i + 1
                         elif item["InventoryType"] == "serverProcessors":
-                            logging.debug("Processing processors (haha) for " + ip)
-                            device_inventories[identifier]["Processors"] = {}
+                            logging.debug("Processing processors (haha) for " + device_id)
+                            device_inventories[device_id]["Processors"] = {}
                             for i, processor in enumerate(item["InventoryInfo"]):
-                                device_inventories[identifier]["Processors"][i] = {}
+                                device_inventories[device_id]["Processors"][i] = {}
                                 _handle_keys("Id", processor, "ID", "Processors")
                                 _handle_keys("Family", processor, "Family", "Processors")
                                 _handle_keys("MaxSpeed", processor, "Max Speed", "Processors")
@@ -336,10 +333,10 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
                                 _handle_keys("BrandName", processor, "Brand Name", "Processors")
                                 _handle_keys("ModelName", processor, "Model Name", "Processors")
                         elif item["InventoryType"] == "serverPowerSupplies":
-                            logging.debug("Processing power supplies for " + ip)
-                            device_inventories[identifier]["Power Supplies"] = {}
+                            logging.debug("Processing power supplies for " + device_id)
+                            device_inventories[device_id]["Power Supplies"] = {}
                             for i, power_supply in enumerate(item["InventoryInfo"]):
-                                device_inventories[identifier]["Power Supplies"][i] = {}
+                                device_inventories[device_id]["Power Supplies"][i] = {}
                                 _handle_keys("Id", power_supply, "ID", "Power Supplies")
                                 _handle_keys("Location", power_supply, "Location", "Power Supplies")
                                 _handle_keys("OutputWatts", power_supply, "Output Watts", "Power Supplies")
@@ -347,10 +344,10 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
                                 _handle_keys("Model", power_supply, "Model", "Power Supplies")
                                 _handle_keys("SerialNumber", power_supply, "Serial Number", "Power Supplies")
                         elif item["InventoryType"] == "serverArrayDisks":
-                            logging.debug("Processing disks for " + ip)
-                            device_inventories[identifier]["Disks"] = {}
+                            logging.debug("Processing disks for " + device_id)
+                            device_inventories[device_id]["Disks"] = {}
                             for i, disk in enumerate(item["InventoryInfo"]):
-                                device_inventories[identifier]["Disks"][i] = {}
+                                device_inventories[device_id]["Disks"][i] = {}
                                 _handle_keys("Id", disk, "ID", "Disks")
                                 _handle_keys("SerialNumber", disk, "Serial Number", "Disks")
                                 _handle_keys("ModelNumber", disk, "Model Number", "Disks")
@@ -359,10 +356,10 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
                                 _handle_keys("BusType", disk, "Bus Type", "Disks")
                                 _handle_keys("MediaType", disk, "Media Type", "Disks")
                         elif item["InventoryType"] == "serverMemoryDevices":
-                            logging.debug("Processing memory for " + ip)
-                            device_inventories[identifier]["Memory"] = {}
+                            logging.debug("Processing memory for " + device_id)
+                            device_inventories[device_id]["Memory"] = {}
                             for i, memory in enumerate(item["InventoryInfo"]):
-                                device_inventories[identifier]["Memory"][i] = {}
+                                device_inventories[device_id]["Memory"][i] = {}
                                 _handle_keys("Id", memory, "ID", "Memory")
                                 _handle_keys("Name", memory, "Name", "Memory")
                                 _handle_keys("Size", memory, "Size", "Memory")
@@ -373,10 +370,10 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
                                 _handle_keys("CurrentOperatingSpeed", memory, "Current Operating Speed", "Memory")
                                 _handle_keys("DeviceDescription", memory, "Device Description", "Memory")
                         elif item["InventoryType"] == "serverRaidControllers":
-                            logging.debug("Processing RAID controllers for " + ip)
-                            device_inventories[identifier]["RAID Controllers"] = {}
+                            logging.debug("Processing RAID controllers for " + device_id)
+                            device_inventories[device_id]["RAID Controllers"] = {}
                             for i, raid_controller in enumerate(item["InventoryInfo"]):
-                                device_inventories[identifier]["RAID Controllers"][i] = {}
+                                device_inventories[device_id]["RAID Controllers"][i] = {}
                                 _handle_keys("Id", raid_controller, "ID", "RAID Controllers")
                                 _handle_keys("Name", raid_controller, "Name", "RAID Controllers")
                                 _handle_keys("DeviceDescription", raid_controller, "Device Description",
@@ -388,18 +385,18 @@ def hardware_inventory(target_ips: str, ome_ip: str, ome_username: str, ome_pass
 
             elif inven_resp.status_code == 400:
                 logging.warning("Inventory type %s not applicable for device with ID %s" % (inventory_type,
-                                                                                            str(identifier)))
+                                                                                            str(device_id)))
                 return None
             else:
                 logging.error("Unable to retrieve inventory for device %s due to status code %s"
-                              % (str(identifier), inven_resp.status_code))
+                              % (str(device_id), inven_resp.status_code))
                 return None
 
     logging.info("Writing pickle database for inventory.")
     db = xl.Database()
-    for identifier, inventory in device_inventories.items():
-        logging.info("Processing " + str(identifier))
-        sheet_name = servers[identifier] + " - Inventory"
+    for device_id, inventory in device_inventories.items():
+        logging.info("Processing " + str(device_id))
+        sheet_name = servers[device_id] + " - Inventory"
         db.add_ws(sheet_name, {'A1': {'v': '', 'f': '', 's': ''}})
         x = 1
         for subsystem, items in inventory.items():
@@ -582,115 +579,105 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
     return db.ws("Inventory Deltas")
 
 
-parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('--port', dest="port", required=False, type=int, default=5000,
-                    help='Specify the port you want Flask to run on')
-parser.add_argument('--log-level', metavar='LOG_LEVEL', dest="log_level", required=False, type=str, default="info",
-                    choices=['debug', 'info', 'warning', 'error', 'critical'],
-                    help='The log level at which you want to run.')
-parser.add_argument('--start-dhcp-server', dest="dhcp", required=False, action='store_true', default=False,
-                    help="Starts a DHCP server in the background that is used to assign IP addresses to the servers. "
-                         "If you want to update the settings for the DHCP server browse to the file "
-                         "lib/dhcpserv/dhcpgui.conf and edit it there. You can also skip this step altogether and"
-                         " manually add servers by using the --servers <filename> switch. If you want to see the"
-                         " hosts found by the DHCP server you can check lib/dhcpserv/hosts.csv.")
-parser.add_argument("--servers", dest="servers", required=False, default=None,
-                    help="If you do not want to use the DHCP server you can instead pass a file with a list of servers."
-                         " The format is one server per line. Ex:\n192.168.1.1\n192.168.1.2\n192.168.1.3")
-parser.add_argument('--scan', dest="scan", required=False, type=str, default="initial",
-                    choices=['initial'],
-                    help='Determines which scan you want to run. This is the core of the program. The scans have the'
-                         'following behavior:\n    - Initial: Collects all of the IPs in the DHCP server\'s registry, '
-                         'then it runs an OME discovery scan against all of those IPs. After it finishes the discovery '
-                         'scan it collects an inventory of those machines and writes it out to disk.')
-parser.add_argument("--omeip", "-i", required=True, help="OME Appliance IP")
-parser.add_argument("--omeuser", "-u", required=False,
-                    help="Username for OME Appliance", default="admin")
-parser.add_argument("--omepass", "-p", required=True,
-                    help="Password for OME Appliance")
-parser.add_argument("--idracuser", required=False, default="root",
-                    help="This command is only used for the initial scan. It is the username for the servers' idracs.")
-parser.add_argument("--idracpass", required=False,
-                    help="This command is only used for the initial scan. It is the password for the servers' idracs.")
+class MyParser(argparse.ArgumentParser):
+    def error(self, message):
+        sys.stderr.write('error: %s\n' % message)
+        self.print_help()
+        sys.exit(1)
 
-args = parser.parse_args()
 
-try:
-    socket.inet_aton(args.omeip)
-except socket.error:
-    logging.error("The OME IP address " + str(args.omeip) + " is not a valid IP address. Exiting.")
-    exit(1)
+if __name__ == "__main__":
+    parser = MyParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('--discoveryscan', '-d', dest="discoveryscan", required=False, type=str,
+                        help='Internal debugging command. Not for end user use. Allows you to bypass the discovery'
+                             ' scan and manually input a scan to use.')
+    parser.add_argument('--log-level', metavar='LOG_LEVEL', dest="log_level", required=False, type=str, default="info",
+                        choices=['debug', 'info', 'warning', 'error', 'critical'],
+                        help='The log level at which you want to run.')
+    parser.add_argument('--start-dhcp-server', dest="dhcp", required=False, action='store_true', default=False,
+                        help="Starts a DHCP server in the background that is used to assign IP addresses to the servers. "
+                             "If you want to update the settings for the DHCP server browse to the file "
+                             "lib/dhcpserv/dhcpgui.conf and edit it there. You can also skip this step altogether and"
+                             " manually add servers by using the --servers <filename> switch. If you want to see the"
+                             " hosts found by the DHCP server you can check lib/dhcpserv/hosts.csv.")
+    parser.add_argument("--servers", dest="servers", required=False, default=None, type=str,
+                        help="If you do not want to use the DHCP server you can instead pass a file with a list of servers."
+                             " The format is one server per line. Ex:\n192.168.1.1\n192.168.1.2\n192.168.1.3")
+    parser.add_argument('--scan', dest="scan", required=False, type=str, default="initial",
+                        choices=['initial','final'],
+                        help='Determines which scan you want to run. This is the core of the program. The scans have the '
+                             'following behavior:\n    - Initial: Collects all of the IPs in the DHCP server\'s registry, '
+                             'then it runs an OME discovery scan against all of those IPs. After it finishes the discovery '
+                             'scan it collects an inventory of those machines and writes it out to disk.\n    - Final: '
+                             'This is the second scan. It expects a previous inventory as an argument, will load the data'
+                             ' from that inventory, and then rescan those machines. This includes rechecking the inventory'
+                             ' and checking the current health of the hardware. It will produce an excel spreadsheet with'
+                             ' inventories for each of the servers, a comparison of the original inventory and the current,'
+                             ' and the health.')
+    parser.add_argument("--inventory", dest="inventory", required=False, type=str,
+                        help="Optional argument for the final scan. Allows you to specify an inventory you want to use."
+                             "If not provided, it will default to \'last_inventory.bin\'")
+    parser.add_argument("--omeip", "-i", required=True, type=str, help="OME Appliance IP")
+    parser.add_argument("--omeuser", "-u", required=False, type=str, help="Username for OME Appliance", default="admin")
+    parser.add_argument("--omepass", "-p", required=True, type=str, help="Password for OME Appliance")
+    parser.add_argument("--idracuser", required=False, default="root", type=str,
+                        help="This command is only used for the initial scan. It is the username for the servers' idracs.")
+    parser.add_argument("--idracpass", required=False, type=str,
+                        help="This command is only used for the initial scan. It is the password for the servers' idracs.")
 
-if args.log_level:
-    if args.log_level == "debug":
-        logging.basicConfig(level=logging.DEBUG)
-    elif args.log_level == "info":
+    args = parser.parse_args()
+
+    # The servers dictionary has all servers listed by both ID->service tag and
+    discovery_scan_path = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
+    if os.path.isfile(discovery_scan_path):
+        with open(discovery_scan_path, 'rb') as discovery_database:
+            servers = pickle.load(discovery_database)
+    else:
+        servers = {}
+
+    try:
+        socket.inet_aton(args.omeip)
+    except socket.error:
+        logging.error("The OME IP address " + str(args.omeip) + " is not a valid IP address. Exiting.")
+        exit(1)
+
+    if args.log_level:
+        if args.log_level == "debug":
+            logging.basicConfig(level=logging.DEBUG)
+        elif args.log_level == "info":
+            logging.basicConfig(level=logging.INFO)
+        elif args.log_level == "warning":
+            logging.basicConfig(level=logging.WARNING)
+        elif args.log_level == "error":
+            logging.basicConfig(level=logging.ERROR)
+        elif args.log_level == "critical":
+            logging.basicConfig(level=logging.CRITICAL)
+    else:
         logging.basicConfig(level=logging.INFO)
-    elif args.log_level == "warning":
-        logging.basicConfig(level=logging.WARNING)
-    elif args.log_level == "error":
-        logging.basicConfig(level=logging.ERROR)
-    elif args.log_level == "critical":
-        logging.basicConfig(level=logging.CRITICAL)
-else:
-    logging.basicConfig(level=logging.INFO)
 
-if args.dhcp:
-    # Change the working directory to the DHCP server's directory
-    os.chdir(os.path.join(os.getcwd(), "lib", "dhcpserv"))
-    os.remove("hosts.csv")
-    process = subprocess.Popen(["python", "dhcp.py"], stdout=subprocess.PIPE)
-    while True:
-        output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
-            break
-        if output:
-            test = output
-            logging.info(output.strip().decode("utf-8"))
-    rc = process.poll()
+    if args.dhcp:
+        # Change the working directory to the DHCP server's directory
+        os.chdir(os.path.join(os.getcwd(), "lib", "dhcpserv"))
+        os.remove("hosts.csv")
+        process = subprocess.Popen(["python", "dhcp.py"], stdout=subprocess.PIPE)
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                test = output
+                logging.info(output.strip().decode("utf-8"))
+        rc = process.poll()
 
-ips = None
+    ips = None
 
-if args.servers:
-    if os.path.isfile(args.servers):
-        with open(args.servers, 'r') as ip_file:
-            ips = ip_file.readlines()
-
-            # Strip whitespace characters
-            ips[:] = map(str.strip, ips)
-
-        for ip in ips:
-            try:
-                socket.inet_aton(ip)
-            except socket.error:
-                logging.error(str(ip) + " is not a valid IP address. Exiting.")
-                exit(1)
-    else:
-        logging.error("Could not find a file at path " + args.servers + ". Are you sure that's a valid file path?")
-        exit(1)
-
-if args.scan == "initial":
-
-    if not args.idracuser:
-        logging.error("For the initial scan you must provide the argument --idracuser.")
-        exit(1)
-    elif not args.idracpass:
-        logging.error("For the initial scan you must provide the argument --idracpassword.")
-        exit(1)
-
-    if ips is not None:
-        logging.info("--servers argument provided. Ignoring hosts assigned by DHCP server.")
-    else:
-        logging.info("--servers argument not provided. Using lib/dhcpserv/hosts.csv from DHCP server.")
-        path = os.path.join(os.getcwd(), "lib", "dhcpserv", "hosts.csv")
-        if os.path.isfile(path):
-            with open(path, 'r') as ip_file:
+    if args.servers:
+        if os.path.isfile(args.servers):
+            with open(args.servers, 'r') as ip_file:
                 ips = ip_file.readlines()
 
-                # Change something with the format '00:50:56:C0:00:01;192.168.173.6;precisionworkstation;1597178186'
-                # to just an IP
-                for i, ip in enumerate(ips):
-                    ips[i] = ip.split(';')[1].strip()
+                # Strip whitespace characters
+                ips[:] = map(str.strip, ips)
 
             for ip in ips:
                 try:
@@ -699,9 +686,78 @@ if args.scan == "initial":
                     logging.error(str(ip) + " is not a valid IP address. Exiting.")
                     exit(1)
         else:
-            logging.error("It looks like you didn't provide the --servers argument and lib/dhcpserv/hosts.csv"
-                          " doesn't exist. You need to either provide the argument --servers or you need to run the"
-                          " dhcp server first.")
+            logging.error("Could not find a file at path " + args.servers + ". Are you sure that's a valid file path?")
             exit(1)
 
-    discover(ips, args.omeip, args.omeuser, args.omepass, args.idracuser, args.idracpass)
+    if args.scan == "initial":
+
+        if not args.idracuser:
+            logging.error("For the initial scan you must provide the argument --idracuser.")
+            exit(1)
+        elif not args.idracpass:
+            logging.error("For the initial scan you must provide the argument --idracpassword.")
+            exit(1)
+
+        if ips is not None:
+            logging.info("--servers argument provided. Ignoring hosts assigned by DHCP server.")
+        else:
+            logging.info("--servers argument not provided. Using lib/dhcpserv/hosts.csv from DHCP server.")
+            path = os.path.join(os.getcwd(), "lib", "dhcpserv", "hosts.csv")
+            if os.path.isfile(path):
+                with open(path, 'r') as ip_file:
+                    ips = ip_file.readlines()
+
+                    # Change something with the format '00:50:56:C0:00:01;192.168.173.6;precisionworkstation;1597178186'
+                    # to just an IP
+                    for i, ip in enumerate(ips):
+                        ips[i] = ip.split(';')[1].strip()
+
+                for ip in ips:
+                    try:
+                        socket.inet_aton(ip)
+                    except socket.error:
+                        logging.error(str(ip) + " is not a valid IP address. Exiting.")
+                        exit(1)
+            else:
+                logging.error("It looks like you didn't provide the --servers argument and lib/dhcpserv/hosts.csv"
+                              " doesn't exist. You need to either provide the argument --servers or you need to run the"
+                              " dhcp server first.")
+                exit(1)
+
+        if not args.discoveryscan:
+            servers = discover(ips, args.omeip, args.omeuser, args.omepass, args.idracuser, args.idracpass)
+        else:
+            logging.warning("--discoveryscan provided. This is a debug command. Make sure you know what you're doing.")
+            if args.discoveryscan == "latest":
+                args.discoveryscan = default=os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
+            with open(args.discoveryscan, 'rb') as discoveryscan:
+                servers = pickle.load(discoveryscan)
+        hardware_inventory(servers, args.omeip, args.omeuser, args.omepass)
+
+    elif args.scan == "final":
+
+        path = os.path.join(os.getcwd(), "inventories")
+        device_inventories_global = {}
+        if args.inventory:
+            if os.path.exists(args.inventory):
+                with open(args.inventory, 'rb') as inventories:
+                    device_inventories_global = pickle.load(inventories)
+            elif os.path.exists(os.path.join(os.getcwd(), "inventories", args.inventory)):
+                logging.warning("We didn't find the path you specified: " + args.inventory + ". We are using the path "
+                                + os.path.join(os.getcwd(), "inventories", args.inventory) + " for you.")
+                with open(os.path.join(os.getcwd(), "inventories", args.inventory), 'rb') as inventories:
+                    device_inventories_global = pickle.load(inventories)
+            else:
+                logging.error(args.inventory + " is not a valid path. Are you sure you typed it correctly?")
+        elif not os.path.exists(path):
+            logging.error("The path " + path + " does not exist. This is where the inventories should be stored. The"
+                          " program cannot perform a final scan without an original inventory to compare against. You"
+                          " can either provide your own inventory with \'--inventory <your_inventory>.bin\' or you can"
+                          " rerun the initial scan.")
+            exit(1)
+        else:
+            with open(os.path.join(path, "last_inventory.bin"), 'rb') as inventories:
+                device_inventories_global = pickle.load(inventories)
+
+        for device_identifier in device_inventories_global.keys():
+            pass
