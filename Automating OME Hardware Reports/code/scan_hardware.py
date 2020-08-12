@@ -194,7 +194,8 @@ def discover(target_ips: list, ome_ip: str, ome_username: str, ome_password: str
     return servers
 
 
-def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_password: str) -> dict:
+def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_password: str,
+                    xldatabase: xl.database = None) -> tuple:
     """
     Retrieves the hardware's health
 
@@ -204,7 +205,7 @@ def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_
     """
 
     auth_success, headers = lib.ome.authenticate_with_ome(ome_ip, ome_username, ome_password)
-    health = {}
+    system_health = {}
 
     for device_id in servers_to_check["id_list"]:
 
@@ -213,38 +214,74 @@ def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_
         response = requests.get(url, headers=headers, verify=False)
         if response.status_code != 200:
             logging.error("Failed to retrieve health. Error received " + str(json.loads(response.content)))
-            return {}
+            return None
         else:
             content = json.loads(response.content)
             if content["@odata.count"] > 0:
-                health[device_id] = {}
+                system_health[device_id] = {}
                 for item in content['value']:
                     if item["@odata.type"] == "#DeviceService.SubSystemHealthFaultModel":
-                        health[device_id]["errors"] = {}
+                        system_health[device_id]["errors"] = {}
                         if "FaultList" in item:
                             for index, error in enumerate(item["FaultList"]):
-                                health[device_id]["errors"][index] = {}
+                                system_health[device_id]["errors"][index] = {}
                                 if "Fqdd" in error:
-                                    health[device_id]["errors"][index]["location"] = error["Fqdd"]
+                                    system_health[device_id]["errors"][index]["location"] = error["Fqdd"]
                                 if "MessageId" in error:
-                                    health[device_id]["errors"][index]["messageid"] = error["MessageId"]
+                                    system_health[device_id]["errors"][index]["messageid"] = error["MessageId"]
                                 if "Message" in error:
-                                    health[device_id]["errors"][index]["message"] = error["Message"]
+                                    system_health[device_id]["errors"][index]["message"] = error["Message"]
                                 if "Severity" in error:
-                                    health[device_id]["errors"][index]["severity"] = health_mapping[error["Severity"]]
+                                    system_health[device_id]["errors"][index]["severity"] = \
+                                        health_mapping[error["Severity"]]
                                 if "SubSystem" in error:
-                                    health[device_id]["errors"][index]["subsystem"] = error["SubSystem"]
+                                    system_health[device_id]["errors"][index]["subsystem"] = error["SubSystem"]
                                 if "RecommendedAction" in error:
-                                    health[device_id]["errors"][index]["recommended_action"] = error[
+                                    system_health[device_id]["errors"][index]["recommended_action"] = error[
                                         "RecommendedAction"]
-                        health[device_id]["health"] = health_mapping[item["RollupStatus"]]
+                        system_health[device_id]["health"] = health_mapping[item["RollupStatus"]]
                         break
             else:
                 logging.error("We successfully retrieved the server health, but there were no values. "
                               "We aren't sure why this would happen.")
-                return {}
+                return None
             logging.info("Retrieved health for " + servers_to_check[device_id])
-    return health
+
+    logging.info("Generating Excel spreadsheet for hardware health.")
+    if not xldatabase:
+        xldatabase = xl.Database()
+    xldatabase.add_ws("Hardware Errors",
+                      {'A1': {'v': "Service Tag", 'f': '', 's': ''},
+               'B1': {'v': "System idrac IP", 'f': '', 's': ''},
+               'C1': {'v': "OME System Identifier", 'f': '', 's': ''},
+               'D1': {'v': "Location", 'f': '', 's': ''},
+               'E1': {'v': "Message ID", 'f': '', 's': ''},
+               'F1': {'v': "Message", 'f': '', 's': ''},
+               'G1': {'v': "Severity", 'f': '', 's': ''},
+               'H1': {'v': "Subsystem", 'f': '', 's': ''},
+               'I1': {'v': "Recommended Action", 'f': '', 's': ''}})
+    y = 2
+    for device_id, health in system_health.items():
+        logging.info("Processing " + device_id)
+        for error in health["errors"].values():
+            xldatabase.ws("Hardware Errors").update_index(row=y, col=1, val=servers_to_check[device_id])
+            xldatabase.ws("Hardware Errors").update_index(row=y, col=2, val=servers_to_check["id_to_ip"][device_id])
+            xldatabase.ws("Hardware Errors").update_index(row=y, col=3, val=device_id)
+            if "location" in error:
+                xldatabase.ws("Hardware Errors").update_index(row=y, col=4, val=error["location"])
+            if "messageid" in error:
+                xldatabase.ws("Hardware Errors").update_index(row=y, col=5, val=error["messageid"])
+            if "message" in error:
+                xldatabase.ws("Hardware Errors").update_index(row=y, col=6, val=error["message"])
+            if "severity" in error:
+                xldatabase.ws("Hardware Errors").update_index(row=y, col=7, val=error["severity"])
+            if "subsystem" in error:
+                xldatabase.ws("Hardware Errors").update_index(row=y, col=8, val=error["subsystem"])
+            if "recommended_action" in error:
+                xldatabase.ws("Hardware Errors").update_index(row=y, col=9, val=error["recommended_action"])
+            y = y + 1
+
+    return system_health, xldatabase
 
 
 def hardware_inventory(servers_to_retrieve: dict, ome_ip: str, ome_username: str, ome_password: str) -> tuple:
@@ -420,7 +457,8 @@ def hardware_inventory(servers_to_retrieve: dict, ome_ip: str, ome_username: str
     return device_inventories, db
 
 
-def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> xl.Database:
+def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
+                        xldatabase: xl.database = None) -> xl.Database:
     """
     Compare two inventories and produce an excel sheet with the results
 
@@ -428,21 +466,10 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
     127.0.0.1:5000/api/compare_inventories -H "Content-Type: application/json"
     """
 
-    # TODO - This can probably get removed
+    if not xldatabase:
+        xldatabase = xl.Database()
 
     """
-    path = os.path.join(os.getcwd(), "inventories")
-    logging.info("Reading binary database from the file \"" + str(os.path.join(path, inventory1)) + "\" from disk.")
-    with open(os.path.join(path, inventory1), 'rb') as database:
-        device_inventory_1 = pickle.load(database)
-
-    logging.info("Reading binary database from the file \"" + str(os.path.join(path, inventory2)) + "\" from disk.")
-    with open(os.path.join(path, inventory2), 'rb') as database:
-        device_inventory_2 = pickle.load(database)
-    """
-
-    db = xl.Database()
-
     device_inventory_2["12446"]["PCI Cards"][1]["Manufacturer"] = "New Manufacturer"
     device_inventory_2["12446"]["PCI Cards"][1]["Slot Number"] = "AHCI.Slot.2-2"
     device_inventory_2["12446"]["PCI Cards"][1]["Databus Width"] = "8x or x 8"
@@ -453,7 +480,8 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
     device_inventory_2["12902"]["Power Supplies"][2] = {"ID": 984, "Location": "PSU.Slot.3", "Output Watts": 9000,
                                                         "Firmware Version": "00.3D.67",
                                                         "Model": 'PWR SPLY,1600W,RDNT,DELTA', "Serial Number": "Stuff"}
-    db.add_ws("Inventory Deltas",
+    """
+    xldatabase.add_ws("Inventory Deltas",
               {'A1': {'v': "Service Tag", 'f': '', 's': ''},
                'B1': {'v': "System idrac IP", 'f': '', 's': ''},
                'C1': {'v': "OME System Identifier", 'f': '', 's': ''},
@@ -501,28 +529,28 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
 
                             if change_made:
                                 y = y + 1
-                                db.ws("Inventory Deltas").update_index(row=y, col=2,
+                                xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
                                                                        val=device_inventory_2[identifier]["idrac IP"])
-                                db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
-                                db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
-                                db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Updated")
-                                db.ws("Inventory Deltas").update_index(row=y, col=6, val=original_string)
-                                db.ws("Inventory Deltas").update_index(row=y, col=7, val=updated_string)
-                                db.ws("Inventory Deltas").update_index(row=y, col=8, val=changed_string)
+                                xldatabase.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
+                                xldatabase.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
+                                xldatabase.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Updated")
+                                xldatabase.ws("Inventory Deltas").update_index(row=y, col=6, val=original_string)
+                                xldatabase.ws("Inventory Deltas").update_index(row=y, col=7, val=updated_string)
+                                xldatabase.ws("Inventory Deltas").update_index(row=y, col=8, val=changed_string)
 
                     if not device_found:
                         y = y + 1
-                        db.ws("Inventory Deltas").update_index(row=y, col=2,
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
                                                                val=device_inventory_2[identifier]["idrac IP"])
-                        db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
-                        db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
-                        db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Removed")
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Removed")
 
                         string = ""
                         for key, value in values.items():
                             string = string + key + ": " + str(value) + "\n"
 
-                        db.ws("Inventory Deltas").update_index(row=y, col=6, val=string)
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=6, val=string)
 
         else:
             warning = "Device identifier " + str(identifier) + " was found in inventory 1, but not in inventory 2. " \
@@ -530,7 +558,7 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
                           "idrac IP"] + ". This probably shouldn't have " \
                                         "happened. The error is not fatal, but should be investigated]."
             logging.warning(warning)
-            db.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
+            xldatabase.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
 
     for identifier, inventory in device_inventory_2.items():
         if identifier in device_inventory_1:
@@ -546,17 +574,17 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
 
                     if not device_found:
                         y = y + 1
-                        db.ws("Inventory Deltas").update_index(row=y, col=2,
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
                                                                val=device_inventory_2[identifier]["idrac IP"])
-                        db.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
-                        db.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
-                        db.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Added")
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Added")
 
                         string = ""
                         for key, value in values.items():
                             string = string + key + ": " + str(value) + "\n"
 
-                        db.ws("Inventory Deltas").update_index(row=y, col=6, val=string)
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=6, val=string)
 
         else:
             warning = "Device identifier " + str(
@@ -565,9 +593,9 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict) -> x
                           "idrac IP"] + ". This probably shouldn't have happened. " \
                                         "The error is not fatal, but should be investigated]."
             logging.warning(warning)
-            db.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
+            xldatabase.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
 
-    return db.ws("Inventory Deltas")
+    return xldatabase.ws("Inventory Deltas")
 
 
 class MyParser(argparse.ArgumentParser):
@@ -728,16 +756,16 @@ if __name__ == "__main__":
     elif args.scan == "final":
 
         path = os.path.join(os.getcwd(), "inventories")
-        device_inventories_global = {}
+        device_inventories_global_1 = {}
         if args.inventory:
             if os.path.exists(args.inventory):
                 with open(args.inventory, 'rb') as inventories:
-                    device_inventories_global = pickle.load(inventories)
+                    device_inventories_global_1 = pickle.load(inventories)
             elif os.path.exists(os.path.join(os.getcwd(), "inventories", args.inventory)):
                 logging.warning("We didn't find the path you specified: " + args.inventory + ". We are using the path "
                                 + os.path.join(os.getcwd(), "inventories", args.inventory) + " for you.")
                 with open(os.path.join(os.getcwd(), "inventories", args.inventory), 'rb') as inventories:
-                    device_inventories_global = pickle.load(inventories)
+                    device_inventories_global_1 = pickle.load(inventories)
             else:
                 logging.error(args.inventory + " is not a valid path. Are you sure you typed it correctly?")
         elif not os.path.exists(path):
@@ -748,9 +776,19 @@ if __name__ == "__main__":
             exit(1)
         else:
             with open(os.path.join(path, "last_inventory.bin"), 'rb') as inventories:
-                device_inventories_global = pickle.load(inventories)
+                device_inventories_global_1 = pickle.load(inventories)
 
-        server_health = hardware_health(servers, args.omeip, args.omeuser, args.omepass)
-        device_inventories_global_2, inventory_spreadsheet = \
+        device_inventories_global_2, output_excel = \
             hardware_inventory(servers, args.omeip, args.omeuser, args.omepass)
-        print(server_health)
+        server_health_dict, server_health_excel = hardware_health(servers, args.omeip, args.omeuser, args.omepass,
+                                                                  output_excel)
+        comparison_results = compare_inventories(device_inventories_global_1, device_inventories_global_2,
+                                                 output_excel)
+
+        output_path = os.path.join(os.getcwd(), "output")
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
+
+        dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
+        xl.writexl(output_excel, dtstring + ".xlsx")
+        os.replace(dtstring + ".xlsx", os.path.join(output_path, dtstring + ".xlsx"))
