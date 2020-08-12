@@ -252,14 +252,14 @@ def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_
         xldatabase = xl.Database()
     xldatabase.add_ws("Hardware Errors",
                       {'A1': {'v': "Service Tag", 'f': '', 's': ''},
-               'B1': {'v': "System idrac IP", 'f': '', 's': ''},
-               'C1': {'v': "OME System Identifier", 'f': '', 's': ''},
-               'D1': {'v': "Location", 'f': '', 's': ''},
-               'E1': {'v': "Message ID", 'f': '', 's': ''},
-               'F1': {'v': "Message", 'f': '', 's': ''},
-               'G1': {'v': "Severity", 'f': '', 's': ''},
-               'H1': {'v': "Subsystem", 'f': '', 's': ''},
-               'I1': {'v': "Recommended Action", 'f': '', 's': ''}})
+                       'B1': {'v': "System idrac IP", 'f': '', 's': ''},
+                       'C1': {'v': "OME System Identifier", 'f': '', 's': ''},
+                       'D1': {'v': "Location", 'f': '', 's': ''},
+                       'E1': {'v': "Message ID", 'f': '', 's': ''},
+                       'F1': {'v': "Message", 'f': '', 's': ''},
+                       'G1': {'v': "Severity", 'f': '', 's': ''},
+                       'H1': {'v': "Subsystem", 'f': '', 's': ''},
+                       'I1': {'v': "Recommended Action", 'f': '', 's': ''}})
     y = 2
     for device_id, health in system_health.items():
         logging.info("Processing " + device_id)
@@ -296,7 +296,7 @@ def hardware_inventory(servers_to_retrieve: dict, ome_ip: str, ome_username: str
         if ome_field in ome_device:
             device_inventories[device_id][dict_device][index][dict_field] = ome_device[ome_field]
         else:
-            logging.warning(ome_field + " was not in OpenManage's database for device with ID " +
+            logging.warning(ome_field + " was not in OpenManage's database for device with sub ID " +
                             str(device_inventories[device_id][dict_device][index]["ID"]) + ". The device type was "
                             + dict_device + ". The host has idrac IP " + servers_to_retrieve["id_to_ip"][device_id] +
                             " and service tag " + servers_to_retrieve[device_id] +
@@ -469,33 +469,32 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
     if not xldatabase:
         xldatabase = xl.Database()
 
-    """
-    device_inventory_2["12446"]["PCI Cards"][1]["Manufacturer"] = "New Manufacturer"
-    device_inventory_2["12446"]["PCI Cards"][1]["Slot Number"] = "AHCI.Slot.2-2"
-    device_inventory_2["12446"]["PCI Cards"][1]["Databus Width"] = "8x or x 8"
-    device_inventory_2["12446"]["PCI Cards"][2]["Manufacturer"] = "New Manufacturer"
-    device_inventory_2["12446"]["PCI Cards"][2]["Slot Number"] = "AHCI.Slot.2-2"
-    device_inventory_2["12446"]["PCI Cards"][2]["Databus Width"] = "8x or x 8"
-    device_inventory_2["12902"]["Processors"].pop(2)
-    device_inventory_2["12902"]["Power Supplies"][2] = {"ID": 984, "Location": "PSU.Slot.3", "Output Watts": 9000,
+    device_inventory_2["13128"]["PCI Cards"][1]["Manufacturer"] = "New Manufacturer"
+    device_inventory_2["13128"]["PCI Cards"][1]["Slot Number"] = "AHCI.Slot.2-2"
+    device_inventory_2["13128"]["PCI Cards"][1]["Databus Width"] = "8x or x 8"
+    device_inventory_2["13128"]["PCI Cards"][2]["Manufacturer"] = "New Manufacturer"
+    device_inventory_2["13128"]["PCI Cards"][2]["Slot Number"] = "AHCI.Slot.2-2"
+    device_inventory_2["13128"]["PCI Cards"][2]["Databus Width"] = "8x or x 8"
+    device_inventory_2["13136"]["Processors"].pop(2)
+    device_inventory_2["13136"]["Power Supplies"][2] = {"ID": 984, "Location": "PSU.Slot.3", "Output Watts": 9000,
                                                         "Firmware Version": "00.3D.67",
                                                         "Model": 'PWR SPLY,1600W,RDNT,DELTA', "Serial Number": "Stuff"}
-    """
+
     xldatabase.add_ws("Inventory Deltas",
-              {'A1': {'v': "Service Tag", 'f': '', 's': ''},
-               'B1': {'v': "System idrac IP", 'f': '', 's': ''},
-               'C1': {'v': "OME System Identifier", 'f': '', 's': ''},
-               'D1': {'v': "Effected Subsystem", 'f': '', 's': ''},
-               'E1': {'v': "Change Made", 'f': '', 's': ''},
-               'F1': {'v': "Component Details", 'f': '', 's': ''},
-               'G1': {'v': "Updated Component Details", 'f': '', 's': ''},
-               'H1': {'v': "Deltas", 'f': '', 's': ''}})
+                      {'A1': {'v': "Service Tag", 'f': '', 's': ''},
+                       'B1': {'v': "System idrac IP", 'f': '', 's': ''},
+                       'C1': {'v': "OME System Identifier", 'f': '', 's': ''},
+                       'D1': {'v': "Effected Subsystem", 'f': '', 's': ''},
+                       'E1': {'v': "Change Made", 'f': '', 's': ''},
+                       'F1': {'v': "Component Details", 'f': '', 's': ''},
+                       'G1': {'v': "Updated Component Details", 'f': '', 's': ''},
+                       'H1': {'v': "Deltas", 'f': '', 's': ''}})
 
     y = 1
 
     for identifier, inventory in device_inventory_1.items():
 
-        logging.info("Comparing inventory for device which had idrac IP of " + inventory["idrac IP"])
+        logging.info("Comparing inventory for device which had service tag " + servers[identifier])
 
         if identifier in device_inventory_2:
             for subsystem, items in inventory.items():
@@ -520,17 +519,21 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
                                     logging.info("Difference found in subsystem " + str(subsystem) + " on device " +
                                                  str(comparison_device) + " in key " + str(key))
                                     changed_string = changed_string + key + ": " + str(value) + " --> CHANGED TO --> " \
-                                                     + device_inventory_2[identifier][subsystem][comparison_device][key]\
+                                                     + device_inventory_2[identifier][subsystem][comparison_device][key] \
                                                      + "\n"
                                 original_string = original_string + key + ": " + str(value) + "\n"
                                 updated_string = updated_string + key + ": " + \
-                                                 str(device_inventory_2[identifier][subsystem][comparison_device][key])\
+                                                 str(device_inventory_2[identifier][subsystem][comparison_device][key]) \
                                                  + "\n"
 
                             if change_made:
                                 y = y + 1
+                                xldatabase.ws("Inventory Deltas").update_index(row=y, col=1,
+                                                                               val=servers[identifier])
+                                what = device_inventory_2[identifier]["idrac IP"]
                                 xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
-                                                                       val=device_inventory_2[identifier]["idrac IP"])
+                                                                               val=device_inventory_2[identifier][
+                                                                                   "idrac IP"])
                                 xldatabase.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
                                 xldatabase.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
                                 xldatabase.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Updated")
@@ -540,8 +543,9 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
 
                     if not device_found:
                         y = y + 1
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=1, val=servers[identifier])
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
-                                                               val=device_inventory_2[identifier]["idrac IP"])
+                                                                       val=device_inventory_2[identifier]["idrac IP"])
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Removed")
@@ -574,8 +578,9 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
 
                     if not device_found:
                         y = y + 1
+                        xldatabase.ws("Inventory Deltas").update_index(row=y, col=1, val=servers[identifier])
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
-                                                               val=device_inventory_2[identifier]["idrac IP"])
+                                                                       val=device_inventory_2[identifier]["idrac IP"])
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=4, val=subsystem)
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=5, val="Component Added")
@@ -623,7 +628,7 @@ if __name__ == "__main__":
                         help="If you do not want to use the DHCP server you can instead pass a file with a list of servers."
                              " The format is one server per line. Ex:\n192.168.1.1\n192.168.1.2\n192.168.1.3")
     parser.add_argument('--scan', dest="scan", required=False, type=str, default="initial",
-                        choices=['initial','final'],
+                        choices=['initial', 'final'],
                         help='Determines which scan you want to run. This is the core of the program. The scans have the '
                              'following behavior:\n    - Initial: Collects all of the IPs in the DHCP server\'s registry, '
                              'then it runs an OME discovery scan against all of those IPs. After it finishes the discovery '
@@ -748,7 +753,7 @@ if __name__ == "__main__":
         else:
             logging.warning("--discoveryscan provided. This is a debug command. Make sure you know what you're doing.")
             if args.discoveryscan == "latest":
-                args.discoveryscan = default=os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
+                args.discoveryscan = default = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
             with open(args.discoveryscan, 'rb') as discoveryscan:
                 servers = pickle.load(discoveryscan)
         hardware_inventory(servers, args.omeip, args.omeuser, args.omepass)
@@ -770,9 +775,9 @@ if __name__ == "__main__":
                 logging.error(args.inventory + " is not a valid path. Are you sure you typed it correctly?")
         elif not os.path.exists(path):
             logging.error("The path " + path + " does not exist. This is where the inventories should be stored. The"
-                          " program cannot perform a final scan without an original inventory to compare against. You"
-                          " can either provide your own inventory with \'--inventory <your_inventory>.bin\' or you can"
-                          " rerun the initial scan.")
+                                               " program cannot perform a final scan without an original inventory to compare against. You"
+                                               " can either provide your own inventory with \'--inventory <your_inventory>.bin\' or you can"
+                                               " rerun the initial scan.")
             exit(1)
         else:
             with open(os.path.join(path, "last_inventory.bin"), 'rb') as inventories:
@@ -789,6 +794,7 @@ if __name__ == "__main__":
         if not os.path.exists(output_path):
             os.mkdir(output_path)
 
-        dtstring = datetime.now().strftime("%d-%b-%Y-%H%M")
-        xl.writexl(output_excel, dtstring + ".xlsx")
-        os.replace(dtstring + ".xlsx", os.path.join(output_path, dtstring + ".xlsx"))
+        dtstring_global = datetime.now().strftime("%d-%b-%Y-%H%M")
+        xl.writexl(output_excel, dtstring_global + ".xlsx")
+        os.replace(dtstring_global + ".xlsx", os.path.join(output_path, dtstring_global + ".xlsx"))
+        logging.info("Finished creating excel sheet. See " + os.path.join(output_path, dtstring_global + ".xlsx"))
