@@ -155,7 +155,7 @@ def get_job_id(ip_address, headers, discovery_config_group_id):
     return job_id
 
 
-def track_job_to_completion(ip_address, headers, job_id):
+def track_job_to_completion(ip_address, headers, job_id, sleep_interval=30):
     """ Tracks the  job to completion / error """
     job_status_map = {
         "2020": "Scheduled",
@@ -173,7 +173,6 @@ def track_job_to_completion(ip_address, headers, job_id):
     }
 
     max_retries = 20
-    sleep_interval = 30
     failed_job_status = [2070, 2090, 2100, 2101, 2102, 2103]
     job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, job_id)
     loop_ctr = 0
@@ -189,14 +188,14 @@ def track_job_to_completion(ip_address, headers, job_id):
             logging.info("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_str))
             if int(job_status) == 2060:
                 job_incomplete = False
-                logging.info("Completed discovering of devices successfully ... Exiting")
+                logging.info("Completed job successfully ... Exiting")
                 break
             elif int(job_status) in failed_job_status:
                 job_incomplete = False
                 if job_status_str == "Warning":
                     logging.warning("Completed with errors")
                 else:
-                    logging.error("discovering of device failed ... ")
+                    logging.error("Job failed ... ")
                 job_hist_url = str(job_url) + "/ExecutionHistories"
                 job_hist_resp = requests.get(job_hist_url, headers=headers, verify=False)
                 if job_hist_resp.status_code == 200:

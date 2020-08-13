@@ -25,6 +25,7 @@ import pickle
 from lib.discover_device import discover_device, get_job_id, track_job_to_completion
 from lib.ome import get_device_ids_by_idrac_ip, get_device_list
 from lib.create_static_group import create_static_group
+from lib.power_cycle_servers import power_control_servers
 import lib.ome
 from urllib3 import disable_warnings
 import pylightxl as xl
@@ -862,6 +863,16 @@ if __name__ == "__main__":
                                      headers=headers)
         if session_info.status_code == 201:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+
+            # TODO - update this for production
+            #power_control_servers(servers["id_list"], headers, power_off_non_graceful=True)
+            #power_control_servers(servers["id_list"], headers, power_on=True)
+            power_control_servers(["13136"], headers, args.omeip, power_off_non_graceful=True)
+            power_control_servers(["13136"], headers, args.omeip, power_on=True)
+
+            logging.info("Sleeping for 1 minute to ensure that the servers turn on and are ready with a new status.")
+            time.sleep(60)
+            logging.info("Sleep completed. Continuing.")
 
             targets = []
             for id_to_refresh in servers["id_list"]:
