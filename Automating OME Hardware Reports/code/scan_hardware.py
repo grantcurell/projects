@@ -482,6 +482,13 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
                                                         "Firmware Version": "00.3D.67",
                                                         "Model": 'PWR SPLY,1600W,RDNT,DELTA', "Serial Number": "Stuff"}
     """
+    device_inventory_2["13136"]["Power Supplies"][2] = {"ID": 984, "Location": "PSU.Slot.3", "Output Watts": 9000,
+                                                        "Firmware Version": "00.3D.67",
+                                                        "Model": 'PWR SPLY,1600W,RDNT,DELTA', "Serial Number": "Stuff"}
+    device_inventory_2["13136"]["Memory"][24] = {"ID": 8556, "Name": "DIMM.Socket.Q1", "Size": 8192, "Manufacturer":
+                                                "Hynix Semiconductor", "Part Number": "HMA81GR7CJR8N-VK", "Serial Number":
+                                                "GRANT", "Speed": 2666, "Current Operating Speed": 2666,
+                                                "Device Description": "DIMM Q1"}
 
     xldatabase.add_ws("Inventory Deltas",
                       {'A1': {'v': "Service Tag", 'f': '', 's': ''},
@@ -524,21 +531,23 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
                                         values["PCI Slot"]:
                                     # This is to account for SATA controllers
                                     if values["PCI Slot"] == "Not Applicable":
-                                        if device_inventory_2[identifier][subsystem][comparison_device]["Device Description"] == values["Device Description"]:
+                                        if device_inventory_2[identifier][subsystem][comparison_device]\
+                                                             ["Device Description"] == values["Device Description"]:
                                             slot_found = True
                                     else:
                                         slot_found = True
                             elif subsystem == "Memory":
-                                if device_inventory_2[identifier][subsystem][comparison_device]["Device Description"] ==\
-                                        values["Device Description"]:
+                                if device_inventory_2[identifier][subsystem][comparison_device]["Device Description"]\
+                                        == values["Device Description"]:
                                     slot_found = True
                             elif subsystem == "Disks":
                                 if device_inventory_2[identifier][subsystem][comparison_device]["Serial Number"] ==\
                                         values["Serial Number"]:
                                     slot_found = True
                             if slot_found:
-                                device_found = True
-                                logging.debug("Found match with device " + str(values["ID"]) + ". Processing comparison.")
+                                logging.debug("Found match with device " + str(values["ID"]) +
+                                              ". Processing comparison.")
+                                device_inventory_2[identifier][subsystem][comparison_device]["FOUND"] = True
                                 changed_string = ""
                                 original_string = ""
                                 updated_string = ""
@@ -585,8 +594,10 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
                             xldatabase.ws("Inventory Deltas").update_index(row=y, col=5, val="Threw an error during "
                                                                                              "comparison. Check logs.")
 
-                    if not device_found:
+                    if not slot_found:
                         y = y + 1
+                        logging.info("A device was removed from subsystem " + str(subsystem) + " on device " + str(
+                            servers[identifier]))
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=1, val=servers[identifier])
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
                                                                        val=device_inventory_2[identifier]["idrac IP"])
@@ -602,26 +613,27 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
 
         else:
             warning = "Device identifier " + str(identifier) + " was found in inventory 1, but not in inventory 2. " \
-                                                               "This corresponds to idrac IP " + inventory[
-                          "idrac IP"] + ". This probably shouldn't have " \
-                                        "happened. The error is not fatal, but should be investigated]."
+                      "This corresponds to idrac IP " + inventory["idrac IP"] + ". This probably shouldn't have " \
+                      "happened. The error is not fatal, but should be investigated]."
             logging.warning(warning)
-            xldatabase.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
+            y = y + 1
+            xldatabase.ws("Inventory Deltas").update_index(row=y, col=1,
+                                                           val=servers[identifier])
+            xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
+                                                           val=device_inventory_2[identifier][
+                                                               "idrac IP"])
+            xldatabase.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
+            xldatabase.ws("Inventory Deltas").update_index(row=y, col=4, val=warning)
 
-    """
     for identifier, inventory in device_inventory_2.items():
         if identifier in device_inventory_1:
             for subsystem, items in inventory.items():
                 if subsystem == "idrac IP":
                     continue
                 for device, values in items.items():
-                    device_found = False
-                    for comparison_device, comparison_device_values in device_inventory_1[identifier][subsystem] \
-                            .items():
-                        if device_inventory_1[identifier][subsystem][comparison_device]["ID"] == values["ID"]:
-                            device_found = True
-
-                    if not device_found:
+                    if "FOUND" not in values:
+                        logging.info("A device was added to subsystem " + str(subsystem) + " on device " +
+                                     str(servers[identifier]))
                         y = y + 1
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=1, val=servers[identifier])
                         xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
@@ -639,12 +651,18 @@ def compare_inventories(device_inventory_1: dict, device_inventory_2: dict,
         else:
             warning = "Device identifier " + str(
                 identifier) + " was found in inventory 2, but not in inventory 1. This " \
-                              "corresponds to idrac IP " + inventory[
-                          "idrac IP"] + ". This probably shouldn't have happened. " \
-                                        "The error is not fatal, but should be investigated]."
+                              "corresponds to idrac IP " + inventory["idrac IP"] + ". This probably shouldn't have " \
+                              "happened. The error is not fatal, but should be investigated]."
             logging.warning(warning)
-            xldatabase.ws("Inventory Deltas").update_index(row=1, col=1, val=warning)  # TODO - fix
-    """
+            y = y + 1
+            xldatabase.ws("Inventory Deltas").update_index(row=y, col=1,
+                                                           val=servers[identifier])
+            xldatabase.ws("Inventory Deltas").update_index(row=y, col=2,
+                                                           val=device_inventory_2[identifier][
+                                                               "idrac IP"])
+            xldatabase.ws("Inventory Deltas").update_index(row=y, col=3, val=identifier)
+            xldatabase.ws("Inventory Deltas").update_index(row=y, col=4, val=warning)
+
     return xldatabase.ws("Inventory Deltas")
 
 
