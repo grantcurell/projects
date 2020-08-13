@@ -23,14 +23,17 @@
 - [x] (Optional) Go back and fix the defaults for the Dell Code on username. It shouldn't be required.
 - [ ] Set up a DHCP server
 - [x] Figure out how to retrieve the service tag
-  - [ ] Add the service tag to the data output
+  - [x] Add the service tag to the data output
 - [ ] Update readme with actual instructions
   - [ ] Add the bit about the file names for inventory and discoveries
   - [ ] Tell people how to manipulate them if needed
 - [ ] Add instructions for manipulated the DHCP config file
 - [ ] Go back and look into the 204 error in the add_to_static_group code
-- [ ] If I'm not going to add a UI I need to go back and add in a command line tool
-- [ ] Need to go back and add inventory to the initial scan
+- [x] If I'm not going to add a UI I need to go back and add in a command line tool
+- [x] Need to go back and add inventory to the initial scan
+- [ ] Incorporate refresh inventory task
+- [ ] Figure out how to get around the IDs changing
+- [ ] Need to reboot the server to detect hardware changes
 
 Note: If I need a way to compare the IP address of the idrac and get the ID, you can retrieve it from the device inventory under deviceManagement
 

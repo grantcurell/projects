@@ -55,6 +55,7 @@ def authenticate_with_ome(ip_address: str, user_name: str, password: str) -> tup
     else:
         error_msg = "Failed create of session with {0} - Status code = {1}"
         logging.error(error_msg.format(ip_address, session_info.status_code))
+        exit(0)
     return auth_success, headers
 
 
