@@ -850,6 +850,63 @@ if __name__ == "__main__":
             with open(os.path.join(path, "last_inventory.bin"), 'rb') as inventories:
                 device_inventories_global_1 = pickle.load(inventories)
 
+        session_url = 'https://%s/api/SessionService/Sessions' % args.omeip
+        jobs_url = "https://%s/api/JobService/Jobs" % args.omeip
+        headers = {'content-type': 'application/json'}
+        user_details = {'UserName': args.omeuser,
+                        'Password': args.omepass,
+                        'SessionType': 'API'}
+
+        session_info = requests.post(session_url, verify=False,
+                                     data=json.dumps(user_details),
+                                     headers=headers)
+        if session_info.status_code == 201:
+            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+
+            targets = []
+            for id_to_refresh in servers["id_list"]:
+                targets.append({
+                    "Id": int(id_to_refresh),
+                    "Data": "",
+                    "TargetType": {
+                        "Id": 1000,
+                        "Name": "DEVICE"
+                    }
+                })
+
+            payload = {
+                "Id": 0,
+                "JobName": "Refresh inventory for server hardware.",
+                "JobDescription": "Refreshes the inventories for hardware in preparation for a final inventory scan.",
+                "Schedule": "startnow",
+                "State": "Enabled",
+                "JobType": {
+                    "Name": "Inventory_Task"
+                },
+                "Targets": targets
+            }
+
+            logging.info("Beginning inventory refresh. This is required to detect hardware changes.")
+            create_resp = requests.post(jobs_url, headers=headers, verify=False, data=json.dumps(payload))
+
+            job_id = None
+            if create_resp.status_code == 201:
+                job_id = json.loads(create_resp.content)["Id"]
+            else:
+                logging.error("Failed to refresh inventory. We aren't sure what went wrong.")
+                exit(1)
+
+            if job_id is None:
+                logging.error("Received invalid job ID from OME. Exiting.")
+                exit(1)
+
+            logging.info("Waiting for the inventory refresh to complete. This could take a couple of minutes.")
+            lib.discover_device.track_job_to_completion(args.omeip, headers, job_id)
+            logging.info("Inventory refresh completed.")
+        else:
+            logging.error("Failed to establish a connection to OpenManage.")
+            exit(1)
+
         device_inventories_global_2, output_excel = \
             hardware_inventory(servers, args.omeip, args.omeuser, args.omepass,
                                default_inventory_name="final_inventory.bin")

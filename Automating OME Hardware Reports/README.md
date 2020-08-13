@@ -31,8 +31,8 @@
 - [ ] Go back and look into the 204 error in the add_to_static_group code
 - [x] If I'm not going to add a UI I need to go back and add in a command line tool
 - [x] Need to go back and add inventory to the initial scan
-- [ ] Incorporate refresh inventory task
-- [ ] Figure out how to get around the IDs changing
+- [x] Incorporate refresh inventory task
+- [x] Figure out how to get around the IDs changing
 - [ ] Need to reboot the server to detect hardware changes
 
 Note: If I need a way to compare the IP address of the idrac and get the ID, you can retrieve it from the device inventory under deviceManagement
