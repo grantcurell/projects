@@ -34,9 +34,12 @@
 - [x] Incorporate refresh inventory task
 - [x] Figure out how to get around the IDs changing
 - [x] Need to reboot the server to detect hardware changes
-- [ ] Add health to the initial scan
+- [x] Add health to the initial scan
 - [ ] Figure out why the power supply doesn't show up in alerts
 - [ ] Add any servers that don't show up as green in the health report
+- [ ] Make sure the servers get skipped if they can't connect
+  - [ ] Put it in debug
+  - [ ] Make sure the server will report if the creds are wrong
 
 Note: If I need a way to compare the IP address of the idrac and get the ID, you can retrieve it from the device inventory under deviceManagement
 
@@ -51,18 +54,7 @@ Note: If I need a way to compare the IP address of the idrac and get the ID, you
 - https://topics-cdn.dell.com/pdf/poweredge-mx7000_api-guide5_en-us.pdf
 - https://www.dell.com/support/manuals/us/en/04/dell-openmanage-enterprise-tech-release/lex_techrel_pub/groups-service?guid=guid-894c21ef-14f8-44ea-9e98-9e4e613ca4a3&lang=en-us
 
-## For Jacob
 
-1. Create a GitHub account if you don't already have one
-2. [Download Gitkraken](https://www.gitkraken.com/download) and install it. Next, connect it to your GitHub account.
-3. [Fork](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo) my [Dell repository](https://github.com/grantcurell/dell)
-4. Use GitKraken to download your forked repository to your local machine
-5. Open the folder "Automating OME Hardware Reports". All our code will be in the code folder and I have made a folder called "Jacob" for you to work in.
-6. Use Excel to create two dummy files. They'll need a column header and the second should have some bogus data. Basically you just want to artificially recreate a scenario where you can find the delta between two columns that have the same name.
-7. Use [this library](https://docs.python.org/3/library/csv.html) to read the CSV.
-8. Using the column name, identify the two columns you want to compare in the two CSV files.
-9. Output the delta between the two CSV files to a third CSV file
-10. When you're finished making your code, [pull request](https://support.gitkraken.com/working-with-repositories/pull-requests/)] it to the master branch of my repository.
 
 ## Helpful things
 

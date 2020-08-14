@@ -220,7 +220,10 @@ def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_
             content = json.loads(response.content)
             if content["@odata.count"] > 0:
                 system_health[device_id] = {}
+                system_health[device_id]["subsystems"] = {}
                 for item in content['value']:
+                    system_health[device_id]["subsystems"][item["SubSystem"]] = health_mapping[item["RollupStatus"]]
+                    system_health[device_id]["health"] = health_mapping[item["RollupStatus"]]
                     if item["@odata.type"] == "#DeviceService.SubSystemHealthFaultModel":
                         system_health[device_id]["errors"] = {}
                         if "FaultList" in item:
@@ -240,8 +243,6 @@ def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_
                                 if "RecommendedAction" in error:
                                     system_health[device_id]["errors"][index]["recommended_action"] = error[
                                         "RecommendedAction"]
-                        system_health[device_id]["health"] = health_mapping[item["RollupStatus"]]
-                        break
             else:
                 logging.error("We successfully retrieved the server health, but there were no values. "
                               "We aren't sure why this would happen.")
@@ -281,6 +282,53 @@ def hardware_health(servers_to_check: dict, ome_ip: str, ome_username: str, ome_
             if "recommended_action" in error:
                 xldatabase.ws("Hardware Errors").update_index(row=y, col=9, val=error["recommended_action"])
             y = y + 1
+
+    xldatabase.add_ws("Hardware Status",
+                      {'A1': {'v': "Service Tag", 'f': '', 's': ''},
+                       'B1': {'v': "System idrac IP", 'f': '', 's': ''},
+                       'C1': {'v': "OME System Identifier", 'f': '', 's': ''},
+                       'D1': {'v': "System Health", 'f': '', 's': ''},
+                       'E1': {'v': "SEL/Misc", 'f': '', 's': ''},
+                       'F1': {'v': "Voltage", 'f': '', 's': ''},
+                       'G1': {'v': "Current", 'f': '', 's': ''},
+                       'H1': {'v': "Intrusion", 'f': '', 's': ''},
+                       'I1': {'v': "Power Supply", 'f': '', 's': ''},
+                       'J1': {'v': "Processor", 'f': '', 's': ''},
+                       'K1': {'v': "Memory", 'f': '', 's': ''},
+                       'L1': {'v': "Storage", 'f': '', 's': ''},
+                       'O1': {'v': "Fan", 'f': '', 's': ''},
+                       'M1': {'v': "Temperature", 'f': '', 's': ''},
+                       'N1': {'v': "Battery", 'f': '', 's': ''}})
+    y = 2
+    for device_id, health in system_health.items():
+        logging.info("Processing hardware status for " + device_id)
+        xldatabase.ws("Hardware Status").update_index(row=y, col=1, val=servers_to_check[device_id])
+        xldatabase.ws("Hardware Status").update_index(row=y, col=2, val=servers_to_check["id_to_ip"][device_id])
+        xldatabase.ws("Hardware Status").update_index(row=y, col=3, val=device_id)
+        xldatabase.ws("Hardware Status").update_index(row=y, col=4, val=health["health"])
+        if "SEL/Misc" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=5, val=health["subsystems"]["SEL/Misc"])
+        if "Voltage" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=6, val=health["subsystems"]["Voltage"])
+        if "Current" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=7, val=health["subsystems"]["Current"])
+        if "Intrusion" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=8, val=health["subsystems"]["Intrusion"])
+        if "PowerSupply" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=9, val=health["subsystems"]["PowerSupply"])
+        if "Processor" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=10, val=health["subsystems"]["Processor"])
+        if "Memory" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=11, val=health["subsystems"]["Memory"])
+        if "Storage" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=12, val=health["subsystems"]["Storage"])
+        if "Fan" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=13, val=health["subsystems"]["Fan"])
+        if "Temperature" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=14, val=health["subsystems"]["Temperature"])
+        if "Battery" in health["subsystems"]:
+            xldatabase.ws("Hardware Status").update_index(row=y, col=15, val=health["subsystems"]["Battery"])
+        y = y + 1
 
     return system_health, xldatabase
 
@@ -841,7 +889,8 @@ if __name__ == "__main__":
                 exit(1)
 
         if not args.discoveryscan:
-            servers = discover(ips, args.omeip, args.omeuser, args.omepass, args.idracuser, args.idracpass)
+            if not args.skip:
+                servers = discover(ips, args.omeip, args.omeuser, args.omepass, args.idracuser, args.idracpass)
 
             if not servers:
                 logging.error("Discovery scan failed. Exiting.")
