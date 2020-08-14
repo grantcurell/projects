@@ -675,33 +675,37 @@ class MyParser(argparse.ArgumentParser):
 
 
 if __name__ == "__main__":
-    parser = MyParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    description = "Used to generate an Excel spreadsheet with the deltas between two sets of servers. Example usage:" \
+                  "\n\nRunning an initial scan: python scan_hardware.py --omeip 192.168.1.18 --omepass someomepassword --scan initial --idracuser root --idracpass someidracpassword --servers servers.txt" \
+                  "\n\nRunning a final scan: python scan_hardware.py --omeip 192.168.1.18 --omepass someomepassword --scan final"
+    parser = MyParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--discoveryscan', '-d', dest="discoveryscan", required=False, type=str,
-                        help='Internal debugging command. Not for end user use. Allows you to bypass the discovery'
-                             ' scan and manually input a scan to use.')
+                        help='Internal debugging command. Not for end user use.')
+    parser.add_argument('--skip-inventory-refresh', '-s', dest="skip", required=False, action='store_true',
+                        help='Internal debugging command. Not for end user use.')
     parser.add_argument('--log-level', metavar='LOG_LEVEL', dest="log_level", required=False, type=str, default="info",
                         choices=['debug', 'info', 'warning', 'error', 'critical'],
                         help='The log level at which you want to run.')
     parser.add_argument('--start-dhcp-server', dest="dhcp", required=False, action='store_true', default=False,
-                        help="Starts a DHCP server in the background that is used to assign IP addresses to the servers. "
-                             "If you want to update the settings for the DHCP server browse to the file "
-                             "lib/dhcpserv/dhcpgui.conf and edit it there. You can also skip this step altogether and"
-                             " manually add servers by using the --servers <filename> switch. If you want to see the"
-                             " hosts found by the DHCP server you can check lib/dhcpserv/hosts.csv.")
+                        help="Starts a DHCP server in the background that is used to assign IP addresses to the servers. \n"
+                             "    If you want to update the settings for the DHCP server browse to the file \n"
+                             "    lib/dhcpserv/dhcpgui.conf and edit it there. You can also skip this step altogether and\n"
+                             "    manually add servers by using the --servers <filename> switch. If you want to see the\n"
+                             "    hosts found by the DHCP server you can check lib/dhcpserv/hosts.csv.")
     parser.add_argument("--servers", dest="servers", required=False, default=None, type=str,
                         help="If you do not want to use the DHCP server you can instead pass a file with a list of servers."
                              " The format is one server per line. Ex:\n192.168.1.1\n192.168.1.2\n192.168.1.3")
     parser.add_argument('--scan', dest="scan", required=False, type=str, default="initial",
                         choices=['initial', 'final'],
                         help='Determines which scan you want to run. This is the core of the program. The scans have the '
-                             'following behavior:\n    - Initial: Collects all of the IPs in the DHCP server\'s registry, '
-                             'then it runs an OME discovery scan against all of those IPs. After it finishes the discovery '
-                             'scan it collects an inventory of those machines and writes it out to disk.\n    - Final: '
-                             'This is the second scan. It expects a previous inventory as an argument, will load the data'
-                             ' from that inventory, and then rescan those machines. This includes rechecking the inventory'
-                             ' and checking the current health of the hardware. It will produce an excel spreadsheet with'
-                             ' inventories for each of the servers, a comparison of the original inventory and the current,'
-                             ' and the health.')
+                             'following behavior:\n    - Initial: Collects all of the IPs in the DHCP server\'s registry, \n'
+                             '     then it runs an OME discovery scan against all of those IPs. After it finishes the discovery \n'
+                             '     scan it collects an inventory of those machines and writes it out to disk.\n    - Final: '
+                             'This is the second scan. It expects a previous inventory as an argument, will load the data\n'
+                             '     from that inventory, and then rescan those machines. This includes rechecking the inventory\n'
+                             '     and checking the current health of the hardware. It will produce an excel spreadsheet with\n'
+                             '     inventories for each of the servers, a comparison of the original inventory and the current,\n'
+                             '     and the health.')
     parser.add_argument("--inventory", dest="inventory", required=False, type=str,
                         help="Optional argument for the final scan. Allows you to specify an inventory you want to use."
                              "If not provided, it will default to \'last_inventory.bin\'")
@@ -812,6 +816,28 @@ if __name__ == "__main__":
                               " dhcp server first.")
                 exit(1)
 
+        if not args.skip:
+            session_url = 'https://%s/api/SessionService/Sessions' % args.omeip
+            headers = {'content-type': 'application/json'}
+            user_details = {'UserName': args.omeuser,
+                            'Password': args.omepass,
+                            'SessionType': 'API'}
+
+            session_info = requests.post(session_url, verify=False,
+                                         data=json.dumps(user_details),
+                                         headers=headers)
+            if session_info.status_code == 201:
+                headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+
+                # TODO - update this for production
+                # power_control_servers(servers["id_list"], headers, power_off_non_graceful=True)
+                # power_control_servers(servers["id_list"], headers, power_on=True)
+                power_control_servers(["13136"], headers, args.omeip, power_off_non_graceful=True)
+                power_control_servers(["13136"], headers, args.omeip, power_on=True)
+            else:
+                logging.error("Could not create session with OME. Exiting.")
+                exit(1)
+
         if not args.discoveryscan:
             servers = discover(ips, args.omeip, args.omeuser, args.omepass, args.idracuser, args.idracpass)
 
@@ -824,7 +850,26 @@ if __name__ == "__main__":
                 args.discoveryscan = default = os.path.join(os.getcwd(), "discovery_scans", "latest_discovery.bin")
             with open(args.discoveryscan, 'rb') as discoveryscan:
                 servers = pickle.load(discoveryscan)
-        hardware_inventory(servers, args.omeip, args.omeuser, args.omepass)
+        output_excel = hardware_inventory(servers, args.omeip, args.omeuser, args.omepass)[1]
+
+        server_health_dict, server_health_excel = hardware_health(servers, args.omeip, args.omeuser, args.omepass,
+                                                                  output_excel)
+
+        output_path = os.path.join(os.getcwd(), "output")
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
+        dtstring_global = datetime.now().strftime("%d-%b-%Y-%H%M")
+        xl.writexl(output_excel, dtstring_global + ".xlsx")
+        os.replace(dtstring_global + ".xlsx", os.path.join(output_path, dtstring_global + "-initial-scan.xlsx"))
+        logging.info("Finished creating excel sheet. See "
+                     + os.path.join(output_path, dtstring_global + "-initial-scan.xlsx"))
+        logging.info("Finished initial scan.")
+        if not args.skip:
+            logging.info("Shutting down servers.")
+            # TODO - update this for production
+            # power_control_servers(servers["id_list"], headers, power_off_non_graceful=True)
+            # power_control_servers(servers["id_list"], headers, power_on=True)
+            power_control_servers(["13136"], headers, args.omeip, power_off_non_graceful=True)
 
     elif args.scan == "final":
 
@@ -851,72 +896,73 @@ if __name__ == "__main__":
             with open(os.path.join(path, "last_inventory.bin"), 'rb') as inventories:
                 device_inventories_global_1 = pickle.load(inventories)
 
-        session_url = 'https://%s/api/SessionService/Sessions' % args.omeip
-        jobs_url = "https://%s/api/JobService/Jobs" % args.omeip
-        headers = {'content-type': 'application/json'}
-        user_details = {'UserName': args.omeuser,
-                        'Password': args.omepass,
-                        'SessionType': 'API'}
+        if not args.skip:
+            session_url = 'https://%s/api/SessionService/Sessions' % args.omeip
+            jobs_url = "https://%s/api/JobService/Jobs" % args.omeip
+            headers = {'content-type': 'application/json'}
+            user_details = {'UserName': args.omeuser,
+                            'Password': args.omepass,
+                            'SessionType': 'API'}
 
-        session_info = requests.post(session_url, verify=False,
-                                     data=json.dumps(user_details),
-                                     headers=headers)
-        if session_info.status_code == 201:
-            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+            session_info = requests.post(session_url, verify=False,
+                                         data=json.dumps(user_details),
+                                         headers=headers)
+            if session_info.status_code == 201:
+                headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
 
-            # TODO - update this for production
-            #power_control_servers(servers["id_list"], headers, power_off_non_graceful=True)
-            #power_control_servers(servers["id_list"], headers, power_on=True)
-            power_control_servers(["13136"], headers, args.omeip, power_off_non_graceful=True)
-            power_control_servers(["13136"], headers, args.omeip, power_on=True)
+                # TODO - update this for production
+                #power_control_servers(servers["id_list"], headers, power_off_non_graceful=True)
+                #power_control_servers(servers["id_list"], headers, power_on=True)
+                power_control_servers(["13136"], headers, args.omeip, power_off_non_graceful=True)
+                power_control_servers(["13136"], headers, args.omeip, power_on=True)
 
-            logging.info("Sleeping for 1 minute to ensure that the servers turn on and are ready with a new status.")
-            time.sleep(60)
-            logging.info("Sleep completed. Continuing.")
+                logging.info("Sleeping for 1 minute to ensure that the servers turn on and are ready with a new status.")
+                time.sleep(60)
+                logging.info("Sleep completed. Continuing.")
 
-            targets = []
-            for id_to_refresh in servers["id_list"]:
-                targets.append({
-                    "Id": int(id_to_refresh),
-                    "Data": "",
-                    "TargetType": {
-                        "Id": 1000,
-                        "Name": "DEVICE"
-                    }
-                })
+                targets = []
+                for id_to_refresh in servers["id_list"]:
+                    targets.append({
+                        "Id": int(id_to_refresh),
+                        "Data": "",
+                        "TargetType": {
+                            "Id": 1000,
+                            "Name": "DEVICE"
+                        }
+                    })
 
-            payload = {
-                "Id": 0,
-                "JobName": "Refresh inventory for server hardware.",
-                "JobDescription": "Refreshes the inventories for hardware in preparation for a final inventory scan.",
-                "Schedule": "startnow",
-                "State": "Enabled",
-                "JobType": {
-                    "Name": "Inventory_Task"
-                },
-                "Targets": targets
-            }
+                payload = {
+                    "Id": 0,
+                    "JobName": "Refresh inventory for server hardware.",
+                    "JobDescription": "Refreshes the inventories for hardware in preparation for a final inventory scan.",
+                    "Schedule": "startnow",
+                    "State": "Enabled",
+                    "JobType": {
+                        "Name": "Inventory_Task"
+                    },
+                    "Targets": targets
+                }
 
-            logging.info("Beginning inventory refresh. This is required to detect hardware changes.")
-            create_resp = requests.post(jobs_url, headers=headers, verify=False, data=json.dumps(payload))
+                logging.info("Beginning inventory refresh. This is required to detect hardware changes.")
+                create_resp = requests.post(jobs_url, headers=headers, verify=False, data=json.dumps(payload))
 
-            job_id = None
-            if create_resp.status_code == 201:
-                job_id = json.loads(create_resp.content)["Id"]
+                job_id = None
+                if create_resp.status_code == 201:
+                    job_id = json.loads(create_resp.content)["Id"]
+                else:
+                    logging.error("Failed to refresh inventory. We aren't sure what went wrong.")
+                    exit(1)
+
+                if job_id is None:
+                    logging.error("Received invalid job ID from OME. Exiting.")
+                    exit(1)
+
+                logging.info("Waiting for the inventory refresh to complete. This could take a couple of minutes.")
+                lib.discover_device.track_job_to_completion(args.omeip, headers, job_id)
+                logging.info("Inventory refresh completed.")
             else:
-                logging.error("Failed to refresh inventory. We aren't sure what went wrong.")
+                logging.error("Failed to establish a connection to OpenManage.")
                 exit(1)
-
-            if job_id is None:
-                logging.error("Received invalid job ID from OME. Exiting.")
-                exit(1)
-
-            logging.info("Waiting for the inventory refresh to complete. This could take a couple of minutes.")
-            lib.discover_device.track_job_to_completion(args.omeip, headers, job_id)
-            logging.info("Inventory refresh completed.")
-        else:
-            logging.error("Failed to establish a connection to OpenManage.")
-            exit(1)
 
         device_inventories_global_2, output_excel = \
             hardware_inventory(servers, args.omeip, args.omeuser, args.omepass,
@@ -934,3 +980,7 @@ if __name__ == "__main__":
         xl.writexl(output_excel, dtstring_global + ".xlsx")
         os.replace(dtstring_global + ".xlsx", os.path.join(output_path, dtstring_global + ".xlsx"))
         logging.info("Finished creating excel sheet. See " + os.path.join(output_path, dtstring_global + ".xlsx"))
+        logging.info("Shutting servers back down.")
+        if not args.skip:
+            power_control_servers(["13136"], headers, args.omeip, power_off_non_graceful=True)
+            logging.info("Server shutdown complete.")

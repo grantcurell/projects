@@ -33,7 +33,10 @@
 - [x] Need to go back and add inventory to the initial scan
 - [x] Incorporate refresh inventory task
 - [x] Figure out how to get around the IDs changing
-- [ ] Need to reboot the server to detect hardware changes
+- [x] Need to reboot the server to detect hardware changes
+- [ ] Add health to the initial scan
+- [ ] Figure out why the power supply doesn't show up in alerts
+- [ ] Add any servers that don't show up as green in the health report
 
 Note: If I need a way to compare the IP address of the idrac and get the ID, you can retrieve it from the device inventory under deviceManagement
 
