@@ -681,7 +681,7 @@ if __name__ == "__main__":
     parser = MyParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--discoveryscan', '-d', dest="discoveryscan", required=False, type=str,
                         help='Internal debugging command. Not for end user use.')
-    parser.add_argument('--skip-inventory-refresh', '-s', dest="skip", required=False, action='store_true',
+    parser.add_argument('--skip', '-s', dest="skip", required=False, action='store_true',
                         help='Internal debugging command. Not for end user use.')
     parser.add_argument('--log-level', metavar='LOG_LEVEL', dest="log_level", required=False, type=str, default="info",
                         choices=['debug', 'info', 'warning', 'error', 'critical'],
@@ -709,9 +709,9 @@ if __name__ == "__main__":
     parser.add_argument("--inventory", dest="inventory", required=False, type=str,
                         help="Optional argument for the final scan. Allows you to specify an inventory you want to use."
                              "If not provided, it will default to \'last_inventory.bin\'")
-    parser.add_argument("--omeip", "-i", required=True, type=str, help="OME Appliance IP")
+    parser.add_argument("--omeip", "-i", required=False, type=str, help="OME Appliance IP")
     parser.add_argument("--omeuser", "-u", required=False, type=str, help="Username for OME Appliance", default="admin")
-    parser.add_argument("--omepass", "-p", required=True, type=str, help="Password for OME Appliance")
+    parser.add_argument("--omepass", "-p", required=False, type=str, help="Password for OME Appliance")
     parser.add_argument("--idracuser", required=False, default="root", type=str,
                         help="This command is only used for the initial scan. It is the username for the servers' idracs.")
     parser.add_argument("--idracpass", required=False, type=str,
@@ -726,12 +726,6 @@ if __name__ == "__main__":
             servers = pickle.load(discovery_database)
     else:
         servers = {}
-
-    try:
-        socket.inet_aton(args.omeip)
-    except socket.error:
-        logging.error("The OME IP address " + str(args.omeip) + " is not a valid IP address. Exiting.")
-        exit(1)
 
     if args.log_level:
         if args.log_level == "debug":
@@ -750,7 +744,8 @@ if __name__ == "__main__":
     if args.dhcp:
         # Change the working directory to the DHCP server's directory
         os.chdir(os.path.join(os.getcwd(), "lib", "dhcpserv"))
-        os.remove("hosts.csv")
+        if os.path.isfile("hosts.csv"):
+            os.remove("hosts.csv")
         process = subprocess.Popen(["python", "dhcp.py"], stdout=subprocess.PIPE)
         while True:
             output = process.stdout.readline()
@@ -760,6 +755,13 @@ if __name__ == "__main__":
                 test = output
                 logging.info(output.strip().decode("utf-8"))
         rc = process.poll()
+        exit(1)
+
+    try:
+        socket.inet_aton(args.omeip)
+    except socket.error:
+        logging.error("The OME IP address " + str(args.omeip) + " is not a valid IP address. Exiting.")
+        exit(1)
 
     ips = None
 
