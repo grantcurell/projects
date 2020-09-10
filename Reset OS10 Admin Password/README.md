@@ -1,5 +1,7 @@
 # Resetting Dell OS10 Password
 
+Video: https://youtu.be/0VfJCa8s7yo
+
 1. Connect to the serial console port. The serial settings are 115,200 baud, 8 data bits, and no parity.
 2. Reboot or power up the system.
 3. Press ESC at the Grub prompt to view the boot menu. The OS10-A partition is selected by default.
