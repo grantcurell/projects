@@ -4,6 +4,10 @@
 
 https://youtu.be/b5MJiLTl9KE
 
+## Update
+
+It looks like the instructions are set up to take care of this, but they need to be updated - ![](https://www.dell.com/support/manuals/us/en/04/networking-s4148f-on/smartfabric-os-user-guide-10-5-1/recover-linux-password?guid=guid-4263f287-20e8-4f25-8092-75a532f0c7ea&lang=en-us) step 8 tells you to run a `sed` command that looks like it is targeted at reloving the problem, but it only tells you to run it on 10.5.1.0. When I went through this procedure I just ignored it because the customer was on 10.5.1.3
+
 ## Description
 
 Follow [Password recovery instructions](https://www.dell.com/support/manuals/us/en/04/networking-s4148f-on/smartfabric-os-user-guide-10-5-1/recover-linux-password?guid=guid-4263f287-20e8-4f25-8092-75a532f0c7ea&lang=en-us) to get into the switch at boot.
@@ -17,3 +21,9 @@ This is due to a previous configuration of OS10 when tho configuration was mount
 Removing the below lines resolves the issue:
 
 ![](images/lines.jpg)
+
+## Note
+
+[The manual](https://www.dell.com/support/manuals/us/en/04/networking-s4148f-on/smartfabric-os-user-guide-10-5-1/recover-linux-password?guid=guid-4263f287-20e8-4f25-8092-75a532f0c7ea&lang=en-us) does tell you to run a sed command, but it only mentions it for 10.5.1.0. It looks like it is targeted at fixing the same problem, but when run on 10.5.1.3 it doesn't seem like it has the right line count.
+
+![](images/line_count.JPG)
