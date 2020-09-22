@@ -298,7 +298,7 @@ This looks like it should be the docker build command `docker run --rm --name ro
             return p_sai_switch_api_tbl;
         }
 
-    - This is a pointer to a table. I'm guessing it's a struct. `sai_switch_api_t` is short for SAI switch API table. It is a point to the table with all the API calls.
+    - This is a pointer to a table. I'm guessing it's a struct. `sai_switch_api_t` is short for SAI switch API table. It is a pointer to the table with all the API calls.
       - From [this](https://github.com/opencomputeproject/SAI/blob/master/stub/inc/stub_sai.h) I got a hint - it looks like there is a thing called switch_api - the same name is used in OpenSwitch.
     - Based on the inputs from [nas_ndi_hash.c](https://github.com/open-switch/opx-nas-ndi/blob/1ba4c72309ef33d8600b18dedabc8aed2a8665ac/src/nas_ndi_hash.c) there must be a series of SAI files with the functionality I want.
 
