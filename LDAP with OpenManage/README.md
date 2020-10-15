@@ -1,5 +1,9 @@
 # Setting Up FreeIPA with OpenManage
 
+Conclusion: Currently FreeIPA isn't supported or tested against OpenManage. See [the User's Guide](https://topics-cdn.dell.com/pdf/dell-openmanage-enterprise_users-guide15_en-us.pdf) page 137.
+
+I'm going to try it with OpenLDAP
+
 ## My Environment
 
 ### CentOS Version
@@ -29,6 +33,10 @@
 
       [root@centos ~]# ipa --version
       VERSION: 4.8.4, API_VERSION: 2.235
+
+### OpenManage Version
+
+      Version 3.5.0 (Build 60)
 
 ## Helpful Resources
 
