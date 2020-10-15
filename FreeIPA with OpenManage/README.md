@@ -122,6 +122,32 @@ When I added a Bind DN as shown in [this video](https://www.youtube.com/watch?v=
 
 ![](images/2020-10-15-14-12-24.png)
 
+### Scenario 3 - Current Sticking Point
+
+Using the settings from scenario 1, I continued. When trying to add a group though, no groups are displayed in available groups.
+
+![](images/2020-10-15-15-21-27.png)
+
+#### Output
+
+      [15/Oct/2020:15:19:49.806462707 -0400] conn=169 fd=103 slot=103 SSL connection from 192.168.1.18 to 192.168.1.92
+      [15/Oct/2020:15:19:49.856773316 -0400] conn=169 TLS1.2 128-bit AES-GCM
+      [15/Oct/2020:15:19:49.858681446 -0400] conn=169 op=0 BIND dn="" method=128 version=3
+      [15/Oct/2020:15:19:49.858906917 -0400] conn=169 op=0 RESULT err=0 tag=97 nentries=0 etime=0.051584941 dn=""
+      [15/Oct/2020:15:19:49.864335125 -0400] conn=169 op=1 SRCH base="dc=grant,dc=lan" scope=2 filter="(uid=grant)" attrs=ALL
+      [15/Oct/2020:15:19:49.866001831 -0400] conn=169 op=1 RESULT err=0 tag=101 nentries=1 etime=0.001790286
+      [15/Oct/2020:15:19:49.867368889 -0400] conn=169 op=2 UNBIND
+      [15/Oct/2020:15:19:49.867386461 -0400] conn=169 op=2 fd=103 closed - U1
+      [15/Oct/2020:15:19:49.873375865 -0400] conn=170 fd=103 slot=103 SSL connection from 192.168.1.18 to 192.168.1.92
+      [15/Oct/2020:15:19:49.925956643 -0400] conn=170 TLS1.2 128-bit AES-GCM
+      [15/Oct/2020:15:19:49.928180447 -0400] conn=170 op=0 BIND dn="uid=grant,cn=users,cn=compat,dc=grant,dc=lan" method=128 version=3
+      [15/Oct/2020:15:19:49.928993026 -0400] conn=170 op=0 RESULT err=0 tag=97 nentries=0 etime=0.053916831 dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan"
+      [15/Oct/2020:15:19:49.934942058 -0400] conn=170 op=1 SRCH base="dc=grant,dc=lan" scope=2 filter="(&(cn=grantgroup*)(uniqueMember=*))" attrs="cn entryuuid"
+      [15/Oct/2020:15:19:49.935438340 -0400] conn=170 op=1 RESULT err=0 tag=101 nentries=0 etime=0.000639539
+      [15/Oct/2020:15:19:49.936729725 -0400] conn=170 op=2 UNBIND
+      [15/Oct/2020:15:19:49.936744908 -0400] conn=170 op=2 fd=103 closed - U1
+
+
 #### Log Output
 
       [15/Oct/2020:14:12:07.504942397 -0400] conn=112 fd=74 slot=74 SSL connection from 192.168.1.93 to 192.168.1.92
