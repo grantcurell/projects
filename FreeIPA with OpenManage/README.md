@@ -122,6 +122,18 @@ When I added a Bind DN as shown in [this video](https://www.youtube.com/watch?v=
 
 ![](images/2020-10-15-14-12-24.png)
 
+
+#### Log Output
+
+      [15/Oct/2020:14:12:07.504942397 -0400] conn=112 fd=74 slot=74 SSL connection from 192.168.1.93 to 192.168.1.92
+      [15/Oct/2020:14:12:07.550456498 -0400] conn=112 TLS1.2 128-bit AES-GCM
+      [15/Oct/2020:14:12:07.551077266 -0400] conn=112 op=0 BIND dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan" method=128 version=3
+      [15/Oct/2020:14:12:07.551767359 -0400] conn=112 op=0 RESULT err=0 tag=97 nentries=0 etime=0.046428458 dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan"
+      [15/Oct/2020:14:12:07.552283396 -0400] conn=112 op=1 SRCH base="dc=grant,dc=lan" scope=2 filter="(uid=grant)" attrs=ALL
+      [15/Oct/2020:14:12:07.553922212 -0400] conn=112 op=1 RESULT err=0 tag=101 nentries=1 etime=0.001752227
+      [15/Oct/2020:14:12:07.555518270 -0400] conn=112 op=2 UNBIND
+      [15/Oct/2020:14:12:07.555534158 -0400] conn=112 op=2 fd=74 closed - U1
+
 ### Scenario 3 - Current Sticking Point
 
 Using the settings from scenario 1, I continued. When trying to add a group though, no groups are displayed in available groups.
@@ -146,15 +158,3 @@ Using the settings from scenario 1, I continued. When trying to add a group thou
       [15/Oct/2020:15:19:49.935438340 -0400] conn=170 op=1 RESULT err=0 tag=101 nentries=0 etime=0.000639539
       [15/Oct/2020:15:19:49.936729725 -0400] conn=170 op=2 UNBIND
       [15/Oct/2020:15:19:49.936744908 -0400] conn=170 op=2 fd=103 closed - U1
-
-
-#### Log Output
-
-      [15/Oct/2020:14:12:07.504942397 -0400] conn=112 fd=74 slot=74 SSL connection from 192.168.1.93 to 192.168.1.92
-      [15/Oct/2020:14:12:07.550456498 -0400] conn=112 TLS1.2 128-bit AES-GCM
-      [15/Oct/2020:14:12:07.551077266 -0400] conn=112 op=0 BIND dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan" method=128 version=3
-      [15/Oct/2020:14:12:07.551767359 -0400] conn=112 op=0 RESULT err=0 tag=97 nentries=0 etime=0.046428458 dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan"
-      [15/Oct/2020:14:12:07.552283396 -0400] conn=112 op=1 SRCH base="dc=grant,dc=lan" scope=2 filter="(uid=grant)" attrs=ALL
-      [15/Oct/2020:14:12:07.553922212 -0400] conn=112 op=1 RESULT err=0 tag=101 nentries=1 etime=0.001752227
-      [15/Oct/2020:14:12:07.555518270 -0400] conn=112 op=2 UNBIND
-      [15/Oct/2020:14:12:07.555534158 -0400] conn=112 op=2 fd=74 closed - U1
