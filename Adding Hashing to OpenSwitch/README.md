@@ -324,7 +324,7 @@ This looks like it should be the docker build command `docker run --rm --name ro
 - [Broadcom Paper on Hashing](https://docs.broadcom.com/doc/12358326)
 - [Can I do this with openvswitch](http://docs.openvswitch.org/en/latest/tutorials/ovs-conntrack/)
   - This didn't pan out.
-- 
+- [Broadcom docs](http://broadcom-switch.github.io/OpenNSL/doc/html/pages.html)
 
 ## Descriptions
 
