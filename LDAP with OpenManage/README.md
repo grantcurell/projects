@@ -81,11 +81,11 @@ To start the IPA service use `ipactl start|stop|restart`. You can check the stat
 
 2. When I went to import the users from a group I received the following:
 
-![](2020-10-21-13-22-09.png)
+![](images/2020-10-21-13-22-09.png)
 
 The code in question:
 
-![](2020-10-21-13-23-00.png)
+![](images/2020-10-21-13-23-00.png)
 
 Below was the value of `u` at runtime:
 
