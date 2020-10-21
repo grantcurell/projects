@@ -1,67 +1,110 @@
-# Setting Up OpenLDAP with OpenManage
+# Setting Up FreeIPA with OpenManage
+
+Conclusion: Currently FreeIPA isn't supported or tested against OpenManage. See [the User's Guide](https://topics-cdn.dell.com/pdf/dell-openmanage-enterprise_users-guide15_en-us.pdf) page 137.
+
+I'm going to try it with OpenLDAP
 
 ## My Environment
 
+### RHEL Version
+
+      NAME="Red Hat Enterprise Linux"
+      VERSION="8.2 (Ootpa)"
+      ID="rhel"
+      ID_LIKE="fedora"
+      VERSION_ID="8.2"
+      PLATFORM_ID="platform:el8"
+      PRETTY_NAME="Red Hat Enterprise Linux 8.2 (Ootpa)"
+      ANSI_COLOR="0;31"
+      CPE_NAME="cpe:/o:redhat:enterprise_linux:8.2:GA"
+      HOME_URL="https://www.redhat.com/"
+      BUG_REPORT_URL="https://bugzilla.redhat.com/"
+
+      REDHAT_BUGZILLA_PRODUCT="Red Hat Enterprise Linux 8"
+      REDHAT_BUGZILLA_PRODUCT_VERSION=8.2
+      REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux"
+      REDHAT_SUPPORT_PRODUCT_VERSION="8.2"
+      Red Hat Enterprise Linux release 8.2 (Ootpa)
+      Red Hat Enterprise Linux release 8.2 (Ootpa)
+
+### FreeIPA Version
+
+      [root@centos ~]# ipa --version
+      VERSION: 4.8.4, API_VERSION: 2.235
+
 ### OpenManage Version
 
-      Version 3.5.0 (Build 60)
+      Version 3.4.1 (Build 24)
 
 ## Helpful Resources
 
 [Dell Tutorial](https://www.youtube.com/watch?v=pOojNfNbQ80&ab_channel=DellEMCSupport)
 
+[Logs Explained](https://access.redhat.com/documentation/en-us/red_hat_directory_server/10/html/configuration_command_and_file_reference/logs-reference)
+
 [LDAP Result Codes](https://access.redhat.com/documentation/en-us/red_hat_directory_server/10/html/configuration_command_and_file_reference/LDAP_Result_Codes)
 
 [Helpful Post on Bind DN](https://serverfault.com/questions/616698/in-ldap-what-exactly-is-a-bind-dn)
 
-[OpenManage User's Guide](https://topics-cdn.dell.com/pdf/dell-openmanage-enterprise_users-guide15_en-us.pdf)
+## Install Instructions
 
-[Fix This base cannot be created with PLA in phpldapadmin](https://stackoverflow.com/questions/13921030/phpldapadmin-does-not-work-for-an-unknown-reason)
+1. Install RHEL
+2. Change hostname
+   1. `hostname freeipa.grant.lan && hostnamectl set-hostname freeipa.grant.lan`
+   2. Change in /etc/hostname
+   3. Configure DNS to return for this hostname. Double check with `dig +short freeipa.grant.lan A && dig +short -x 192.168.1.95`
+5. Follow [RHEL's instructions](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/installing_identity_management/index)
+   1. I used Chapter 5 for primary installation
+6. 6. Run `kinit admin` - this allows you to use the command line tools otherwise they'll complain about kerberos.
+7.  Log into FreeIPA server at `https://<your_hostname>`. In my case, Windows popped up a username and password prompt. That prompt didn't work - I had to exit it and then log into the webGUI.
+8.  Go to Users and then directory services in OpenManage. I used the following:
+    1.  Note: You can get the Bind DN by running `ldapsearch` from the command line.
+9.  Create a new user and new group in the UI and assign the new user to the new group.
+10. Install OpenManage
+11. Go to Application Settings -> Directory Services
 
-[Turnkey OpenLDAP](https://www.turnkeylinux.org/openldap)
+![](images/2020-10-21-11-24-14.png)
 
-## Instructions
+12.  Substitute with your values and then click test. I wasn't able to get this to work with the generic admin user. In the test screen I used that new user to connect to directory services
 
-1. Download OpenLDAP appliance from [here](https://www.turnkeylinux.org/download?file=turnkey-openldap-16.0-buster-amd64-vmdk.zip)
-   1. Alternatively, you can build it yourself. [This tutorial](https://medium.com/@benjamin.dronen/installing-openldap-and-phpldapadmin-on-ubuntu-20-04-lts-7ef3ca40dc00 is helpful however you will have to add LDAPS for it to work with OpenManage Enterprise.
-2. 
+### Helpful Commands
 
+To start the IPA service use `ipactl start|stop|restart`. You can check the status with `ipactl status`.
 
-## Helpful Commands/Things
+## Errors Encountered
 
-### Run slapd in Foreground
+### Failure to Import Groups
 
-`sudo slapd -d 256 -d 128`
+1. I used the settings defined here:
 
-### View Database Configuration
+![](images/2020-10-21-11-24-14.png)
 
-The database configuration for OpenLDAP is stored at /etc/ldap/slapd.d
+2. When I went to import the users from a group I received the following:
 
-You can find a config your interested in with `grep -R <THING> *`. For example my user config was at `cn\=config/olcDatabase\=\{1\}mdb.ldif`.
+![](2020-10-21-13-22-09.png)
 
-### phpldapadmin Config Location
+The code in question:
 
-`/etc/phpldapadmin/config.php`
+![](2020-10-21-13-23-00.png)
 
-Line 300 has login stuff
+Below was the value of `u` at runtime:
 
-### Use a SRV record for Discovery
+[
+   {
+      "userTypeId":2,
+      "objectGuid":null,
+      "objectSid":null,
+      "directoryServiceId":13483,
+      "name":"grantgroup",
+      "password":"",
+      "userName":"grantgroup",
+      "roleId":"10",
+      "locked":false,
+      "isBuiltin":false,
+      "enabled":true
+   }
+]
+## Notes
 
-If you use DNS for Domain Controller Lookup when setting up LDAP what it will do is use a SRV record lookup to find your LDAP server.
-
-![](images/2020-10-19-09-02-14.png)
-
-If you want discovery to happen this way, you just need to add the appropriate SRV record to your DNS server. I was using PFSense so I added the following in Custom options:
-
-      server:
-      local-data: "_ldap._tcp.ubuntuldap.grant.lan 3600 IN SRV 0 100 389 ubuntuldap.grant.lan"
-
-## Potential Bug?
-
-When testing LDAP on OpenManage I noticed it would issue the message "Unable to connect to the LDAP or AD server because the entered credentials are invalid." However, while watching Wireshark I noted this coincided with a failed DNS query.
-
-![](images/2020-10-19-09-01-37.png)
-
-This error message appears to be a erroneous.
-
-![](images/2020-10-19-09-02-14.png)
+Bind DN he did: uid=<name>,cn=users,cn=accounts,dc=grant,dc=lan
+cn=accounts,dc=grant,dc=lan
