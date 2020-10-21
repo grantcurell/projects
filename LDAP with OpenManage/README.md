@@ -104,8 +104,3 @@ Below was the value of `u` at runtime:
             "enabled":true
       }
       ]
-
-## Notes
-
-Bind DN he did: uid=<name>,cn=users,cn=accounts,dc=grant,dc=lan
-cn=accounts,dc=grant,dc=lan
