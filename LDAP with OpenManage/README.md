@@ -89,21 +89,22 @@ The code in question:
 
 Below was the value of `u` at runtime:
 
-[
-   {
-      "userTypeId":2,
-      "objectGuid":null,
-      "objectSid":null,
-      "directoryServiceId":13483,
-      "name":"grantgroup",
-      "password":"",
-      "userName":"grantgroup",
-      "roleId":"10",
-      "locked":false,
-      "isBuiltin":false,
-      "enabled":true
-   }
-]
+      [
+      {
+            "userTypeId":2,
+            "objectGuid":null,
+            "objectSid":null,
+            "directoryServiceId":13483,
+            "name":"grantgroup",
+            "password":"",
+            "userName":"grantgroup",
+            "roleId":"10",
+            "locked":false,
+            "isBuiltin":false,
+            "enabled":true
+      }
+      ]
+
 ## Notes
 
 Bind DN he did: uid=<name>,cn=users,cn=accounts,dc=grant,dc=lan
