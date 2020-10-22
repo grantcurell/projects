@@ -224,7 +224,7 @@ See [duplicate_bug.py](./duplicate_bug.py) for a replication of the problem. Rep
             "enabled":true
       }
 
-with the data from your instance. I grabbed this out of the javascript debugger. To fix the problem, you have to lookup the uid/gid (which correspond to objectSid and objectGuid respectively) on your LDAP server. I used `ldapsearch` to find mine:
+with the data from your instance. I grabbed this out of the javascript debugger. To fix the problem, you have to lookup the uid/gid (which correspond to objectSid and objectGuid respectively) on your LDAP server and replace the null values. I used `ldapsearch` to find mine:
 
       # grant, users, compat, grant.lan
       dn: uid=grant,cn=users,cn=compat,dc=grant,dc=lan
@@ -242,3 +242,19 @@ with the data from your instance. I grabbed this out of the javascript debugger.
       uid: grant
 
 You can see the `uidNumber` and `gidNumber` fields. Change the payload out in [duplicate_bug.py](./duplicate_bug.py) and it will correctly import the group.
+
+      test_payload = [
+        {
+              "userTypeId": 2,
+              "objectGuid": 1314600001,
+              "objectSid": 1314600001,
+              "directoryServiceId": 13483,
+              "name": "grantgroup",
+              "password": "",
+              "userName": "grant",
+              "roleId": "10",
+              "locked": False,
+              "isBuiltin": False,
+              "enabled": True
+        }
+      ]
