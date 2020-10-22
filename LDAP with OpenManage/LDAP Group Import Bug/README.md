@@ -59,7 +59,7 @@
 10. Install OpenManage
 11. Go to Application Settings -> Directory Services
 
-![](images/2020-10-21-11-24-14.png)
+![](../images/2020-10-21-11-24-14.png)
 
 12.  Substitute with your values and then click test. I wasn't able to get this to work with the generic admin user. In the test screen I used that new user to connect to directory services
 
@@ -71,15 +71,15 @@ To start the IPA service use `ipactl start|stop|restart`. You can check the stat
 
 1. I used the settings defined here:
 
-![](images/2020-10-21-11-24-14.png)
+![](../images/2020-10-21-11-24-14.png)
 
 2. When I went to import the users from a group I received the following:
 
-![](images/2020-10-21-13-22-09.png)
+![](../images/2020-10-21-13-22-09.png)
 
 The code in question:
 
-![](images/2020-10-21-13-23-00.png)
+![](../images/2020-10-21-13-23-00.png)
 
 Below was the value of `u` at runtime:
 
@@ -208,4 +208,37 @@ The problem occurs because `objectGuid` and `objectSid` are set to null.
 
 ### Resolution
 
-See [duplicate_bug.py](duplicate_bug.py) for a replication of the problem. If you pull the 
+See [duplicate_bug.py](./duplicate_bug.py) for a replication of the problem. Replace the payload:
+
+      {
+            "userTypeId":2,
+            "objectGuid":null,
+            "objectSid":null,
+            "directoryServiceId":13483,
+            "name":"grantgroup",
+            "password":"",
+            "userName":"grantgroup",
+            "roleId":"10",
+            "locked":false,
+            "isBuiltin":false,
+            "enabled":true
+      }
+
+with the date from your instance. I grabbed this out of the javascript debugger. To fix the problem, you have to lookup the uid/gid (which correspond to objectSid and objectGuid respectively) on your LDAP server. I used `ldapsearch` to find mine:
+
+      # grant, users, compat, grant.lan
+      dn: uid=grant,cn=users,cn=compat,dc=grant,dc=lan
+      objectClass: posixAccount
+      objectClass: ipaOverrideTarget
+      objectClass: top
+      gecos: Grant Curell
+      cn: Grant Curell
+      uidNumber: 1314600001
+      gidNumber: 1314600001
+      loginShell: /bin/sh
+      homeDirectory: /home/grant
+      ipaAnchorUUID:: OklQQTpncmFudC5sYW46OWIzOTYwNDQtMTNhZS0xMWViLTllNzctMDA1MDU2Ym
+      U4NGIw
+      uid: grant
+
+You can see the `uidNumber` and `gidNumber` fields. Change the payload out in [duplicate_bug.py](./duplicate_bug.py) and it will correctly import the group.
