@@ -224,7 +224,7 @@ See [duplicate_bug.py](./duplicate_bug.py) for a replication of the problem. Rep
             "enabled":true
       }
 
-with the date from your instance. I grabbed this out of the javascript debugger. To fix the problem, you have to lookup the uid/gid (which correspond to objectSid and objectGuid respectively) on your LDAP server. I used `ldapsearch` to find mine:
+with the data from your instance. I grabbed this out of the javascript debugger. To fix the problem, you have to lookup the uid/gid (which correspond to objectSid and objectGuid respectively) on your LDAP server. I used `ldapsearch` to find mine:
 
       # grant, users, compat, grant.lan
       dn: uid=grant,cn=users,cn=compat,dc=grant,dc=lan
