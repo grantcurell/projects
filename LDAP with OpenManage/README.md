@@ -67,145 +67,47 @@
 
 To start the IPA service use `ipactl start|stop|restart`. You can check the status with `ipactl status`.
 
-## Bug
+Test LDAP credentials: `ldapwhoami -vvv -h 192.168.1.95 -p 389 -D 'uid=grant,cn=users,cn=accounts,dc=grant,dc=lan' -x -w <PASSWORD>`
 
-1. I used the settings defined here:
+## Update FreeIPA Schema
 
-![](images/2020-10-21-11-24-14.png)
+Request received:
 
-2. When I went to import the users from a group I received the following:
-
-![](images/2020-10-21-13-22-09.png)
-
-The code in question:
-
-![](images/2020-10-21-13-23-00.png)
-
-Below was the value of `u` at runtime:
-
-      [
-      {
-            "userTypeId":2,
-            "objectGuid":null,
-            "objectSid":null,
-            "directoryServiceId":13483,
-            "name":"grantgroup",
-            "password":"",
-            "userName":"grantgroup",
-            "roleId":"10",
-            "locked":false,
-            "isBuiltin":false,
-            "enabled":true
-      }
-      ]
-
-Error in logs
-
-      [ERROR] 2020-10-22 07:33:08.392 [ajp-bio-8009-exec-2] BaseController - com.dell.enterprise.exception.ui.ConsoleException: error.general_known_error_occurred
-      com.dell.enterprise.exception.ui.ConsoleException: error.general_known_error_occurred
-            at com.dell.enterprise.controller.console.ADController.importGroups(ADController.java:400) ~[UI.ADPlugin-0.0.1-SNAPSHOT.jar:?]
-            at sun.reflect.GeneratedMethodAccessor824.invoke(Unknown Source) ~[?:?]
-            at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_262]
-            at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_262]
-            at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:205) ~[spring-web-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:133) ~[spring-web-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:97) ~[spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:854) ~[spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:765) ~[spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:85) ~[spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:967) [spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:901) [spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:970) [spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:872) [spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at javax.servlet.http.HttpServlet.service(HttpServlet.java:650) [tomcat-servlet-3.0-api.jar:?]
-            at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:846) [spring-webmvc-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at javax.servlet.http.HttpServlet.service(HttpServlet.java:731) [tomcat-servlet-3.0-api.jar:?]
-            at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:303) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:208) [catalina.jar:7.0.76]
-            at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52) [tomcat7-websocket.jar:7.0.76]
-            at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:241) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:208) [catalina.jar:7.0.76]
-            at com.dell.enterprise.filter.ui.CacheControlFilter.doFilterInternal(CacheControlFilter.java:23) [classes/:?]
-            at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107) [spring-web-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:347) [spring-web-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:263) [spring-web-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:241) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:208) [catalina.jar:7.0.76]
-            at org.apache.catalina.filters.SetCharacterEncodingFilter.doFilter(SetCharacterEncodingFilter.java:108) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:241) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:208) [catalina.jar:7.0.76]
-            at org.apache.shiro.web.servlet.ProxiedFilterChain.doFilter(ProxiedFilterChain.java:61) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.AdviceFilter.executeChain(AdviceFilter.java:108) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.AdviceFilter.doFilterInternal(AdviceFilter.java:137) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:125) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.ProxiedFilterChain.doFilter(ProxiedFilterChain.java:66) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.AdviceFilter.executeChain(AdviceFilter.java:108) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.AdviceFilter.doFilterInternal(AdviceFilter.java:137) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:125) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.ProxiedFilterChain.doFilter(ProxiedFilterChain.java:66) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.AbstractShiroFilter.executeChain(AbstractShiroFilter.java:450) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.AbstractShiroFilter$1.call(AbstractShiroFilter.java:365) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.subject.support.SubjectCallable.doCall(SubjectCallable.java:90) [shiro-core-1.6.0.jar:1.6.0]
-            at org.apache.shiro.subject.support.SubjectCallable.call(SubjectCallable.java:83) [shiro-core-1.6.0.jar:1.6.0]
-            at org.apache.shiro.subject.support.DelegatingSubject.execute(DelegatingSubject.java:387) [shiro-core-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.AbstractShiroFilter.doFilterInternal(AbstractShiroFilter.java:362) [shiro-web-1.6.0.jar:1.6.0]
-            at org.apache.shiro.web.servlet.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:125) [shiro-web-1.6.0.jar:1.6.0]
-            at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:347) [spring-web-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:263) [spring-web-4.3.28.RELEASE.jar:4.3.28.RELEASE]
-            at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:241) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:208) [catalina.jar:7.0.76]
-            at com.dell.enterprise.core.integration.lib.common.filter.RequestFilter.doFilter(RequestFilter.java:103) [common-0.0.1-SNAPSHOT.jar:?]
-            at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:241) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:208) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:218) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:110) [catalina.jar:7.0.76]
-            at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:498) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:169) [catalina.jar:7.0.76]
-            at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:103) [catalina.jar:7.0.76]
-            at org.apache.catalina.valves.AccessLogValve.invoke(AccessLogValve.java:962) [catalina.jar:7.0.76]
-            at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:116) [catalina.jar:7.0.76]
-            at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:445) [catalina.jar:7.0.76]
-            at org.apache.coyote.ajp.AjpProcessor.process(AjpProcessor.java:190) [tomcat-coyote.jar:7.0.76]
-            at org.apache.coyote.AbstractProtocol$AbstractConnectionHandler.process(AbstractProtocol.java:637) [tomcat-coyote.jar:7.0.76]
-            at org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor.run(JIoEndpoint.java:316) [tomcat-coyote.jar:7.0.76]
-            at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149) [?:1.8.0_262]
-            at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624) [?:1.8.0_262]
-            at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61) [tomcat-coyote.jar:7.0.76]
-            at java.lang.Thread.run(Thread.java:748) [?:1.8.0_262]
+      [23/Oct/2020:07:12:13.558111497 -0400] conn=22 fd=101 slot=101 SSL connection from 192.168.1.93 to 192.168.1.95
+      [23/Oct/2020:07:12:13.605452505 -0400] conn=22 TLS1.2 128-bit AES-GCM
+      [23/Oct/2020:07:12:13.607423551 -0400] conn=22 op=0 BIND dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan" method=128 version=3
+      [23/Oct/2020:07:12:13.633734712 -0400] conn=22 op=0 RESULT err=0 tag=97 nentries=0 etime=0.075252172 dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan"
+      [23/Oct/2020:07:12:13.634444660 -0400] conn=22 op=1 SRCH base="cn=accounts,dc=grant,dc=lan" scope=2 filter="(uid=grant)" attrs=ALL
+      [23/Oct/2020:07:12:13.636377426 -0400] conn=22 op=1 RESULT err=0 tag=101 nentries=1 etime=0.001994528
+      [23/Oct/2020:07:12:13.637728783 -0400] conn=22 op=2 SRCH base="cn=accounts,dc=grant,dc=lan" scope=2 filter="(|(member=uid=grant,cn=users,cn=accounts,dc=grant,dc=lan)(member=grant))" attrs=ALL
+      [23/Oct/2020:07:12:13.638251981 -0400] conn=22 op=2 RESULT err=0 tag=101 nentries=2 etime=0.000588138
+      [23/Oct/2020:07:12:13.640124457 -0400] conn=23 fd=103 slot=103 SSL connection from 192.168.1.93 to 192.168.1.95
+      [23/Oct/2020:07:12:13.684231843 -0400] conn=23 TLS1.2 128-bit AES-GCM
+      [23/Oct/2020:07:12:13.685087831 -0400] conn=23 op=0 BIND dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan" method=128 version=3
+      [23/Oct/2020:07:12:13.685478906 -0400] conn=23 op=0 RESULT err=0 tag=97 nentries=0 etime=0.044995726 dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan"
+      [23/Oct/2020:07:12:13.686411703 -0400] conn=23 op=1 SRCH base="cn=accounts,dc=grant,dc=lan" scope=2 filter="(|(member=uid=grant,cn=users,cn=accounts,dc=grant,dc=lan)(member=grant))" attrs="entryuuid cn"
+      [23/Oct/2020:07:12:13.686675968 -0400] conn=23 op=1 RESULT err=0 tag=101 nentries=2 etime=0.000324070
+      [23/Oct/2020:07:12:13.687691917 -0400] conn=23 op=2 UNBIND
+      [23/Oct/2020:07:12:13.687704782 -0400] conn=23 op=2 fd=103 closed - U1
 
 
-### Further Explanation
+      sed -i -e "s/NAME 'ipaUniqueID'/NAME ('ipaUniqueID' 'entryUUID')/" /etc/dirsrv/slapd-*/schema/60basev2.ldif 
+      ipa-ldap-updater -u --schema-file=$(ls /etc/dirsrv/slapd-*/schema/60basev2.ldif) 
 
-The URI endpoint is: https://192.168.1.93/core/api/Console/import-groups
+After making the above modification I now get:
 
-
-This is the JSON returned from the call.
-
-      {severity: "IGNORE", message: "error.general_known_error_occurred",…}
-      debug: false
-      details: {error: {code: "Base.1.0.GeneralError",…}}
-      error: {code: "Base.1.0.GeneralError",…}
-      @Message.ExtendedInfo: [{MessageId: "CGEN1004", RelatedProperties: [],…}]
-      code: "Base.1.0.GeneralError"
-      message: "A general error has occurred. See ExtendedInfo for more information."
-      message: "error.general_known_error_occurred"
-      severity: "IGNORE"
-      timestamp: "2020-10-21T14:43:44.385-0500"
-
-The errors occurs at: `M.send(y(u) ? null : u)`
-
-See [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Conditional_Operator#:~:text=The%20conditional%20(ternary)%20operator%20is,if%20the%20condition%20is%20falsy.) for a description of Javascript's ternary operator.
-
-In this case it is saying if `y(u)` is true then the value is set to null, otherwise it is set to `u`. The `y` function is:
-
-    function y(e) {
-        return "undefined" == typeof e
-    }
-
-It is just a basic check to see if `u` is defined or not. M is an instance of [XMLHttpRequest](https://www.w3schools.com/xml/xml_http.asp). We can see `M` being called with open `M.open(i, s, !0)` where i is "POST" and `s` is "/core/api/Console/import-groups".
-
-The problem occurs because `objectGuid` and `objectSid` are set to null. 
-
-### Resolution
-
-See [duplicate_bug.py](duplicate_bug.py) for a replication of the problem. If you pull the 
+      [23/Oct/2020:08:16:51.891366602 -0400] conn=30 fd=101 slot=101 SSL connection from 192.168.1.93 to 192.168.1.95
+      [23/Oct/2020:08:16:51.938289338 -0400] conn=30 TLS1.2 128-bit AES-GCM
+      [23/Oct/2020:08:16:51.939209205 -0400] conn=30 op=0 BIND dn="uid=grant,cn=users,cn=accounts,dc=grant,dc=lan" method=128 version=3
+      [23/Oct/2020:08:16:51.965507560 -0400] conn=30 op=0 RESULT err=49 tag=97 nentries=0 etime=0.073775627 - Invalid credentials
+      [23/Oct/2020:08:16:51.966077916 -0400] conn=30 op=-1 fd=101 closed - B1
+      [23/Oct/2020:08:16:51.970300516 -0400] conn=31 fd=101 slot=101 SSL connection from 192.168.1.93 to 192.168.1.95
+      [23/Oct/2020:08:16:52.015244484 -0400] conn=31 TLS1.2 128-bit AES-GCM
+      [23/Oct/2020:08:16:52.015949382 -0400] conn=31 op=0 BIND dn="" method=128 version=3
+      [23/Oct/2020:08:16:52.016032928 -0400] conn=31 op=0 RESULT err=0 tag=97 nentries=0 etime=0.045312604 dn=""
+      [23/Oct/2020:08:16:52.017337373 -0400] conn=31 op=1 SRCH base="cn=accounts,dc=grant,dc=lan" scope=2 filter="(|(member=null)(member=grant))" attrs="ipaUniqueID cn"
+      [23/Oct/2020:08:16:52.017436879 -0400] conn=31 op=1 RESULT err=0 tag=101 nentries=0 etime=0.000150394
+      [23/Oct/2020:08:16:52.018338463 -0400] conn=31 op=2 UNBIND
+      [23/Oct/2020:08:16:52.018350155 -0400] conn=31 op=2 fd=101 closed - U1
+      [23/Oct/2020:08:20:26.725516663 -0400] conn=21 op=2 SRCH base="ou=sessions,ou=Security Domain,o=ipaca" scope=2 filter="(objectClass=securityDomainSessionEntry)" attrs="cn"
+      [23/Oct/2020:08:20:26.725732986 -0400] conn=21 op=2 RESULT err=32 tag=101 nentries=0 etime=0.000316769
