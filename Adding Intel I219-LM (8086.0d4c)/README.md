@@ -34,5 +34,7 @@
 ## Resources
 
 [How to make your unsupported NIC work with ESXi 5.x or 6.0](https://www.v-front.de/2014/12/how-to-make-your-unsupported-nic-work.html?fbclid=IwAR3VaW1OyibYhe8GX13SJhNIn0_UJmGoW1wR1x-bXBH8vtjdBVZrpnBgkwo)
+
 [https://www.virtuallyghetto.com/2020/01/esxi-on-10th-gen-intel-nuc-frost-canyon.html](https://www.virtuallyghetto.com/2020/01/esxi-on-10th-gen-intel-nuc-frost-canyon.html)
+
 [Enhancements to the community ne1000 VIB for Intel NUC 10](https://www.virtuallyghetto.com/2020/08/enhancements-to-the-community-ne1000-vib-for-intel-nuc-10.html)
