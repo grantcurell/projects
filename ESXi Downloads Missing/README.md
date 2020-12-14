@@ -36,5 +36,3 @@ Dell support didn't know how to resolve the issue and it took some time before s
 This was further complicated by the presence of links with incorrect versioning present on the Dell website.
 
 Suggest we prominantly display the new link in the release notes redirecting customers and eliminate improperly versioned downloads from the Dell site if the goal is to consolidate on VMWare's site.
-
-#I_work_for_dell <---Required for work
