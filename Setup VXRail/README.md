@@ -6,7 +6,7 @@
   - [RASR Process](#rasr-process)
   - [Deploy Witness](#deploy-witness)
     - [After deploying the Witness:](#after-deploying-the-witness)
-    - [Set Up vCenter](#set-up-vcenter)
+  - [Set Up vCenter](#set-up-vcenter)
   - [Set up the Manager for Discovery](#set-up-the-manager-for-discovery)
   - [Install](#install)
   - [Advanced Troubleshooting](#advanced-troubleshooting)
@@ -59,7 +59,7 @@ Follow the instructions [here](https://docs.vmware.com/en/VMware-vSphere/6.7/com
 3. Make sure vmk0 of the Witness has the same MAC address of vmk0 on the host OR set the security settings of the management portgroup you are using to promiscuous
 
 
-### Set Up vCenter
+## Set Up vCenter
 
 1. Make sure your DNS server can resolve all the VxRail ESXi IPs first before continuing.
 2. On vCenter double check that DNS and NTP are setup correctly. You can do this from the network menu by going to Home->Administration->System Configuration->Click on vCenter->Login. This should bring up the appliance management screen. Check Time and Networking.
