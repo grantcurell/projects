@@ -1,6 +1,26 @@
 # VxRail Setup
 
-<!-- TOC -->autoauto- [VxRail Setup](#vxrail-setup)auto    - [Networking](#networking)auto        - [What does MLD Querying Do and Why Can it Break VxRail Discovery](#what-does-mld-querying-do-and-why-can-it-break-vxrail-discovery)auto    - [RASR Process](#rasr-process)auto    - [Deploy Witness](#deploy-witness)auto        - [After deploying the Witness:](#after-deploying-the-witness)auto        - [Set Up vCenter](#set-up-vcenter)auto    - [Set up the Manager for Discovery](#set-up-the-manager-for-discovery)auto    - [Install](#install)auto    - [Advanced Troubleshooting](#advanced-troubleshooting)auto        - [Check for ESXi Logs](#check-for-esxi-logs)auto        - [Marvin Logs](#marvin-logs)auto        - [Digging Through VxRail's Guts](#digging-through-vxrails-guts)auto    - [Helpful Commands](#helpful-commands)auto        - [Check if VxRail is Running](#check-if-vxrail-is-running)auto        - [Get a List of VMs](#get-a-list-of-vms)auto        - [Check if VM is On](#check-if-vm-is-on)auto        - [Check Networking](#check-networking)auto        - [Set the VLAN for a Switch](#set-the-vlan-for-a-switch)auto        - [Get Interface IPs](#get-interface-ips)auto        - [Get Interface List](#get-interface-list)autoauto<!-- /TOC -->
+- [VxRail Setup](#vxrail-setup)
+  - [Networking](#networking)
+    - [What does MLD Querying Do and Why Can it Break VxRail Discovery](#what-does-mld-querying-do-and-why-can-it-break-vxrail-discovery)
+  - [RASR Process](#rasr-process)
+  - [Deploy Witness](#deploy-witness)
+    - [After deploying the Witness:](#after-deploying-the-witness)
+    - [Set Up vCenter](#set-up-vcenter)
+  - [Set up the Manager for Discovery](#set-up-the-manager-for-discovery)
+  - [Install](#install)
+  - [Advanced Troubleshooting](#advanced-troubleshooting)
+    - [Check for ESXi Logs](#check-for-esxi-logs)
+    - [Marvin Logs](#marvin-logs)
+    - [Digging Through VxRail's Guts](#digging-through-vxrails-guts)
+  - [Helpful Commands](#helpful-commands)
+    - [Check if VxRail is Running](#check-if-vxrail-is-running)
+    - [Get a List of VMs](#get-a-list-of-vms)
+    - [Check if VM is On](#check-if-vm-is-on)
+    - [Check Networking](#check-networking)
+    - [Set the VLAN for a Switch](#set-the-vlan-for-a-switch)
+    - [Get Interface IPs](#get-interface-ips)
+    - [Get Interface List](#get-interface-list)
 
 ## Networking
 
