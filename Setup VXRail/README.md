@@ -24,7 +24,7 @@
 
 ## Networking
 
-I followed [the vCenter Server Planning Guide](https://www.delltechnologies.com/resources/en-us/asset/technical-guides-support-information/products/converged-infrastructure/vxrail-vcenter-server-planning-guide.pdf) to set up the network.
+I followed [the VxRail Network Planning Guide](https://www.delltechnologies.com/it-it/collaterals/unauth/technical-guides-support-information/products/converged-infrastructure/h15300-vxrail-network-guide.pdf) to set up the network.
 
 **WARNING**: The discovery process for VxRail uses IPv6 multicast to discover itself. Dell switches come with MLD snooping globally enabled, but **do not** have the MLD querier enabled! This will cause the nodes to flap! Servers will discover themselves and then disappear. You must enable MLD snooping **and** the mld querier on the correct vlans with `interface vlan #` and then `ipv6 mld snooping querier`.
 
