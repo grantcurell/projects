@@ -1,6 +1,7 @@
 # VxRail Setup
 
 - [VxRail Setup](#vxrail-setup)
+  - [License Keys](#license-keys)
   - [Networking](#networking)
     - [What does MLD Querying Do and Why Can it Break VxRail Discovery](#what-does-mld-querying-do-and-why-can-it-break-vxrail-discovery)
   - [RASR Process](#rasr-process)
@@ -21,6 +22,10 @@
     - [Set the VLAN for a Switch](#set-the-vlan-for-a-switch)
     - [Get Interface IPs](#get-interface-ips)
     - [Get Interface List](#get-interface-list)
+
+## License Keys
+
+In case you have to upgrade or downgrade license keys see [this KB article](https://kb.vmware.com/s/article/81665)
 
 ## Networking
 
