@@ -27,5 +27,70 @@ The IDPA uses Avamar Virtual Edition (AVE) servers fo-r the DP5xxx and DP4xxx mo
 
 ## Instructions
 
-1. Set up 12 continuous IP addresses in DNS. They must be in the same subnet. idrac can be separate
-2. 
+### Network Setup
+
+1. Set up 12 continuous IP addresses in DNS plus idrac. They must be in the same subnet. idrac can be separate
+2. TODO Register the 13 IP addresses in DNS with forward and reverse lookup entries for each address. Ensure that the router for the 13 IP addresses can be pinged.
+   1. Cannot use _ in the hostname
+   2. Addresses should cover the following:
+
+![](2021-01-15-08-19-22.png)
+
+#### My Configuration
+
+   192.168.2.64 acm.lan
+   192.168.2.65 idpa-esxi.lan
+   192.168.2.66 idpa-ddve-backup-1.lan
+   192.168.2.67 idpa-ddve-backup-2.lan
+   192.168.2.68 idpa-ave-server.lan
+   192.168.2.69 idpa-proxy.lan
+   192.168.2.70 idpa-system-manager.lan
+   192.168.2.71 idpa-application-server.lan
+   192.168.2.72 datastore-server-host.lan
+   192.168.2.73 index-master-node.lan
+   192.168.2.74 cdra.lan
+
+### Configuration
+
+1. On the switch:
+
+        switch(config)# interface range ethernet 1/1/1
+        switch(config)# interface range ethernet 1/1/1-1/1/5
+        switch(conf-range-eth1/1/1-1/1/5)# switchport mode access
+        switch(conf-range-eth1/1/1-1/1/5)# switchport access vlan 2
+
+2. On a jump box set an IP of 192.168.100.98
+3. Verify you can ping 192.168.100.100
+4. Browse to: https://192.168.100.100:8543/
+5. Log in with default creds:
+   1. User root, password Idpa_1234
+6. Follow the prompts and set up the networking.
+7. After you finish setting up the networking the UI will wait while the network settings are applied. Afterwards, it usually autoreconnects with updated IP information. Otherwise you can browse to `https://<YOUR_IP>:8543
+8. Provide the information in the following screens:
+
+![](2021-01-15-11-31-14.png)
+
+![](2021-01-15-11-31-30.png)
+
+![](2021-01-15-11-31-45.png)
+
+![](2021-01-15-11-32-33.png)
+
+![](2021-01-15-11-34-27.png)
+
+![](2021-01-15-14-48-20.png)
+
+Proxy does image level backups. The system will backup the local VMs.
+
+## Adding Backups
+
+![](2021-01-15-14-57-07.png)
+
+Do not use change block tracking with vCenter
+
+Static vs dynamic - dynamic is dependent on it being in a folder. If the VMs are in a sub folder and you select the folder itself, then when you import the folder, the folder will be purple. That means dynamic, if someone creates another VM it will automatically add it.
+
+You can do rule based filtering and assign it to a policy.
+
+Recursive protection - Subfolders
+

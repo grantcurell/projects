@@ -1,6 +1,10 @@
 # Running Offline Updates with OME
 
 1. Download [Dell Repository Manager](https://www.dell.com/support/driver/us/en/19/DriversDetails?driverid=v8ym0)
+   1. Run it with `/opt/dell/dellemcrepositorymanager/drm.sh`
+   2. Click add repository
+   3. Select the systems for which you want to download updates under select systems
+   4. Make sure you select Windows-64 as one of the types which will be available
 2. `chmod +x <binary name>` then run with `./<binary_name>`.
 3. On Ubuntu Desktop, open terminal, run `sudo apt-get install xdg-utils firefox openjfx -y`
 4. I used Apache to host my web server. My configuration is below.
@@ -17,9 +21,9 @@
 
         ServerAdmin webmaster@localhost
         DocumentRoot /var/www/html
-        Alias "/dell/" "/opt/dell/catelogs/"
+        Alias "/dell/" "/opt/dell/catalogs/"
 
-        <Directory "/opt/dell/catelogs/">
+        <Directory "/opt/dell/catalogs/">
                 Options Indexes FollowSymLinks MultiViews
                 AllowOverride None
                 Order allow,deny
@@ -46,13 +50,15 @@
 
         # vim: syntax=apache ts=4 sw=4 sts=4 sr noet
 
-5. I downloaded all the catelogs to /opt/dell/catelogs/fc640
+5. I downloaded all the files to /opt/dell/catalogs/fc640
+   1. Note: I wasn't able to get the permissions to work so I gave others read and write - I'm not sure what user DRM is using under the hood. I think this is a bug. Even granting the DRM user access was insufficient.
 6. You then have to go open the Dell EMC Repository Manager -> Export -> Export
    1. This has to be in the web server root! There is a bug in OME that causes it to send out the wrong URLs if the URI path requires forwardslashes. See [this post](https://www.dell.com/community/Dell-OpenManage-Essentials/Dell-OpenManage-Reports-TCP-Window-Full/m-p/7473117#M14933) for details on why.
    2. **WARNING** You have to download the Windows 64 bit versions of the updates for it to work! Even if you are using Linux the idrac only accepts the Windows EXE files.
-7. Firmware compliance -> Catelog Management -> Add
+7. Firmware compliance -> catalog Management -> Add
    1. Share Address: <YOUR_UP> (nothing else)
    2. Catalog File Path: /catalog.xml (cannot have anything else)
+      1. NOTE: The catalog my have a different name depending on how you exported it!
 8. Go back to Firmware Compliance -> Create Baseline
    1. Select your local catalog
    2. Give it a name
