@@ -2,6 +2,7 @@
 
 1. Download [Dell Repository Manager](https://www.dell.com/support/driver/us/en/19/DriversDetails?driverid=v8ym0)
    1. Run it with `/opt/dell/dellemcrepositorymanager/drm.sh`
+      1. NOTE: Running it with root does not work! You will get an error: GUI interface is not supported by this operating system.
    2. Click add repository
    3. Select the systems for which you want to download updates under select systems
    4. Make sure you select Windows-64 as one of the types which will be available
