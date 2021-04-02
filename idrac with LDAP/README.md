@@ -50,10 +50,8 @@ Fedora release 33 (Thirty Three)
 5. Run `kinit admin` - this allows you to use the command line tools otherwise they'll complain about kerberos.
 6.  Log into FreeIPA server at `https://<your_hostname>`. In my case, Windows popped up a username and password prompt. That prompt didn't work - I had to exit it and then log into the webGUI.
     1.  Add a user other than administrator.
-7.  Go to Users and then directory services in OpenManage. I used the following:
-    1.  Note: You can get the Bind DN by running `ldapsearch` from the command line.
-8.  Create a new user and new group in the UI and assign the new user to the new group.
-    1.  **WARNING** I had to actually add the user to a new group. The group **could not** be admins or it wouldn't work. When I dumped `ldapsearch -x -H ldap://localhost -b "cn=admins,cn=groups,cn=accounts,dc=grant,dc=lan" -D "uid=grant,cn=users,cn=accounts,dc=grant,dc=lan" -w PASSWORD | less` my user actually didn't show in the admins group but when I created my own group and checked it worked fine.
+7.  Create a new user and new group in the UI and assign the new user to the new group.
+    1.  **WARNING** I had to actually add the user to a new group. The group **could not** be admins or it wouldn't work. When I dumped `ldapsearch -x -H ldap://localhost -b "cn=admins,cn=groups,cn=accounts,dc=grant,dc=lan" -D "uid=grant,cn=users,cn=accounts,dc=grant,dc=lan" -w PASSWORD | less` my user actually didn't show in the admins group. When I created my own group and checked it worked fine.
 
 ### Helpful Commands
 
