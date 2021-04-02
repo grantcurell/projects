@@ -51,13 +51,16 @@
    3. Configure DNS to return for this hostname. Double check with `dig +short freeipa.grant.lan A && dig +short -x 192.168.1.95`
 5. Follow [RHEL's instructions](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/installing_identity_management/index)
    1. I used Chapter 5 for primary installation
-6. 6. Run `kinit admin` - this allows you to use the command line tools otherwise they'll complain about kerberos.
-7.  Log into FreeIPA server at `https://<your_hostname>`. In my case, Windows popped up a username and password prompt. That prompt didn't work - I had to exit it and then log into the webGUI.
-8.  Go to Users and then directory services in OpenManage. I used the following:
+   2. Make sure you add the requested DNS entries at the end
+6. Run `firewall-cmd --permanent --add-port={80/tcp,443/tcp,389/tcp,636/tcp,88/tcp,464/tcp,88/udp,464/udp,123/udp} && firewall-cmd --reload` to allow the appropriate ports
+7. Run `kinit admin` - this allows you to use the command line tools otherwise they'll complain about kerberos.
+8.  Log into FreeIPA server at `https://<your_hostname>`. In my case, Windows popped up a username and password prompt. That prompt didn't work - I had to exit it and then log into the webGUI.
+    1.  Add a user other than administrator.
+9.  Go to Users and then directory services in OpenManage. I used the following:
     1.  Note: You can get the Bind DN by running `ldapsearch` from the command line.
-9.  Create a new user and new group in the UI and assign the new user to the new group.
-10. Install OpenManage
-11. Go to Application Settings -> Directory Services
+10. Create a new user and new group in the UI and assign the new user to the new group.
+11. Install OpenManage
+12. Go to Application Settings -> Directory Services
 
 ![](images/2020-10-21-11-24-14.png)
 
@@ -68,6 +71,9 @@
 To start the IPA service use `ipactl start|stop|restart`. You can check the status with `ipactl status`.
 
 Test LDAP credentials: `ldapwhoami -vvv -h 192.168.1.95 -p 389 -D 'uid=grant,cn=users,cn=accounts,dc=grant,dc=lan' -x -w <PASSWORD>`
+
+Dump the structure of FreeIPA: `ldapsearch -x -H ldap://localhost -b "cn=accounts,dc=grant,dc=lan" -D "uid=grant,cn=users,cn=accounts,dc=grant,dc=lan" -w <YOUR_USERS_PASSWORD> | less`
+You can also use this to check to see if a user is a member of a group by changing the base path to search (-b). Change it to what you think the FQDN of the group is. The user in question should show up.
 
 ## Update FreeIPA Schema
 
