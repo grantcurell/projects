@@ -1,5 +1,12 @@
 # Setting Up idrac with FreeIPA
 
+- [Setting Up idrac with FreeIPA](#setting-up-idrac-with-freeipa)
+  - [Version Info](#version-info)
+  - [Setup FreeIPA](#setup-freeipa)
+    - [Helpful Commands](#helpful-commands)
+  - [Setup idrac](#setup-idrac)
+  - [YouTube Video of Login](#youtube-video-of-login)
+
 ## Version Info
 
 ```
