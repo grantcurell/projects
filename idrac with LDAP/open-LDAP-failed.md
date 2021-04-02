@@ -1,5 +1,11 @@
 # Configuring idrac with OpenLDAP
 
+- [Configuring idrac with OpenLDAP](#configuring-idrac-with-openldap)
+  - [Setup OpenLDAP](#setup-openldap)
+    - [Debugging](#debugging)
+  - [Configure idrac](#configure-idrac)
+  - [Stopped](#stopped)
+
 ## Setup OpenLDAP
 
 I used [osixia's openldap container](https://github.com/osixia/docker-openldap) for testing. I used [osixia's phpLDAPadmin container](https://github.com/osixia/docker-phpLDAPadmin) for administration.
@@ -35,4 +41,7 @@ You can use `podman inspect <container_name>` and then search for `Log` to find 
 ![](images/2021-04-02-10-13-22.png)
 ![](images/2021-04-02-17-25-59.png)
 
-2. 
+
+## Stopped
+
+For whatever reason the container networking never quite cooperated. Even though DNS entries were present for the external IP when either OME or idrac would try to hit it they would both say the LDAP server was unavailable. phpldapadmin worked without issue. I know it's a probably with the networking but decided it wasn't worth diving into so I abandonded this approach and went with a baremetal FreeIPA instance.
