@@ -156,3 +156,7 @@ Go into the idrac and click the directories prompt.
           Virtual Media
           Test Alerts
           Diagnostic Command
+
+## YouTube Video of Login
+
+See: https://youtu.be/-fHlHhF9vH4
