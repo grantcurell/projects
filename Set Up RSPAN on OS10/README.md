@@ -1,4 +1,4 @@
-# Setup RSPAN OS10
+# Setup RSPAN on Dell OS10
 
 ## Setup
 
@@ -7,6 +7,10 @@
 Source port for span is Switch 1, 1/1/9
 
 We will use VLAN 99 to transport our RSPAN traffic
+
+## Explanation
+
+One of the things that's different about the Dell configuration is the use of ACLs in the configuration. The way OS10 sees RSPAN is on the source side you grab whatever source you want and then you push that to a special "remote" VLAN. This is indicated only on the source switch itself. Then, each other intermediate and destination switch uses an ACL to indicate what traffic should be captured from that VLAN and subsequently forwarded. Finally, on the destination a regular local monitor session is used to pull the traffic from the RSPAN VLAN and push it t o network sensors.
 
 ## Switch 1
 
@@ -56,11 +60,24 @@ We will use VLAN 99 to transport our RSPAN traffic
 
     configure terminal
     interface vlan 99
-    remote-span
     exit
-    interface range ethernet 1/1/11-1/1/12
+    interface range ethernet 1/1/11
     switchport mode trunk
     switchport trunk allowed vlan 99
+    exit
+    interface ethernet 1/1/12
+    mac access-group rspan in
+    switchport mode trunk
+    switchport trunk allowed vlan 99
+    exit
+    monitor session 1
+    destination interface ethernet1/1/11
+    flow-based enable
+    source interface ethernet1/1/12
+    no shut
+    mac access-list rspan
+    seq 10 permit any any capture session 1 vlan 99
+
 
 ## Switch 3
 
@@ -80,17 +97,23 @@ We will use VLAN 99 to transport our RSPAN traffic
 
     configure terminal
     interface vlan 99
+    no shut
     exit
+    mac access-list rpan
+    seq 10 permit any any capture session 1 vlan 99
     interface ethernet 1/1/11
     switchport mode trunk
     switchport trunk allowed vlan 99
+    mac access-group rpan in
     exit
     interface ethernet 1/1/12
-    switchport mode access
+    no shut
     exit
-    monitor session 18
-    source interface vlan99 rx
-    destination interface ethernet 1/1/12
+    monitor session 1
+    destination interface ethernet1/1/12
+    flow-based enable
+    source interface ethernet1/1/11
+    no shut
 
 
 

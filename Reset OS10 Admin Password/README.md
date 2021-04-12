@@ -30,3 +30,7 @@ Video: https://youtu.be/0VfJCa8s7yo
 8. When the system reboots log into the admin account with your new password. That password is temporary and *is not permanently written to the system*.
 9. Enter configuration mode with `configure terminal` and then run `username admin password <YOURPASSWORD> role sysadmin` to change the password
 10. Run `write memory` to make the changes permanent.
+
+## Startup Config Location
+
+/config/etc/opt/dell/os10/db_init/startup.xml
