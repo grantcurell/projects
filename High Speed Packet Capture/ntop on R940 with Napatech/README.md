@@ -1,8 +1,3 @@
-# How to Get DPDK with pdump Running
-
-The purpose of this experiment is to get Intel's DPDK framework up and running on
-a server.
-
 # Useful Materials
 
 [NapaTech Installation Instructions](https://www.ntop.org/guides/pf_ring/modules/napatech.html)
