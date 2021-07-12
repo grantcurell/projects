@@ -1,10 +1,31 @@
 # Notes on vSAN
 
+- [Notes on vSAN](#notes-on-vsan)
+  - [Disk Groups](#disk-groups)
+  - [Deduplication and Replication](#deduplication-and-replication)
+  - [Distributed Datastore](#distributed-datastore)
+  - [Objects Components and Witnesses](#objects-components-and-witnesses)
+  - [RAID Architecture](#raid-architecture)
+  - [Required Networks](#required-networks)
+  - [Quarum Logic](#quarum-logic)
+    - [Fault Domains](#fault-domains)
+      - [Sample Architecture](#sample-architecture)
+  - [Witness](#witness)
+  - [Design Notes](#design-notes)
+    - [Networking](#networking)
+    - [Erasure Coding](#erasure-coding)
+      - [RAID 5](#raid-5)
+      - [RAID 6](#raid-6)
+    - [Internal Components](#internal-components)
+
+## Disk Groups
 ![](images/2021-07-12-13-18-23.png)
 
 ![](images/2021-07-12-13-36-00.png)
 
 ![](images/2021-07-12-13-38-00.png)
+
+## Deduplication and Replication
 
 - The scope of deduplication and compression exists only within each disk group.
   - Hosken, Martin. VMware Software-Defined Storage (Kindle Locations 5278-5279). Wiley. Kindle Edition. 
@@ -20,11 +41,19 @@
 - The mechanism for destaging differs between the two Virtual SAN models, hybrid and all-flash; mechanical disks are typically good at handling sequential write workloads, so Virtual SAN uses this to make the process more efficient. In the hybrid model, an elevator algorithm runs independently on each disk group and decides, locally, whether to move any data to its capacity disks, and if so, when. This algorithm uses multiple criteria and batches together larger chunks of data that are physically proximal on a mechanical disk, and destages them together asynchronously. This mechanism writes to the disk sequentially for improved performance. However, the destaging mechanism is also conservative: it will not rush to move data if the space in the write buffer is not constringed. In addition, as data that is written tends to be overwritten quickly within a short period of time, this approach avoids writing the same blocks of data multiple times to the mechanical disks. Also note that the write buffers of the capacity layer disks are flushed onto the persistent storage devices before writes are discarded from the caching device. In the all-flash model, Virtual SAN uses 100 percent of the available capacity on the endurance flash device as a write buffer. In all-flash configurations, essentially the same mechanism is in place as that in the hybrid model. However, Virtual SAN does not take into account the proximal algorithm, making it a more efficient mechanism for destaging to capacity flash devices. Also, in the all-flash model, changes to the elevator algorithm allow the destaging of cold data from the write cache to the capacity tier, based on their data blocks' relative hotness or coldness. In addition, data blocks that are overwritten stay in the caching tier longer, which results in reducing the overall wear on the capacity tier flash devices, increasing their life expectancy.
   - Hosken, Martin. VMware Software-Defined Storage (Kindle Locations 5339-5353). Wiley. Kindle Edition.
 
+## Distributed Datastore
+
 ![](images/2021-07-12-14-51-59.png)
+
+## Objects Components and Witnesses
 
 ![](images/2021-07-12-14-56-54.png)
 
+## RAID Architecture
+
 ![](images/2021-07-12-14-57-21.png)
+
+## Required Networks
 
 ![](images/2021-07-12-15-03-21.png)
 
