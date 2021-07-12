@@ -4,7 +4,7 @@
   - [Disk Groups](#disk-groups)
   - [Deduplication and Replication](#deduplication-and-replication)
   - [Distributed Datastore](#distributed-datastore)
-  - [Objects Components and Witnesses](#objects-components-and-witnesses)
+  - [Objects Components](#objects-components)
   - [RAID Architecture](#raid-architecture)
   - [Required Networks](#required-networks)
   - [Quarum Logic](#quarum-logic)
@@ -45,7 +45,7 @@
 
 ![](images/2021-07-12-14-51-59.png)
 
-## Objects Components and Witnesses
+## Objects Components
 
 ![](images/2021-07-12-14-56-54.png)
 
