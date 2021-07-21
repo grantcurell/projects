@@ -277,6 +277,8 @@ We bumped into several errors while attempting to add nodes and they varied in t
   4. Change the contents of /var/lib/vmware-mariv to `{"state":"NONE","vc_plugin_updated":false,"deployed_for_public_api":false}`
   5. Restart Marvin with `system restart vmware-marvin`
 
+In one instance we were able to clear all problems by restarting all nodes in the cluster, the VxRail manager, and vCenter. After a full reboot of everything, a series of general errors we had been receiving during validation cleared.
+
 ### How Adding Nodes Works During Cluster Construction
 
 All nodes after being RASR have a fully built vSAN disk group. During the initial cluster construction VxRail will select a primary node and then add it to the cluster. On every subsequent node it will delete that node's vSAN disk group and then add it to the cluster's existing disk group.
