@@ -1,5 +1,16 @@
 # Configuring VLT on OS10
 
+- [Configuring VLT on OS10](#configuring-vlt-on-os10)
+  - [My Test Platform](#my-test-platform)
+  - [Configuration of VLT](#configuration-of-vlt)
+    - [Device 1](#device-1)
+    - [Device 2](#device-2)
+  - [Configuration of VLANs for Test](#configuration-of-vlans-for-test)
+  - [Test Scenario](#test-scenario)
+    - [Objective](#objective)
+  - [Useful Commands](#useful-commands)
+  - [Spanning Tree and VLT](#spanning-tree-and-vlt)
+
 ## My Test Platform
 
     OS10# show version
