@@ -112,7 +112,7 @@ I created the below scenario to see what would happen if you created a situation
 
 The first thing I investigated were the effects on STP on S2.
 
-Under the hood you can drop to the Linux command line and inspect the bridge associated with the VLT setup to see its path cost (here my VLT interface is `bo1000`). It is worth noting that VLT interfaces are represented as bonds to the Linux kernel:
+Under the hood you can drop to the Linux command line and inspect the bridge associated with the VLT setup to see its root path cost (here my VLT interface is `bo1000`). It is worth noting that VLT interfaces are represented as bonds to the Linux kernel. Furthermore I also noticed the updated values, if updated from the OS10 shell, are not reflected here:
 
     root@OS10:~# brctl showstp br1
     br1
