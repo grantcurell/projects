@@ -17,6 +17,8 @@
       - [RAID 5](#raid-5)
       - [RAID 6](#raid-6)
     - [Internal Components](#internal-components)
+  - [vSAN Layers](#vsan-layers)
+  - [Components](#components)
 
 ## Disk Groups
 ![](images/2021-07-12-13-18-23.png)
@@ -107,3 +109,15 @@ How it works: https://stonefly.com/blog/understanding-erasure-coding
 
 ![](images/2021-07-12-15-27-38.png)
 ![](images/2021-07-12-15-28-32.png)
+
+## vSAN Layers
+
+![](images/2021-08-29-20-51-40.png)
+![](images/2021-08-29-21-23-36.png)
+![](images/2021-08-29-21-23-50.png)
+
+## Components
+
+See https://masteringvmware.com/vsan-objects-and-components/
+
+Component is an single file which you can say it as single VMDK. When you apply an storage policy to the Virtual Machine based on the policy components gets created and replicated. Let’s take an Example where you have created a VM with RAID-1 (Mirroring). So now when you see at the VM placement you will see that different components gets created. Component has the maximum limit of 255GB. So that means if your VMDK is more then 255 GB in size then it will be striped and if the VMDK is less then 255GB in size then it will be single component. In vSAN 6.6 there is limit of maximum 9000 components per vSAN Host. vSAN Distributes the components across the hosts evenly for the availability and to maintain the balance.
