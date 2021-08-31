@@ -22,6 +22,7 @@
   - [vSAN Layers](#vsan-layers)
   - [Objects and Components](#objects-and-components-1)
   - [vSAN Networking Roles](#vsan-networking-roles)
+  - [vSAN RAID Tree](#vsan-raid-tree)
 
 ## Disk Groups
 ![](images/2021-07-12-13-18-23.png)
@@ -92,6 +93,10 @@
 
 ![](images/2021-07-12-14-59-11.png)
 
+The logic for the equation 2n+1 comes from the fact that you have to have replicas on two different hosts and then a third to act as a tie breaker with the witness.
+
+![](images/2021-08-30-21-12-51.png)
+
 ### Alternate Explanation (includes stripes)
 
 ![](images/2021-08-30-09-21-03.png)
@@ -144,3 +149,8 @@ Component is an single file which you can say it as single VMDK. When you apply 
 CMMDS = Clustered metadata database and monitoring service
 Multicast addresses used are as follows:
 ![](images/2021-08-30-18-32-16.png)
+
+## vSAN RAID Tree
+
+![](images/2021-08-30-21-11-26.png)
+![](images/2021-08-30-21-13-28.png)

@@ -2,13 +2,15 @@
 
 ## Helpful Resources
 
-[Virtual SAN Diagnostics and Troubleshooting Reference Manual](./virtual-san-diagnostics-troubleshooting-reference-manual.pdf) - Outside of what I have recorded here, chapter 7 - Understanding expected failure behavior may be useful. It covers what you'll see in the logs, UI, etc when different types of failure occur. It also describes things like what happens when you plug in a new disk in both the capacity and cache tiers.
+[Virtual SAN Diagnostics and Troubleshooting Reference Manual](./virtual-san-diagnostics-troubleshooting-reference-manual.pdf) - Outside of what I have recorded here, chapter 7 - Understanding expected failure behavior may be useful. It covers what you'll see in the logs, UI, etc when different types of failure occur. It also describes things like what happens when you plug in a new disk in both the capacity and cache tiers. **If you don't know how to handle a problem** this is the place to look. I have a lot of the highlights below but there are a lot of scenarios they cover that I don't.
 
 [VMware Ruby vSphere Console Command Reference for Virtual SAN](./vmware-ruby-vsphere-console-command-reference-for-virtual-san.pdf)
 
 [Troubleshooting vSAN Performance](https://core.vmware.com/resource/troubleshooting-vsan-performance)
 
-[Monitoring with vSAN Observer](Monitoring-with-VSAN-Observer-v1.2.pdf)
+[Monitoring with vSAN Observer](Monitoring-with-VSAN-Observer-v1.2.pdf) - Covers interpreting and understanding all the functionality of vSAN observer.
+
+[My Notes on vSAN](../Notes%20on%20VSAN/README.md) - I documented how a number of vSAN features function and the variosu highlights.
 ## vSAN Support Insight
 
 
@@ -48,16 +50,22 @@ Potential Bottlenecks: https://core.vmware.com/blog/understanding-performance-bo
       2. **Invalid/inaccessible VMs**: The next check is for invalid or inaccessible VMs. These are VMs that, most likely  due to the fact that the failure(s) that have occurred in the cluster, have been  impacted so much that it is no longer accessible by the vCenter server or the ESXi  hosts. This is likely be due to the fact that the VM Home Namespace, where the .vmx  file resides, is no longer online. Common causes are clusters that have had multiple  failures, but the virtual machines have been configured to tolerate only one failure,  or network outages.
       3. **Check that vCenter and hosts are in sync**: The final check just makes sure vCenter Server (VC) and hosts agree on the state of the cluster.
    3. Use RVC to check that the cluster is operating within limits with `vsan.check_limits` ![](images/2021-08-30-18-15-53.png)
+      1. From a network perspective the most important things to check are associations (Assocs) and the the socket count. Associations track peer-to-peer network state within the vSAN and you should not run out (max 45k). Sockts are used for various things. The max is 10,000.
    4. Check that the cluster has enough resources to tolerate a failure with RVC command `vsan.whatif_host_failures`
       1. RC reservations means Read Cache reservations and is only used in hybrid configurations. You can dedicate a certain amount of read cache to a specific VM.
       2. HDD capacity only refers to the capacity tier.
 6. Check host connectivity
-   1. Check cluster ping with `vmkping -I <vmk_interface> <target_ip>`
-   2. Check to make sure all hosts are on the same network segment with `esxcli network ip neighbor list`
-   3. Check round trip time with `esxcli network diag ping`
-   4. Check to make sure multicast is working and a host is receiving heartbeats with `tcpdump-uw –i <your_vmk> udp port 23451 –v -s0`
-   5. Each ESXi node in the vSAN cluster will send out IGMP membership reports (aka joins) every 90-300 seconds. Check for receipt with `tcpdump-uw -i <yourvmk> igmp`
-7. Kick off vSAN Observer. See [Using vSAN Observer](#using-vsan-observer). Details on using vSAN observer available in [this PDF](./Monitoring-with-VSAN-Observer-v1.2.pdf)
+   1. Note it may be helpful if you need to identify where a host is plugged in to use LLDP with the RVC command `vsan.lldpnetmap localhost/datacenter/computers/vSAN\ Cluster/`
+   2. Check cluster ping with `vmkping -I <vmk_interface> <target_ip>`
+   3. Check to make sure all hosts are on the same network segment with `esxcli network ip neighbor list`
+   4. Check round trip time with `esxcli network diag ping`
+   5. Check to make sure multicast is working and a host is receiving heartbeats with `tcpdump-uw –i <your_vmk> udp port 23451 –v -s0`
+   6. Each ESXi node in the vSAN cluster will send out IGMP membership reports (aka joins) every 90-300 seconds. Check for receipt with `tcpdump-uw -i <yourvmk> igmp`
+   7. Make sure the following ports are accessible through any firewalls: ![](images/2021-08-30-20-57-51.png)
+7. Use iperf to get a baseline idea of the network bandwidth available. This will cause degredation of performance! Most useful for initial setup. See [this KB article](https://kb.vmware.com/s/article/2001003#Network)
+8. **NOTE**: [Virtual SAN Diagnostics and Troubleshooting Reference Manual](./virtual-san-diagnostics-troubleshooting-reference-manual.pdf) covers a lot of other scenarios I didn't here.
+9. Consider ![](images/2021-08-30-21-08-07.png)
+10. Kick off vSAN Observer. See [Using vSAN Observer](#using-vsan-observer). Details on using vSAN observer available in [this PDF](./Monitoring-with-VSAN-Observer-v1.2.pdf)
   2. Check the latency as seen by a guest VM running the application of interest (check on the VMs tab)
    1. VM Home - This is where the VM's configuration file, log files, and other VM related small files are stored. The RAID tree subsection shows the different component owners for VM Home.
    2. Virtual Disk - This shows the different virtual disks attached to the VM. Each disk displas stats specific to that disk. You can drill down to individual virtual disks. The VSCSI layer shows the aggregate latency, IOPS and throughput numbers for a particular virtual disk of a VM.
@@ -84,12 +92,15 @@ Potential Bottlenecks: https://core.vmware.com/blog/understanding-performance-bo
    11. Or this error when trying to add a disk group: ![](images/2021-08-30-08-20-45.png)
    12. An error will also be displayed in the GUI: ![](images/2021-08-30-08-21-56.png)
   9. Check distribution of [components](../Notes%20on%20VSAN/README.md#components). The line should be uniform indicating roughly equal distribution of components
-8.  Check that the storage controller is supported and running normaly with `esxcli storage core device list`. Compare to VCG. You can cross reference this with `esxcli core storage adapter list` and `esxcfg-scsidevs -a`
+11. Check that the storage controller is supported and running normaly with `esxcli storage core device list`. Compare to VCG. You can cross reference this with `esxcli core storage adapter list` and `esxcfg-scsidevs -a`
   10. You may see the word *degraded* - this occurs when there is only a single path to teh device. If there are multiple paths this will not show. This is not an issue for local disk configurations.
   11. If you see *Logical Volume* in the model field it implies there is a RAID volume configuration on the disk - probably RAID0. Certain storage controllers can pass disk devices directly to the ESXi host; this is called pass-through mode. You may also see it called JBOD or HBA mode. Other storage controllers require each disk device be configured as a RAID0 volume before ESXi can recognize it. You can check the VCG to determine whether something supports pass through or not: ![](images/2021-08-30-08-31-36.png)
      1. Double check the VCG! If a controller is supported in RAID0 mode only, it may still work in pass-through mode but the disks will frequently error. 
-9.  Make sure the storage adapter is supported and the driver is up to date. See [Get a list of all PCI devices](#get-a-list-of-all-pci-devices-allows-you-to-check-for-rebranding)
-10. Review [the VCG check summary](#vcg-check-summary) and make sure everything is good to go
+12. Make sure the storage adapter is supported and the driver is up to date. See [Get a list of all PCI devices](#get-a-list-of-all-pci-devices-allows-you-to-check-for-rebranding)
+13. Review [the VCG check summary](#vcg-check-summary) and make sure everything is good to go
+14. If you are having general performace issues with vSAN you can go to a host seeing the issues and check the controller queue depth with `esxtop`. You can use the D option to see the queue stats. Hit enter to return to the general view and then you can check AQLEN. ESXi requires a depth greater than 256. You can also check it with the command `esxcfg-info –s | grep “==+SCSI Interface” –A 1`
+15. Disable controller caching. This is the VMWare recommended setting. If you can't disable it try setting the cache to 100% read.
+16. Make sure all disks that are meant to be claimed by vSAN are with the command `esxcli vsan storage list`. Make sure in the output that CMMDS is set to true. This implies that the cluster membership and directory services know about the disk in question and that the capacity of the disk is contributing to the capactiy of the vSAN datastore.
 
 
 ## Using vSAN Observer
@@ -117,6 +128,9 @@ esxcli vsan network list # Determine which vmk interface is used for vSAN
 
 # This can be run at the cluster level and also gives vmk interface for vSAN
 vsan.cluster_info <vSAN cluster> 
+
+# Use LLDP to obtain upstream switch info
+vsan.lldpnetmap localhost/datacenter/computers/vSAN\ Cluster/
 ```
 
 ### Determine what drives are attached to which storage adapters
