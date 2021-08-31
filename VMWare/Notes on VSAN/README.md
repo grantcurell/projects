@@ -3,6 +3,7 @@
 - [Notes on vSAN](#notes-on-vsan)
   - [Disk Groups](#disk-groups)
   - [Deduplication and Replication](#deduplication-and-replication)
+    - [What is a Replica (other source)](#what-is-a-replica-other-source)
   - [Distributed Datastore](#distributed-datastore)
   - [Objects and Components](#objects-and-components)
   - [RAID Architecture](#raid-architecture)
@@ -11,6 +12,7 @@
     - [Fault Domains](#fault-domains)
       - [Sample Architecture](#sample-architecture)
   - [Witness](#witness)
+    - [Alternate Explanation (includes stripes)](#alternate-explanation-includes-stripes)
   - [Design Notes](#design-notes)
     - [Networking](#networking)
     - [Erasure Coding](#erasure-coding)
@@ -18,7 +20,8 @@
       - [RAID 6](#raid-6)
     - [Internal Components](#internal-components)
   - [vSAN Layers](#vsan-layers)
-  - [Components](#components)
+  - [Objects and Components](#objects-and-components-1)
+  - [vSAN Networking Roles](#vsan-networking-roles)
 
 ## Disk Groups
 ![](images/2021-07-12-13-18-23.png)
@@ -42,6 +45,10 @@
 
 - The mechanism for destaging differs between the two Virtual SAN models, hybrid and all-flash; mechanical disks are typically good at handling sequential write workloads, so Virtual SAN uses this to make the process more efficient. In the hybrid model, an elevator algorithm runs independently on each disk group and decides, locally, whether to move any data to its capacity disks, and if so, when. This algorithm uses multiple criteria and batches together larger chunks of data that are physically proximal on a mechanical disk, and destages them together asynchronously. This mechanism writes to the disk sequentially for improved performance. However, the destaging mechanism is also conservative: it will not rush to move data if the space in the write buffer is not constringed. In addition, as data that is written tends to be overwritten quickly within a short period of time, this approach avoids writing the same blocks of data multiple times to the mechanical disks. Also note that the write buffers of the capacity layer disks are flushed onto the persistent storage devices before writes are discarded from the caching device. In the all-flash model, Virtual SAN uses 100 percent of the available capacity on the endurance flash device as a write buffer. In all-flash configurations, essentially the same mechanism is in place as that in the hybrid model. However, Virtual SAN does not take into account the proximal algorithm, making it a more efficient mechanism for destaging to capacity flash devices. Also, in the all-flash model, changes to the elevator algorithm allow the destaging of cold data from the write cache to the capacity tier, based on their data blocks' relative hotness or coldness. In addition, data blocks that are overwritten stay in the caching tier longer, which results in reducing the overall wear on the capacity tier flash devices, increasing their life expectancy.
   - Hosken, Martin. VMware Software-Defined Storage (Kindle Locations 5339-5353). Wiley. Kindle Edition.
+
+### What is a Replica (other source)
+
+![](images/2021-08-30-09-19-07.png)
 
 ## Distributed Datastore
 
@@ -85,6 +92,11 @@
 
 ![](images/2021-07-12-14-59-11.png)
 
+### Alternate Explanation (includes stripes)
+
+![](images/2021-08-30-09-21-03.png)
+![](images/2021-08-30-09-21-37.png)
+
 ## Design Notes
 
 ### Networking
@@ -109,6 +121,8 @@ How it works: https://stonefly.com/blog/understanding-erasure-coding
 
 ![](images/2021-07-12-15-27-38.png)
 ![](images/2021-07-12-15-28-32.png)
+![](images/2021-08-30-09-15-33.png)
+![](images/2021-08-30-09-15-56.png)
 
 ## vSAN Layers
 
@@ -116,8 +130,17 @@ How it works: https://stonefly.com/blog/understanding-erasure-coding
 ![](images/2021-08-29-21-23-36.png)
 ![](images/2021-08-29-21-23-50.png)
 
-## Components
+## Objects and Components
 
 See https://masteringvmware.com/vsan-objects-and-components/
 
 Component is an single file which you can say it as single VMDK. When you apply an storage policy to the Virtual Machine based on the policy components gets created and replicated. Let’s take an Example where you have created a VM with RAID-1 (Mirroring). So now when you see at the VM placement you will see that different components gets created. Component has the maximum limit of 255GB. So that means if your VMDK is more then 255 GB in size then it will be striped and if the VMDK is less then 255GB in size then it will be single component. In vSAN 6.6 there is limit of maximum 9000 components per vSAN Host. vSAN Distributes the components across the hosts evenly for the availability and to maintain the balance.
+
+![](images/2021-08-30-09-18-03.png)
+
+## vSAN Networking Roles
+
+![](images/2021-08-30-18-26-21.png)
+CMMDS = Clustered metadata database and monitoring service
+Multicast addresses used are as follows:
+![](images/2021-08-30-18-32-16.png)
