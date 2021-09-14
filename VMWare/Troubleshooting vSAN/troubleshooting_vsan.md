@@ -22,6 +22,7 @@
     - [List SCSI devices and their sizes](#list-scsi-devices-and-their-sizes)
     - [Get a list of all PCI devices (allows you to check for rebranding)](#get-a-list-of-all-pci-devices-allows-you-to-check-for-rebranding)
       - [Determine Adapter Driver and Version](#determine-adapter-driver-and-version)
+        - [Determine Driver Parameters](#determine-driver-parameters)
     - [Get a list of VIBs](#get-a-list-of-vibs)
     - [Check failures to tolerate and stripe](#check-failures-to-tolerate-and-stripe)
     - [Check what the fault domains are](#check-what-the-fault-domains-are)
@@ -224,6 +225,8 @@ You an use a combination of the vendor IDs, device IDs, sub-vendor IDs, and sub-
 
 *Module Name* indicates the driver that is currently in use. You can use the `vmkload_mod -s <driver name>` or `esxcli system module get -m` command to determine the driver version. Check that against the VCG; as bugs arise the supported drivers can change. You can also check the adapters with `vsan.disks_info localhost/datacenter/computers/vSAN\ Cluster/hosts/vsan1.lan --show-adapters` in RVC. 
 
+##### Determine Driver Parameters 
+`vmkload_mod -s <driver name>`
 ### Get a list of VIBs
 
 `esxcli software vib list`
