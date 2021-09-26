@@ -8,17 +8,40 @@
 
 ## Configure ZTP
 
-https://infohub.delltechnologies.com/l/enterprise-sonic-distribution-by-dell-technologies-lifecycle-management/introduction-857
+The official ZTP documentation for SONiC is [here](https://github.com/Azure/SONiC/blob/master/doc/ztp/ztp.md).
+
+### Configure DHCP for ZTP
+
+The first thing you will need to do is configure the DHCP server servicing the devices to provide option 67 which will point to initial boot file used by SONiC's ZTP agent. The options for URL are defined [here](https://github.com/Azure/SONiC/blob/master/doc/ztp/ztp.md#url-object). I used PFSense to provide DHCP. On the DHCP server section I added option 67 with type string and value "http://192.168.1.95:80/initial.json".
+
+![](images/2021-09-26-15-25-21.png)
+
+The name of the JSON file doesn't matter.
+
+### Configure Your HTTP Server
+
+Next on the HTTP server you will need to add two files. The first is the aforementioned initial configuration file. A copy of mine is below.
 
 ```json
-"initial-config": {
-  "plugin": {
-    "name": "config-db-json"
-  },
-  "url": {
-    "source": "http://192.168.1.1:8080/spine01_first_boot_config.json",
-    "destination": "/etc/sonic/config_db.json",
-    "secure": false
+{
+  "ztp": {
+    "configdb-json" : {
+      "url": {
+        "source": "http://192.168.1.95:80/config_db.json"
+      }
+    }
+  }
+}
+```
+
+The *source* field points to the actual configuration file you want to deploy to the networking device. On your web server you will also need to provide this configuration file. In my case I only had it update the device's management IP address:
+
+```json
+{
+  "MGMT_INTERFACE": {
+      "eth0|192.168.1.96/24": {
+          "gwaddr": "10.11.12.1"
+      }
   }
 }
 ```
