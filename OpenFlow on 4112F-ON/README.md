@@ -42,10 +42,16 @@
     sudo npm install -g @angular/cli
     sudo ng add @angular/material
 
+There's a problem with the angular material install. I haven't tested it but it seems to have to do with the package lock. Try deleting references to Angular Material from it.
+![](images/2021-09-27-17-23-54.png)
+![](images/2021-09-27-17-24-19.png)
+
 You can drop the `-g` if you want to install angular locally in the directory instead of globally.
 You will have to prefix your commands with `npx -p @angular/cli ng`
 
 To setup debugging do the following:
+
+Note: Chrome debugger [seems to be deprecated now](https://github.com/microsoft/vscode-js-debug)
 
 1. Go to https://marketplace.visualstudio.com/items?itemName=msjsdiag.debugger-for-chrome and install the addon for Visual Studio Code
 2. Go to the debugging tab in Visual Studio code, hit the down arrow next to launch program and click launch Chrome.
