@@ -46,6 +46,12 @@ The *source* field points to the actual configuration file you want to deploy to
 }
 ```
 
+This file's sections are identical to what is in */etc/sonic/config_db.json*. If you want to see what something should look like you can look there and then copy/paste.
+
+## Running ZTP
+
+ZTP will run by default on a new device but if you want to force it to run you can make sure it is on with `ztp enable` and then `ztp run` to force it to run.
+
 ## TODO
 
 - First I want to get it working with a fixed file, then we'll do dynamic content
