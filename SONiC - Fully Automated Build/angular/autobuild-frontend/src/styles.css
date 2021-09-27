@@ -30,3 +30,5 @@ body { margin: 0; font-family: Roboto-Light, MuseoSansForDell, "Helvetica Neue",
 .app-button { font-family: Roboto-Light, MuseoSansForDell; color: white; background-color: #137db5;}
 .roboto-regular { font-family: Roboto-Regular, Roboto-Light, MuseoSansForDell; color: #007DB8;}
 .hard-black { font-family: Robot-Light, MuseoSansDell, "Lucida Sans Unicode"; font-size: 18px; font-weight: 300;}
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
