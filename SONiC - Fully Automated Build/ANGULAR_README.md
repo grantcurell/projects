@@ -11,8 +11,9 @@ ng add @angular/material
 
 ## Debugging
 
-1. Go to the debugging tab in Visual Studio code, hit the down arrow next to launch program and click launch Chrome.
-2. I used the following configuration:
+1. Run the server with `ng serve --host 0.0.0.0`
+2. Go to the debugging tab in Visual Studio code, hit the down arrow next to launch program and click launch Chrome.
+3. I used the following configuration:
 
 ```json
 {
