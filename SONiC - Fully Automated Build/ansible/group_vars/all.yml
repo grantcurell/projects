@@ -4,14 +4,14 @@ ansible_network_os: dellemc.enterprise_sonic.sonic
 
 # Changing the interface name here will be reflected in all places
 # Spine to Leaf interface connections
-spine_leaf1_inf1: Eth1/1
-spine_leaf2_inf2: Eth1/2
-spine_leaf25_inf3: Eth1/25
-spine_leaf26_inf4: Eth1/26
+spine_leaf1_inf1: Ethernet32
+spine_leaf2_inf2: Ethernet36
+spine_leaf25_inf3: Ethernet164
+spine_leaf26_inf4: Ethernet160
 
 # Leaf to spine interface connections
-leaf_spine1_inf1: Eth1/14
-leaf_spine2_inf2: Eth1/15
+leaf_spine1_inf1: Ethernet40
+leaf_spine2_inf2: Ethernet4
 
 # Logical interface defintions
 loopback_inf0: Loopback0
