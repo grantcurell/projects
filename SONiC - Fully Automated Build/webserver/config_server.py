@@ -21,7 +21,7 @@ mac_address_regex = re.compile(r"[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\1[0-9a-f]{2}){4}
 @app.route('/<regex("[a-z0-9]{12}"):mac_address>.json/')
 def config(mac_address):
     print("Processing MAC address " + mac_address)
-    return render_template('configs/config_db.json', gwaddr='192.168.1.1', mgmt_address="192.168.1.97")
+    return render_template('configs/config_db.json', gwaddr='192.168.1.1', mgmt_address="192.168.1.98/24")
 
 
 @app.route('/initial.json')

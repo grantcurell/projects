@@ -1,7 +1,7 @@
 {
   "MGMT_INTERFACE": {
-      "eth0|{{ mgmt_address }}": {
-          "gwaddr": "{{ gwaddr }}"
-      }
+    "eth0|{{ mgmt_address }}": {
+      "gwaddr": "{{ gwaddr }}"
+    }
   }
 }
