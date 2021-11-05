@@ -177,6 +177,7 @@ esxcli network ip interface list
 esxcli network ip interface ipv4 get
 esxcli network ip neighbor list # view ARP table
 esxcli vsan network list # Determine which vmk interface is used for vSAN
+esxcli network nic list # List the physical interfaces
 
 # This can be run at the cluster level and also gives vmk interface for vSAN
 vsan.cluster_info <vSAN cluster> 
