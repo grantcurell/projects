@@ -1,5 +1,15 @@
 # How Does CloudLink Work
 
+- [How Does CloudLink Work](#how-does-cloudlink-work)
+  - [General Functioning](#general-functioning)
+  - [Components](#components)
+  - [Licensing](#licensing)
+    - [General Licenses](#general-licenses)
+    - [License Types](#license-types)
+  - [Installation Notes](#installation-notes)
+  - [Connecting VMWare to CloudLink](#connecting-vmware-to-cloudlink)
+  - [Questions](#questions)
+
 ## General Functioning
 
 CloudLink provides encryption by using Microsoft BitLocker and dm-crypt ([How does dm-crypt work](https://www.linux.com/training-tutorials/how-encrypt-linux-file-system-dm-crypt/))for Linux to provide encryption.
@@ -50,6 +60,18 @@ This license defines the total storage that can be encrypted using CloudLink Cen
 - Make sure you add approved networks with IP ranges before installation or adding machines will fail with `IP address (192.168.1.95) not in group's approved networks`
   - Alternatively you will have to go to machines and accept the machine
 - To install in standard mode on Linux run `sudo ./clagent.sh -S 192.168.1.86 -G cf41-f71e` where -S specifies the server and -G is the group key
+
+## Connecting VMWare to CloudLink
+
+Connection to vSphere / VMWare works through a protocol called KMIP. KMIP is a protocol for communicating key information between key management servers and key management clients. Broadly speaking there are two ways which CloudLink can function in a VMWare environment:
+
+1. You can set up the CloudLink Center server and it can encrypt the virtual hard disks used by the various VMs. This is accomplished by running the CloudLink Agent on the individual VMs themselves.
+2. You can connect Cloudlink Center directly to vSphere and vSphere will instead use it to encrypt the VMs themselves.
+
+You can verify that CloudLink is compatible with the version of VMWare you are going to use [here](https://www.vmware.com/resources/compatibility/search.php?deviceCategory=kms&details=1&releases=577&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc).
+
+See [Dell EMC CloudLink Key Management for VMware vCenter Server Configuration Guide](https://docs.delltechnologies.com/bundle/P_KEY_CL/page/GUID-86A006AF-A553-4EEE-9F7A-B0DAFAC5C9B9.html) for an overview of configuring VMWare vCenter with CloudLink.
+
 ## Questions
 
 - What is vault mode?
@@ -62,3 +84,4 @@ This license defines the total storage that can be encrypted using CloudLink Cen
 
 - Can it encrypt data in motion?
 - How does the licensing work if you have multiple clusters?
+- Can it be used as a generic keystore
