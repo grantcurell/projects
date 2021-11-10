@@ -8,7 +8,10 @@
     - [License Types](#license-types)
   - [Installation Notes](#installation-notes)
   - [Connecting VMWare to CloudLink](#connecting-vmware-to-cloudlink)
-  - [Questions](#questions)
+    - [Set Up CloudLink](#set-up-cloudlink)
+    - [Configure vCenter](#configure-vcenter)
+    - [Enabling Encryption](#enabling-encryption)
+  - [My Outstanding Questions](#my-outstanding-questions)
 
 ## General Functioning
 
@@ -63,6 +66,8 @@ This license defines the total storage that can be encrypted using CloudLink Cen
 
 ## Connecting VMWare to CloudLink
 
+**WARNING** This option requires you to use the KMIP license. If you use another license the below indicated options will not be present.
+
 Connection to vSphere / VMWare works through a protocol called KMIP. KMIP is a protocol for communicating key information between key management servers and key management clients. Broadly speaking there are two ways which CloudLink can function in a VMWare environment:
 
 1. You can set up the CloudLink Center server and it can encrypt the virtual hard disks used by the various VMs. This is accomplished by running the CloudLink Agent on the individual VMs themselves.
@@ -72,7 +77,47 @@ You can verify that CloudLink is compatible with the version of VMWare you are g
 
 See [Dell EMC CloudLink Key Management for VMware vCenter Server Configuration Guide](https://docs.delltechnologies.com/bundle/P_KEY_CL/page/GUID-86A006AF-A553-4EEE-9F7A-B0DAFAC5C9B9.html) for an overview of configuring VMWare vCenter with CloudLink.
 
-## Questions
+### Set Up CloudLink
+
+**Note** The use of Chinese characters is deliberate. I do this to ensure that software I test correctly handles character encodings other than ASCII. It is surprising how many modern software applications fail to handle UTF8 and other character encodings properly which is frequently an indicator of poor design quality.
+
+![](images/2021-11-10-10-26-40.png)
+
+A KMIP partition is a container for the keys and certificates that are created by some KMIP client. Multiple clients can use the same partition but then keep in mind they will also be mutually accessible. See https://docs.delltechnologies.com/bundle/P_AG_CL/page/GUID-3A10CBF2-07DA-4951-96F3-2A7008390F55.html
+
+After that I added a KMIP client:
+
+![](images/2021-11-10-10-32-48.png)
+
+### Configure vCenter
+
+![](images/2021-11-10-10-36-19.png)
+
+![](images/2021-11-10-10-38-59.png)
+
+![](images/2021-11-10-10-55-19.png)
+
+First we have to establish trust with the KMS server by make the KMS trust vCenter. After clicking the above select KMS certificate and private key as shown below.
+
+![](images/2021-11-10-11-01-06.png)
+
+In KMS certificate upload cert.pem (which you got from setting up the client in CloudLink) and in KMS private key upload key.pem.
+
+![](images/2021-11-10-10-50-26.png)
+
+Upload the certificate you downloaded earlier here (it should be called ca.pem). I didn't have to do this in my setup.
+
+### Enabling Encryption
+
+Encryption is controlled by storage policy so you can set it as you would on any other object. 
+
+1. Right click on a VM
+2. Click Edit Storage Policies
+3. Now you can change it to VM Encryption Policy
+
+![](images/2021-11-10-11-35-18.png)
+
+## My Outstanding Questions
 
 - What is vault mode?
 
@@ -84,4 +129,3 @@ See [Dell EMC CloudLink Key Management for VMware vCenter Server Configuration G
 
 - Can it encrypt data in motion?
 - How does the licensing work if you have multiple clusters?
-- Can it be used as a generic keystore
