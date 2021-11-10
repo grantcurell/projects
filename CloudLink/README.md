@@ -11,6 +11,7 @@
     - [Set Up CloudLink](#set-up-cloudlink)
     - [Configure vCenter](#configure-vcenter)
     - [Enabling Encryption](#enabling-encryption)
+      - [vSAN](#vsan)
   - [My Outstanding Questions](#my-outstanding-questions)
 
 ## General Functioning
@@ -116,6 +117,10 @@ Encryption is controlled by storage policy so you can set it as you would on any
 3. Now you can change it to VM Encryption Policy
 
 ![](images/2021-11-10-11-35-18.png)
+
+#### vSAN
+
+To enable encryption on vSAN do this: https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.vsphere.virtualsan.doc/GUID-E7CA36B7-D7EB-423A-ADD1-7E410E36F5A7.html
 
 ## My Outstanding Questions
 
