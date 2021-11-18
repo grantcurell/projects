@@ -5,6 +5,21 @@
 
 [Nvidia System Management Interface](https://developer.nvidia.com/nvidia-system-management-interface)
 
+[GPUDirect RDMA Access Example Code](https://github.com/karakozov/gpudma)
+
+[Mellanox GPUDirect RDMA Example](https://github.com/Mellanox/gpu_direct_rdma_access)
+
+[NVIDIA CUDA Basics](images/sc11-cuda-c-basics.pdf)
+
+[GPUDirect Benchmark Tests](https://www.mellanox.com/related-docs/prod_software/Mellanox_GPUDirect_User_Manual_v1.5.pdf)
+
+[RDMA Aware Programming User Manual (has a great RDMA architecture overview)](images/RDMA_Aware_Programming_user_manual.pdf)
+**NOTE** This also includes how Infiniband works.
+
+[Packet Capture with GPUDirect](images/s9730-packet-processing-on-gpu-at-100gbe-line-rate.pdf)
+
+[How Infiniband Works](https://blog.zhaw.ch/icclab/infiniband-an-introduction-simple-ib-verbs-program-with-rdma-write/)
+
 ## Using Nvidia SMI
 
 Run from Windows: `c:\Windows\System32\DriverStore\FileRepository\nvdm.inf_amd64_3349a8117b680632>nvidia-smi.exe`
@@ -87,6 +102,14 @@ int main()
 }
 ```
 
+### Global Keyword
+
+The __global__ keyword indicates a function that runs on the device and is called from host code
+
+### How nvcc separates code
+
+nvcc separates source code into host and device components. Device functions (e.g. mykernel()) are proccesed by the Nvidia compiler while host functions (e.g. main()) are processed by standard host compiler (gcc, cl, etc)
+
 ### Thread Hierarchy
 
 For convenience, threadIdx is a 3-component vector, so that threads can be identified using a one-dimensional, two-dimensional, or three-dimensional thread index, forming a one-dimensional, two-dimensional, or three-dimensional block of threads, called a thread block. This provides a natural way to invoke computation across the elements in a domain such as a vector, matrix, or volume.
@@ -110,3 +133,42 @@ The runtime is implemented in the cudart library, which is linked to the applica
 See https://stackoverflow.com/a/23087951/4427375
 
 A GPU context is described [here](http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#context). It represents all the state (data, variables, conditions, etc.) that are collectively required and instantiated to perform certain tasks (e.g. CUDA compute, graphics, H.264 encode, etc). A CUDA context is instantiated to perform CUDA compute activities on the GPU, either implicitly by the CUDA runtime API, or explicitly by the CUDA device API.
+
+## What is a PCIe Root Complex?
+
+https://www.quora.com/What-is-a-PCIe-root-complex?share=1
+
+## How does PCIe Enumeration Work?
+
+https://www.quora.com/What-is-PCIE-enumeration/answer/Satish-Kumar-525?ch=15&oid=31389493&share=44585235&target_type=answer
+
+## NVMe over PCIe vs Other Protocols
+
+https://www.quora.com/Is-NVMe-faster-than-PCIe/answer/Mike-Jones-169?ch=15&oid=193548046&share=a587ff45&target_type=answer
+
+## What is a PCIe Function?
+
+https://www.quora.com/What-is-a-PCIe-function/answer/Udit-Khanna-2?ch=15&oid=58319695&share=c7f066e5&target_type=answer
+
+## PCIe-Bus and NUMA Node Correlation
+
+https://social.msdn.microsoft.com/Forums/en-US/fabb05b7-eb3f-4a7c-91c5-1ced90af3d0c/pciebus-and-numanode-correlation
+
+## How does the root complex work?
+
+https://codywu2010.wordpress.com/2015/11/29/how-modern-multi-processor-multi-root-complex-system-assigns-pci-bus-number/
+
+## What is PCIe P2P?
+
+https://xilinx.github.io/XRT/master/html/p2p.html
+
+## What is the difference between a thread and a block?
+
+https://stackoverflow.com/questions/16635587/whats-the-difference-between-a-thread-in-a-block-and-a-warp32-threads
+
+A block is used to run things in parallel and for each block there is one thread. Each parallel invocation of a kernel is a block and a set of blocks is a grid.
+
+You can also run multiple threads per block.
+![](images/2021-11-11-16-09-59.png)
+![](images/2021-11-11-16-10-17.png)
+![](images/2021-11-11-16-11-28.png)
