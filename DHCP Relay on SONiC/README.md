@@ -33,9 +33,9 @@ RHEL Virtual Machine with DHCP server
 ### IP Addresses
 
 - RHEL VM: 192.168.100.5/24
-- Z9264 VLAN 99 interface: 192.168.99.1/24
-- Z9264 VLAN 100 interface: 192.168.100.1/24
-- 4112F-ON VLAN 99 interface 192.168.99.2/24
+- Z9264 SVI interface on VLAN 99: 192.168.99.1/24
+- Z9264 SVI interface on VLAN 100: 192.168.100.1/24
+- 4112F-ON SVI interface on VLAN 99 - DHCP
 
 ### Test Concept
 
