@@ -52,6 +52,10 @@ This file's sections are identical to what is in */etc/sonic/config_db.json*. If
 
 ZTP will run by default on a new device but if you want to force it to run you can make sure it is on with `ztp enable` and then `ztp run` to force it to run.
 
+## Get Command Line
+
+Run `sonic-cli` to get an OS-10 style command line.
+
 ## TODO
 
 - First I want to get it working with a fixed file, then we'll do dynamic content
