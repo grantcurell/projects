@@ -1,9 +1,4 @@
-eth1/1/1 - right hand SFP on R840 (192.168.1.10)
-eth1/1/2 - right hand SFP on VEP (192.168.1.27)
-eth1/1/4 - right hand ethernet jack on R840 (192.168.1.10
-eth1/1/5 - bottom right ethernet port on VEP (vmnic5)
-eth1/1/6 - top right ethernet port on VEP
-eth1/1/13 - going to 40Gb/s jack on R840
+# Configuring Load Balancing with LAG on Dell 5212F-ON
 
 - [Configuring Load Balancing with LAG on Dell 5212F-ON](#configuring-load-balancing-with-lag-on-dell-5212f-on)
   - [Version Information](#version-information)
@@ -12,8 +7,6 @@ eth1/1/13 - going to 40Gb/s jack on R840
     - [Configure 5212F-ON](#configure-5212f-on)
     - [Configure RHEL 8](#configure-rhel-8)
   - [Test Results](#test-results)
-
-# Configuring Load Balancing with LAG on Dell 5212F-ON
 
 ## Version Information
 
