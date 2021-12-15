@@ -21,8 +21,15 @@
     - [Internal Components](#internal-components)
   - [vSAN Layers](#vsan-layers)
   - [Objects and Components](#objects-and-components-1)
+    - [Another explanation](#another-explanation)
   - [vSAN Networking Roles](#vsan-networking-roles)
   - [vSAN RAID Tree](#vsan-raid-tree)
+  - [Other Notes](#other-notes)
+    - [Minimum Drive Requirements](#minimum-drive-requirements)
+    - [Minimum Hosts for vSAN](#minimum-hosts-for-vsan)
+    - [Minimum Hosts for Erasure Coding (RAID5/6)](#minimum-hosts-for-erasure-coding-raid56)
+    - [Maximum Size](#maximum-size)
+    - [Deduplication and Compression](#deduplication-and-compression)
 
 ## Disk Groups
 ![](images/2021-07-12-13-18-23.png)
@@ -143,6 +150,13 @@ Component is an single file which you can say it as single VMDK. When you apply 
 
 ![](images/2021-08-30-09-18-03.png)
 
+### Another explanation
+
+This also describes stripe width
+
+![](images/2021-12-15-10-52-27.png)
+![](images/2021-12-15-10-52-38.png)
+![](images/2021-12-15-10-53-07.png)
 ## vSAN Networking Roles
 
 ![](images/2021-08-30-18-26-21.png)
@@ -154,3 +168,37 @@ Multicast addresses used are as follows:
 
 ![](images/2021-08-30-21-11-26.png)
 ![](images/2021-08-30-21-13-28.png)
+
+## Other Notes
+
+### Minimum Drive Requirements
+
+Each host contributing storage capacity to the vSAN cluster will require at least one flash device and one capacity device (magnetic disk or flash). Note that the capacity tier is either all-flash or all magnetic disk; they cannot be mixed in the same vSAN cluster.
+
+Hogan, Cormac; Epping, Duncan. VMware vSAN 6.7 U1 Deep Dive . Kindle Edition. 
+
+### Minimum Hosts for vSAN
+
+At a minimum, vSAN requires three hosts in your cluster to contribute storage (or two hosts if you decide to use a witness host, which is a common configuration for ROBO, this is discussed in chapter 8); other hosts in your cluster could leverage these storage resources without contributing storage resources to the cluster itself, although this is not common.
+
+Hogan, Cormac; Epping, Duncan. VMware vSAN 6.7 U1 Deep Dive . Kindle Edition. 
+
+### Minimum Hosts for Erasure Coding (RAID5/6)
+
+![](images/2021-12-15-10-50-33.png)
+
+### Maximum Size
+
+Today’s boundary for vSAN in terms of both size and connectivity is a vSphere cluster. This means that vSAN supports single clusters/datastores of up to 64 hosts, but of course a single vCenter Server instance can manage many 64 host clusters. It is a common practice for most customers however to limit their clusters to around 20 hosts. This is for operational considerations like the time it takes to update a full cluster. Each host can run a supported maximum of 200 VMs, up to a total of 6,400 VMs within a 64-host vSAN cluster.
+
+Hogan, Cormac; Epping, Duncan. VMware vSAN 6.7 U1 Deep Dive . Kindle Edition. 
+
+### Deduplication and Compression
+
+When creating your vSAN cluster, if your vSAN cluster is an all-flash configuration, you have the option to enable “deduplication and compression.” Deduplication and compression will play a big factor in available capacity for an all-flash configuration. Note that these data services are not available in a hybrid configuration.
+
+Hogan, Cormac; Epping, Duncan. VMware vSAN 6.7 U1 Deep Dive . Kindle Edition. 
+
+But it is not just deduplication and compression that can provide space saving on the vSAN datastore. There is also the number of replica copies configured if the VM is using a RAID-1 policy. This is enabled through the policy-based management framework. Conversely, you may decide to use erasure coding polices such as RAID-5 and RAID-6 (but note that this space efficiency feature is only available on all-flash vSAN). These all determine how many VMs can be deployed on the datastore.
+
+Hogan, Cormac; Epping, Duncan. VMware vSAN 6.7 U1 Deep Dive . Kindle Edition. 

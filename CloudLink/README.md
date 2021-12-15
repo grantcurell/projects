@@ -66,7 +66,7 @@ This license defines the total storage that can be encrypted using CloudLink Cen
 - To install in standard mode on Linux run `sudo ./clagent.sh -S 192.168.1.86 -G cf41-f71e` where -S specifies the server and -G is the group key
 
 ## Connecting VMWare to CloudLink
-
+ 
 **WARNING** This option requires you to use the KMIP license. If you use another license the below indicated options will not be present.
 
 Connection to vSphere / VMWare works through a protocol called KMIP. KMIP is a protocol for communicating key information between key management servers and key management clients. Broadly speaking there are two ways which CloudLink can function in a VMWare environment:
