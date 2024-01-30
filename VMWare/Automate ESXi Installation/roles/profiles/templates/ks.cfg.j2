@@ -1,0 +1,42 @@
+##############################
+# Custom ESXi kickstart file #
+##############################
+
+accepteula
+
+keyboard 'US Default'
+
+# Clear all existing partitions
+clearpart --alldrives --overwritevmfs
+
+#Set password
+rootpw {{ root_password }}
+
+{% if item is defined %}
+install --disk={{ hostvars[item].boot_drive }} --overwritevmfs
+network --device={{ hostvars[item].mac | lower }} --bootproto=static --ip={{ hostvars[item].ip }} --netmask={{ netmask }} --gateway={{ gateway }} --nameserver={{ dns }} --hostname={{ item }}
+{% for datastore in hostvars[item].datastores %}
+partition {{ datastore }} --ondisk={{ hostvars[item].datastores[datastore].disk }}
+{% endfor %}
+{% else %}
+install --firstdisk --overwritevmfs
+network  --bootproto=dhcp
+network  --hostname=localhost.localdomain
+{% endif %}
+
+
+%firstboot --interpreter=busybox
+
+sleep 20
+esxcli network vswitch standard uplink add --uplink-name vmnic1 --vswitch-name vSwitch0
+esxcli network ip dns search add --domain={{ domain }}
+esxcli network ip dns server add --server={{ dns }}
+
+#Suppress shell warning
+esxcli system settings advanced set -o /UserVars/SuppressShellWarning -i 1
+
+# enable & start remote ESXi Shell  (SSH)
+vim-cmd hostsvc/enable_ssh
+vim-cmd hostsvc/start_ssh
+
+reboot

@@ -1,0 +1,17 @@
+From be289978c7883a8343faee723f6324f52943d23f Mon Sep 17 00:00:00 2001
+From: Grant Curell <grant_curell@dell.com>
+Date: Wed, 1 Apr 2020 10:30:37 -0500
+Subject: [PATCH 0/1] *** SUBJECT HERE ***
+
+*** BLURB HERE ***
+
+Grant Curell (1):
+  Fix two bugs in simple switch 13 examples
+
+ ryu/app/simple_switch_13.py      | 2 +-
+ ryu/app/simple_switch_rest_13.py | 8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+-- 
+2.17.1
+

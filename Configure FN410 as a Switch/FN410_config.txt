@@ -1,0 +1,162 @@
+! Version 9.14(1.8)
+! Last configuration change at Thu Jan 30 17:37:04 2020 by default
+! Startup-config last updated at Thu Jan 30 16:17:27 2020 by default
+!
+boot system stack-unit 0 primary system://B
+boot system stack-unit 0 secondary system://B
+!
+hostname Dell
+!
+protocol lldp
+!
+redundancy auto-synchronize full
+!
+enable password 7 b125455cf679b208fcf9eeeed0cd6d84
+!
+username root password 7 d7acc8a1dcd4f698 privilege 15
+!
+stack-unit 0 provision PE-FN-410S-IOM
+!
+interface TenGigabitEthernet 0/1
+ no ip address
+ portmode hybrid
+ switchport
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/2
+ no ip address
+ portmode hybrid
+ switchport
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/3
+ no ip address
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/4
+ no ip address
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/5
+ no ip address
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/6
+ no ip address
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/7
+ no ip address
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/8
+ no ip address
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/9
+ no ip address
+!
+ port-channel-protocol LACP
+  port-channel 128 mode active
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/10
+ no ip address
+!
+ port-channel-protocol LACP
+  port-channel 128 mode active
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/11
+ no ip address
+!
+ protocol lldp
+ no shutdown
+!
+interface TenGigabitEthernet 0/12
+ no ip address
+ portmode hybrid
+ switchport
+!
+ protocol lldp
+ shutdown
+!
+interface ManagementEthernet 0/0
+ no ip address
+ no shutdown
+!
+interface Port-channel 128
+ no ip address
+ portmode hybrid
+ switchport
+ no shutdown
+!
+interface Vlan 1
+ ip address dhcp
+!untagged TenGigabitEthernet 0/1-2,12
+!untagged Port-channel 128
+ no shutdown
+!
+interface Vlan 32
+ ip address 192.168.1.115/24
+ tagged TenGigabitEthernet 0/1-2,12
+ tagged Port-channel 128
+ shutdown
+!
+management route 0.0.0.0/0 192.168.1.1
+!
+service-class dynamic dot1p
+!
+snmp-server community public ro
+snmp-server enable traps snmp linkdown linkup
+snmp-server enable traps stack
+!
+ntp server 216.239.35.0
+!
+clock timezone TZ-11 -6 0
+!
+dcb-map FLEXIO_DCB_MAP_PFC_OFF
+ no pfc mode on
+!
+feature fip-snooping
+!
+line console 0
+line vty 0
+line vty 1
+line vty 2
+line vty 3
+line vty 4
+line vty 5
+line vty 6
+line vty 7
+line vty 8
+line vty 9
+!
+uplink-state-group 1
+ no enable
+!
+reload-type
+ boot-type normal-reload
+ config-scr-download enable
+!
+end
