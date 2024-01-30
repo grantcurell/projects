@@ -1,8 +1,0 @@
-default vesamenu.c32
-timeout 1
-prompt 0
-
-label Fedora
-  menu label Fedora
-  kernel mboot.c32
-  append -c boot.cfg ks=http://{{ server_ip }}/ks/{% if item is defined %}{{ item }}.cfg{% else %}{{ kick_cfg }}{% endif %}

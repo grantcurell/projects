@@ -1,9 +1,0 @@
-{
-  "ztp": {
-    "configdb-json" : {
-      "url": {
-        "source": "{{ ip_address }}:80/{{ config_name }}.json/"
-      }
-    }
-  }
-}

@@ -1,0 +1,4554 @@
+<?xml version="1.0" encoding="UTF-8"?><LCLogEvents Version="1">
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-04-05T18:29:58-0500" Sequence="1">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Informational" Timestamp="2022-04-05T18:30:18-0500" Sequence="2">
+  <Message>Log cleared.</Message>
+  <MessageID>SEL0004</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x01,0x00,0x02,0xBA,0x8A,0x4C,0x62,0x20,0x00,0x04,0x10,0x72,0x6F,0x02,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-04-05T18:38:58-0500" Sequence="3">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Warning" Timestamp="2022-04-05T18:41:30-0500" Sequence="4">
+  <Message>The Embedded NIC 1 Port 1 network link is down.</Message>
+  <MessageID>NIC100</MessageID>
+  <FQDD>NIC.Embedded.1-1-1</FQDD>
+  <MessageArgs>
+    <Arg>Embedded NIC 1</Arg>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2022-04-05T18:41:33-0500" Sequence="5">
+  <Message>The Embedded NIC 1 Port 1 network link is started.</Message>
+  <MessageID>NIC101</MessageID>
+  <FQDD>NIC.Embedded.1-1-1</FQDD>
+  <MessageArgs>
+    <Arg>Embedded NIC 1</Arg>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-05T18:41:34-0500" Sequence="6">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-04-05T18:43:15-0500" Sequence="7">
+  <Message>The request to change attributes is being processed.</Message>
+  <MessageID>UEFI0061</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-04-05T18:43:19-0500" Sequence="8">
+  <Message>One or more attributes are successfully changed.</Message>
+  <MessageID>UEFI0062</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-04-05T18:43:19-0500" Sequence="9">
+  <Message>One or more attributes are successfully configured. The system will be automatically turned off in 5 seconds.</Message>
+  <MessageID>UEFI0065</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-05T18:43:25-0500" Sequence="10">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-05T18:43:25-0500" Sequence="11">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:30-0500" Sequence="12">
+  <Message>Power Supply 1: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x0.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>1</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:30-0500" Sequence="13">
+  <Message>Power Supply 2: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x0.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2022-04-05T21:27:46-0500" Sequence="14">
+  <Message>The chassis is open while the power is off.</Message>
+  <MessageID>SEC0033</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x02,0x00,0x02,0x2F,0x33,0x3D,0x5E,0x20,0x00,0x04,0x05,0x73,0x6F,0x80,0x02,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Informational" Timestamp="2022-04-05T21:27:47-0500" Sequence="15">
+  <Message>The chassis is closed while the power is off.</Message>
+  <MessageID>SEC0034</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x03,0x00,0x02,0x2F,0x33,0x3D,0x5E,0x20,0x00,0x04,0x05,0x73,0xEF,0x80,0x02,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Informational" Timestamp="2022-04-05T21:27:57-0500" Sequence="16">
+  <Message>Log cleared.</Message>
+  <MessageID>SEL0004</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x01,0x00,0x02,0x5D,0xB4,0x4C,0x62,0x20,0x00,0x04,0x10,0x72,0x6F,0x02,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="AutoDiscovery" Category="Configuration" Severity="Informational" Timestamp="2022-04-05T21:28:03-0500" Sequence="17">
+  <Message>Auto Discovery feature disabled.</Message>
+  <MessageID>DIS002</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-04-05T21:28:04-0500" Sequence="18">
+  <Message>The iDRAC firmware was rebooted with the following reason: ac.</Message>
+  <MessageID>RAC0182</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>ac</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-05T21:28:04-0500" Sequence="19">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-05T21:28:08-0500" Sequence="20">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:27-0500" Sequence="21">
+  <Message>Power Supply 1: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x8.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>1</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>8</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:27-0500" Sequence="22">
+  <Message>Power Supply 2: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x0.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:29-0500" Sequence="23">
+  <Message>Power Supply 1: Status = 0x9, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x8.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>1</Arg>
+    <Arg>9</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>8</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Configuration" Severity="Informational" Timestamp="2020-02-07T10:51:54-0500" Sequence="24">
+  <Message>The iDRAC IP Address changed from 0.0.0.0 to 192.168.1.173.</Message>
+  <MessageID>IPA0100</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>0.0.0.0</Arg>
+    <Arg>192.168.1.173</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2020-02-07T10:52:11-0500" Sequence="25">
+  <Message>The chassis is open while the power is off.</Message>
+  <MessageID>SEC0033</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x02,0x00,0x02,0x26,0x33,0x3D,0x5E,0x20,0x00,0x04,0x05,0x73,0x6F,0x80,0x02,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2020-02-07T10:52:29-0500" Sequence="26">
+  <Message>The iDRAC firmware was rebooted with the following reason: ac.</Message>
+  <MessageID>RAC0182</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>ac</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="AutoDiscovery" Category="Configuration" Severity="Informational" Timestamp="2020-02-07T10:52:28-0500" Sequence="27">
+  <Message>Auto Discovery feature disabled.</Message>
+  <MessageID>DIS002</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2020-02-07T10:53:44-0500" Sequence="28">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2020-02-07T10:54:04-0500" Sequence="29">
+  <Message>The power input for power supply 1 is lost.</Message>
+  <MessageID>PSU0003</MessageID>
+  <FQDD>PSU.Slot.1</FQDD>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData>0x03,0x00,0x02,0xBB,0x33,0x3D,0x5E,0x20,0x00,0x04,0x08,0x85,0x6F,0x03,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:54:04-0500" Sequence="30">
+  <Message>The chassis is closed while the power is on.</Message>
+  <MessageID>SEC0032</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x04,0x00,0x02,0xBC,0x33,0x3D,0x5E,0x20,0x00,0x04,0x05,0x73,0xEF,0x80,0x01,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2020-02-07T10:54:30-0500" Sequence="31">
+  <Message>Power supply redundancy is lost.</Message>
+  <MessageID>RDU0012</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x05,0x00,0x02,0xD6,0x33,0x3D,0x5E,0x20,0x00,0x04,0x08,0x77,0x0B,0x01,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Critical" Timestamp="2022-04-22T09:06:57-0500" Sequence="32">
+  <Message>Power required by the system exceeds the power supplied by the Power Supply Units (PSUs).</Message>
+  <MessageID>UEFI0060</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2022-04-22T09:06:57-0500" Sequence="33">
+  <Message>The system halted because system power exceeds capacity.</Message>
+  <MessageID>PWR1006</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x06,0x00,0x02,0x31,0x70,0x62,0x62,0x20,0x00,0x04,0xC0,0x76,0x6F,0xA6,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-22T09:10:06-0500" Sequence="34">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-22T09:10:06-0500" Sequence="35">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-22T09:11:20-0500" Sequence="36">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Informational" Timestamp="2022-04-22T09:12:53-0500" Sequence="37">
+  <Message>The system performance restored.</Message>
+  <MessageID>PWR1000</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x07,0x00,0x02,0x95,0x71,0x62,0x62,0x20,0x00,0x04,0xC0,0x76,0xEF,0xA6,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-22T09:14:55-0500" Sequence="38">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-04-22T09:14:55-0500" Sequence="39">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:27-0500" Sequence="40">
+  <Message>Power Supply 1: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x0.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>1</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:27-0500" Sequence="41">
+  <Message>Power Supply 2: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x8.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>8</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:29-0500" Sequence="42">
+  <Message>Power Supply 2: Status = 0x9, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x8.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+    <Arg>9</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>8</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2020-02-07T10:52:09-0500" Sequence="43">
+  <Message>The chassis is open while the power is off.</Message>
+  <MessageID>SEC0033</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x08,0x00,0x02,0x26,0x33,0x3D,0x5E,0x20,0x00,0x04,0x05,0x73,0x6F,0x80,0x02,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:52:10-0500" Sequence="44">
+  <Message>The chassis is closed while the power is off.</Message>
+  <MessageID>SEC0034</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x09,0x00,0x02,0x2B,0x33,0x3D,0x5E,0x20,0x00,0x04,0x05,0x73,0xEF,0x80,0x02,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Configuration" Severity="Informational" Timestamp="2020-02-07T10:52:20-0500" Sequence="45">
+  <Message>The iDRAC IP Address changed from 0.0.0.0 to 192.168.1.173.</Message>
+  <MessageID>IPA0100</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>0.0.0.0</Arg>
+    <Arg>192.168.1.173</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="AutoDiscovery" Category="Configuration" Severity="Informational" Timestamp="2020-02-07T10:52:28-0500" Sequence="46">
+  <Message>Auto Discovery feature disabled.</Message>
+  <MessageID>DIS002</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2020-02-07T10:52:28-0500" Sequence="47">
+  <Message>The iDRAC firmware was rebooted with the following reason: ac.</Message>
+  <MessageID>RAC0182</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>ac</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2020-02-07T10:52:56-0500" Sequence="48">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2020-02-07T10:53:15-0500" Sequence="49">
+  <Message>The power input for power supply 2 is lost.</Message>
+  <MessageID>PSU0003</MessageID>
+  <FQDD>PSU.Slot.2</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData>0x0A,0x00,0x02,0x8A,0x33,0x3D,0x5E,0x20,0x00,0x04,0x08,0x86,0x6F,0x03,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2020-02-07T10:53:40-0500" Sequence="50">
+  <Message>Power supply redundancy is lost.</Message>
+  <MessageID>RDU0012</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x0B,0x00,0x02,0xA4,0x33,0x3D,0x5E,0x20,0x00,0x04,0x08,0x77,0x0B,0x01,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:06:43-0500" Sequence="51">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:06:43-0500" Sequence="52">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:06:51-0500" Sequence="53">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:08:49-0500" Sequence="54">
+  <Message>Unable to log in for root from 192.168.1.6 using GUI.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:08:52-0500" Sequence="55">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Configuration" Severity="Informational" Timestamp="2022-05-06T14:08:58-0500" Sequence="56">
+  <Message>User ID 2 User Password has been changed.</Message>
+  <MessageID>SWC1911</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:08:58-0500" Sequence="57">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Local Users_2 using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Local Users_2</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-05-06T14:09:01-0500" Sequence="58">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:09:32-0500" Sequence="59">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to IPv4 Settings using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>IPv4 Settings</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-05-06T14:09:46-0500" Sequence="60">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:10:24-0500" Sequence="61">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Configuration" Severity="Informational" Timestamp="2022-05-06T14:10:24-0500" Sequence="62">
+  <Message>The iDRAC IP Address changed from 192.168.1.173 to 192.168.1.47.</Message>
+  <MessageID>IPA0100</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>192.168.1.173</Arg>
+    <Arg>192.168.1.47</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-05-06T14:10:31-0500" Sequence="63">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:13:22-0500" Sequence="64">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-05-06T14:13:31-0500" Sequence="65">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:13:47-0500" Sequence="66">
+  <Message>Successfully logged in using root, from 192.168.1.6 and eHTML5 Virtual Console.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:13:48-0500" Sequence="67">
+  <Message>The session for root from 192.168.1.6 using eHTML5 Virtual Console is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:27:09-0500" Sequence="68">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:27:09-0500" Sequence="69">
+  <Message>Successfully logged in using root, from 192.168.1.6 and eHTML5 Virtual Console.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:39:52-0500" Sequence="70">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:57:17-0500" Sequence="71">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:57:17-0500" Sequence="72">
+  <Message>Virtual Media session started.</Message>
+  <MessageID>VME0002</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:57:17-0500" Sequence="73">
+  <Message>Virtual Media session created.</Message>
+  <MessageID>VME0008</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T14:57:17-0500" Sequence="74">
+  <Message>Successfully logged in using root, from 192.168.1.6 and eHTML5 Virtual Media.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-05-06T14:57:31-0500" Sequence="75">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Warning" Timestamp="2022-05-06T15:01:29-0500" Sequence="76">
+  <Message>The Embedded NIC 1 Port 2 network link is down.</Message>
+  <MessageID>NIC100</MessageID>
+  <FQDD>NIC.Embedded.2-1-1</FQDD>
+  <MessageArgs>
+    <Arg>Embedded NIC 1</Arg>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2022-05-06T15:01:33-0500" Sequence="77">
+  <Message>The Embedded NIC 1 Port 2 network link is started.</Message>
+  <MessageID>NIC101</MessageID>
+  <FQDD>NIC.Embedded.2-1-1</FQDD>
+  <MessageArgs>
+    <Arg>Embedded NIC 1</Arg>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-05-06T15:01:36-0500" Sequence="78">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Power Control using eHTML5 Virtual Console.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T15:01:36-0500" Sequence="79">
+  <Message>Requested system powerdown.</Message>
+  <MessageID>RAC0704</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T15:01:40-0500" Sequence="80">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T15:01:40-0500" Sequence="81">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-05-06T15:06:36-0500" Sequence="82">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Power Control using eHTML5 Virtual Console.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T15:06:36-0500" Sequence="83">
+  <Message>Requested system powerup.</Message>
+  <MessageID>RAC0701</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T15:06:37-0500" Sequence="84">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-05-06T15:06:46-0500" Sequence="85">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T21:28:59-0500" Sequence="86">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T21:28:59-0500" Sequence="87">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T21:28:59-0500" Sequence="88">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T21:33:01-0500" Sequence="89">
+  <Message>The session for root from 192.168.1.6 using eHTML5 Virtual Console is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-05-06T21:33:02-0500" Sequence="90">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T21:33:02-0500" Sequence="91">
+  <Message>Virtual Media session exited.</Message>
+  <MessageID>VME0006</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-06T21:33:02-0500" Sequence="92">
+  <Message>The session for root from 192.168.1.6 using eHTML5 Virtual Media is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-07T14:55:00-0500" Sequence="93">
+  <Message>Unable to log in for NULL from 192.168.1.6 using eHTML5 Virtual Console.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-05-07T14:55:00-0500" Sequence="94">
+  <Message>Unable to log in for NULL from 192.168.1.6 using eHTML5 Virtual Media.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:28-0500" Sequence="95">
+  <Message>Power Supply 1: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x0.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>1</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:28-0500" Sequence="96">
+  <Message>Power Supply 2: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x8.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>8</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2020-02-07T10:51:30-0500" Sequence="97">
+  <Message>Power Supply 2: Status = 0x9, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x8.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+    <Arg>9</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>8</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2022-09-19T12:21:41-0500" Sequence="98">
+  <Message>The power input for power supply 2 is lost.</Message>
+  <MessageID>PSU0003</MessageID>
+  <FQDD>PSU.Slot.2</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData>0x0C,0x00,0x02,0x2F,0x33,0x3D,0x5E,0x20,0x00,0x04,0x08,0x86,0x6F,0x03,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2022-09-19T12:21:42-0500" Sequence="99">
+  <Message>Power supply redundancy is lost.</Message>
+  <MessageID>RDU0012</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x0D,0x00,0x02,0xD6,0x5E,0x28,0x63,0x20,0x00,0x04,0x08,0x77,0x0B,0x01,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:22:01-0500" Sequence="100">
+  <Message>The iDRAC firmware was rebooted with the following reason: ac.</Message>
+  <MessageID>RAC0182</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>ac</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="AutoDiscovery" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:22:01-0500" Sequence="101">
+  <Message>Auto Discovery feature disabled.</Message>
+  <MessageID>DIS002</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:24:35-0500" Sequence="102">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:28:48-0500" Sequence="103">
+  <Message>The iDRAC IP Address changed from 0.0.0.0 to 192.168.1.47.</Message>
+  <MessageID>IPA0100</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>0.0.0.0</Arg>
+    <Arg>192.168.1.47</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:28:49-0500" Sequence="104">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:29:01-0500" Sequence="105">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:29:08-0500" Sequence="106">
+  <Message>Successfully logged in using root, from 192.168.1.6 and eHTML5 Virtual Console.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:29:18-0500" Sequence="107">
+  <Message>Virtual Media session started.</Message>
+  <MessageID>VME0002</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:29:18-0500" Sequence="108">
+  <Message>Virtual Media session created.</Message>
+  <MessageID>VME0008</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:29:18-0500" Sequence="109">
+  <Message>Successfully logged in using root, from 192.168.1.6 and eHTML5 Virtual Media.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:29:19-0500" Sequence="110">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:29:34-0500" Sequence="111">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Power Control using eHTML5 Virtual Console.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:29:34-0500" Sequence="112">
+  <Message>Requested system hardreset.</Message>
+  <MessageID>RAC0703</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:29:34-0500" Sequence="113">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:34:20-0500" Sequence="114">
+  <Message>Requested system powercycle.</Message>
+  <MessageID>RAC0702</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:34:24-0500" Sequence="115">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:34:24-0500" Sequence="116">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:34:32-0500" Sequence="117">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:36:19-0500" Sequence="118">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-09-19T12:45:53-0500" Sequence="119">
+  <Message>PCIe SSD in Slot 6 in Bay 1 is inserted.</Message>
+  <MessageID>PDR8</MessageID>
+  <FQDD>Disk.Bay.6:Enclosure.Internal.0-1</FQDD>
+  <MessageArgs>
+    <Arg>PCIe SSD in Slot 6 in Bay 1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-09-19T12:45:54-0500" Sequence="120">
+  <Message>PCIe SSD in Slot 7 in Bay 1 is inserted.</Message>
+  <MessageID>PDR8</MessageID>
+  <FQDD>Disk.Bay.7:Enclosure.Internal.0-1</FQDD>
+  <MessageArgs>
+    <Arg>PCIe SSD in Slot 7 in Bay 1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:49:11-0500" Sequence="121">
+  <Message>The (installation or configuration) job JID_636097513152 is successfully created on iDRAC.</Message>
+  <MessageID>JCP027</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_636097513152</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:49:11-0500" Sequence="122">
+  <Message>User root via IP 192.168.1.6 created configuration / update Job ID JID_636097513152 with Job Name Config:RAID:RAID.Integrated.1-1 using GUI.</Message>
+  <MessageID>JCP040</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>JID_636097513152</Arg>
+    <Arg>Config:RAID:RAID.Integrated.1-1</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-09-19T12:49:16-0500" Sequence="123">
+  <Message>Disk 0 in Backplane 1 of Integrated RAID Controller 1 is online.</Message>
+  <MessageID>PDR26</MessageID>
+  <FQDD>Disk.Bay.0:Enclosure.Internal.0-1:RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Disk 0 in Backplane 1 of Integrated RAID Controller 1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-09-19T12:49:16-0500" Sequence="124">
+  <Message>Virtual Disk 0 on Integrated RAID Controller 1 was created.</Message>
+  <MessageID>VDR4</MessageID>
+  <FQDD>Disk.Virtual.0:RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Virtual Disk 0 on Integrated RAID Controller 1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:50:26-0500" Sequence="125">
+  <Message>Job completed successfully.</Message>
+  <MessageID>PR19</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+  <ConfigResults>
+    <JobID>JID_636097513152</JobID>
+    <FQDD>RAID.Integrated.1-1</FQDD>
+    <Operation name="CREATE">
+      <DisplayValue>Test</DisplayValue>
+      <Name>Test</Name>
+      <Detail>
+        <NewValue>RAID 0</NewValue>
+        <NewValue>Solid State Disk 0:1:0</NewValue>
+        <NewValue>Virtual Disk Size in Bytes : 479559942144</NewValue>
+        <NewValue>Virtual Disk Stripe Size : 256 Kb</NewValue>
+        <NewValue>Physical Disks per Span : 1</NewValue>
+      </Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+  </ConfigResults>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:50:30-0500" Sequence="126">
+  <Message>The (installation or configuration) job JID_636097513152 is successfully completed.</Message>
+  <MessageID>JCP037</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_636097513152</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-19T12:53:27-0500" Sequence="127">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:55:19-0500" Sequence="128">
+  <Message>New device detected: Dell NVMe PCIe SSD Configuration Data(PCIe SSD in Slot 7 in Bay 1)</Message>
+  <MessageID>PR7</MessageID>
+  <FQDD>Disk.Bay.7:Enclosure.Internal.0-1</FQDD>
+  <MessageArgs>
+    <Arg>Dell NVMe PCIe SSD Configuration Data(PCIe SSD in Slot 7 in Bay 1)</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-19T12:55:19-0500" Sequence="129">
+  <Message>New device detected: Dell NVMe PCIe SSD Configuration Data(PCIe SSD in Slot 6 in Bay 1)</Message>
+  <MessageID>PR7</MessageID>
+  <FQDD>Disk.Bay.6:Enclosure.Internal.0-1</FQDD>
+  <MessageArgs>
+    <Arg>Dell NVMe PCIe SSD Configuration Data(PCIe SSD in Slot 6 in Bay 1)</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-09-19T12:56:22-0500" Sequence="130">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-19T13:19:13-0500" Sequence="131">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T13:19:13-0500" Sequence="132">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T16:04:45-0500" Sequence="133">
+  <Message>The session for root from 192.168.1.6 using eHTML5 Virtual Console is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-19T16:04:46-0500" Sequence="134">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T16:04:46-0500" Sequence="135">
+  <Message>The session for root from 192.168.1.6 using eHTML5 Virtual Media is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T16:04:46-0500" Sequence="136">
+  <Message>Virtual Media session exited.</Message>
+  <MessageID>VME0006</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T20:27:51-0500" Sequence="137">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-19T20:57:55-0500" Sequence="138">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-20T17:39:20-0500" Sequence="139">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-20T17:39:20-0500" Sequence="140">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-20T18:59:10-0500" Sequence="141">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-20T19:29:13-0500" Sequence="142">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:18:02-0500" Sequence="143">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:19:13-0500" Sequence="144">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Licenses using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Licenses</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:19:14-0500" Sequence="145">
+  <Message>License 446339 imported to device iDRAC successfully.</Message>
+  <MessageID>LIC208</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>446339</Arg>
+    <Arg>iDRAC</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:19:14-0500" Sequence="146">
+  <Message>The iDRAC feature set has changed.</Message>
+  <MessageID>LIC211</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-23T14:19:19-0500" Sequence="147">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:19:29-0500" Sequence="148">
+  <Message>Unable to log in for root from 192.168.1.6 using REDFISH.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:19:49-0500" Sequence="149">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:19:49-0500" Sequence="150">
+  <Message>Successfully logged in using root, from 192.168.1.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:21:11-0500" Sequence="151">
+  <Message>The previous log entry was repeated 2 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Configuration" Severity="Informational" Timestamp="2022-09-23T14:21:11-0500" Sequence="152">
+  <Message>iDRAC time zone has changed.</Message>
+  <MessageID>SWC1915</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:21:11-0500" Sequence="153">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Time Zone Settings using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Time Zone Settings</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-23T14:21:19-0500" Sequence="154">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="Redfish" Category="Configuration" Severity="Informational" Timestamp="2022-09-23T14:23:10-0500" Sequence="155">
+  <Message>The Telemetry feature is successfully enabled.</Message>
+  <MessageID>SYS498</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-23T14:23:19-0500" Sequence="156">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:23:23-0500" Sequence="157">
+  <Message>Successfully logged in using root, from 192.168.1.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:23:48-0500" Sequence="158">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:23:48-0500" Sequence="159">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Power Control using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:23:49-0500" Sequence="160">
+  <Message>Requested system powerup.</Message>
+  <MessageID>RAC0701</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T14:23:50-0500" Sequence="161">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:29:25-0500" Sequence="162">
+  <Message>Successfully logged in using root, from 192.168.1.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:30:11-0500" Sequence="163">
+  <Message>The previous log entry was repeated 2 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-09-23T19:30:11-0500" Sequence="164">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:30:23-0500" Sequence="165">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Reset iDRAC using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Reset iDRAC</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:30:26-0500" Sequence="166">
+  <Message>Successfully logged in using root, from 192.168.1.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2022-09-23T19:32:20-0500" Sequence="167">
+  <Message>Power Supply 1: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x0.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>1</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2022-09-23T19:32:20-0500" Sequence="168">
+  <Message>Power Supply 2: Status = 0x1, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x8.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+    <Arg>1</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>8</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2022-09-23T19:32:22-0500" Sequence="169">
+  <Message>Power Supply 2: Status = 0x9, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x8.</Message>
+  <MessageID>PSU0800</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+    <Arg>9</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>0</Arg>
+    <Arg>8</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Configuration" Severity="Informational" Timestamp="2022-09-23T19:32:50-0500" Sequence="170">
+  <Message>The iDRAC IP Address changed from 0.0.0.0 to 192.168.1.47.</Message>
+  <MessageID>IPA0100</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>0.0.0.0</Arg>
+    <Arg>192.168.1.47</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2022-09-23T19:33:08-0500" Sequence="171">
+  <Message>The power input for power supply 2 is lost.</Message>
+  <MessageID>PSU0003</MessageID>
+  <FQDD>PSU.Slot.2</FQDD>
+  <MessageArgs>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData>0x0E,0x00,0x02,0xD6,0x09,0x2E,0x63,0x20,0x00,0x04,0x08,0x86,0x6F,0x03,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="SEL" Category="System Health" Severity="Critical" Timestamp="2022-09-23T19:33:09-0500" Sequence="172">
+  <Message>Power supply redundancy is lost.</Message>
+  <MessageID>RDU0012</MessageID>
+  <FQDD>System.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData>0x0F,0x00,0x02,0xEF,0x09,0x2E,0x63,0x20,0x00,0x04,0x08,0x77,0x0B,0x01,0xFF,0xFF</RawEventData>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:33:29-0500" Sequence="173">
+  <Message>The iDRAC firmware was rebooted with the following reason: user initiated.</Message>
+  <MessageID>RAC0182</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>user initiated</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="AutoDiscovery" Category="Configuration" Severity="Informational" Timestamp="2022-09-23T19:33:29-0500" Sequence="174">
+  <Message>Auto Discovery feature disabled.</Message>
+  <MessageID>DIS002</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-09-23T19:33:45-0500" Sequence="175">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:33:55-0500" Sequence="176">
+  <Message>Successfully logged in using root, from 192.168.1.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:34:18-0500" Sequence="177">
+  <Message>The previous log entry was repeated 2 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:34:18-0500" Sequence="178">
+  <Message>Unable to log in for root from 192.168.1.6 using GUI.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:34:23-0500" Sequence="179">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:34:30-0500" Sequence="180">
+  <Message>Successfully logged in using root, from 192.168.1.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:38:31-0500" Sequence="181">
+  <Message>The previous log entry was repeated 7 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>7</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-23T19:38:31-0500" Sequence="182">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:40:51-0500" Sequence="183">
+  <Message>Successfully logged in using root, from 192.168.1.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:44:49-0500" Sequence="184">
+  <Message>The previous log entry was repeated 3 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>3</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T19:44:49-0500" Sequence="185">
+  <Message>Successfully logged in using root, from 192.168.1.189 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.189</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-23T20:13:01-0500" Sequence="186">
+  <Message>The previous log entry was repeated 9 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>9</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-23T20:13:01-0500" Sequence="187">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-24T02:01:32-0500" Sequence="188">
+  <Message>Successfully logged in using root, from 192.168.1.194 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.194</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-09-24T02:01:44-0500" Sequence="189">
+  <Message>User root via IP 192.168.1.194 requested state / configuration change to Power Control using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.194</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-24T02:01:45-0500" Sequence="190">
+  <Message>Requested system powerdown.</Message>
+  <MessageID>RAC0704</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-09-24T02:01:46-0500" Sequence="191">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-24T02:01:49-0500" Sequence="192">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-09-24T02:01:49-0500" Sequence="193">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-24T02:31:44-0500" Sequence="194">
+  <Message>The session for root from 192.168.1.194 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.194</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-09-26T21:18:49-0500" Sequence="195">
+  <Message>Successfully logged in using root, from 192.168.1.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-10-03T19:33:00-0500" Sequence="196">
+  <Message>The previous log entry was repeated 6 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>6</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2022-10-03T19:33:00-0500" Sequence="197">
+  <Message>The server is either idle or underutilized for the last 240 hours.</Message>
+  <MessageID>SYS321</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>240</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-10-08T15:42:43-0500" Sequence="198">
+  <Message>Successfully logged in using root, from 10.8.0.6 and REDFISH.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>10.8.0.6</Arg>
+    <Arg>REDFISH</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-10-18T21:47:02-0500" Sequence="199">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Warning" Timestamp="2022-10-18T21:47:02-0500" Sequence="200">
+  <Message>License 446339 assigned to device iDRAC expires in 5 days.</Message>
+  <MessageID>LIC201</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>446339</Arg>
+    <Arg>iDRAC</Arg>
+    <Arg>5</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Warning" Timestamp="2022-10-19T21:52:25-0500" Sequence="201">
+  <Message>License 446339 assigned to device iDRAC expires in 4 days.</Message>
+  <MessageID>LIC201</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>446339</Arg>
+    <Arg>iDRAC</Arg>
+    <Arg>4</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Warning" Timestamp="2022-10-20T21:57:49-0500" Sequence="202">
+  <Message>License 446339 assigned to device iDRAC expires in 3 days.</Message>
+  <MessageID>LIC201</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>446339</Arg>
+    <Arg>iDRAC</Arg>
+    <Arg>3</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Warning" Timestamp="2022-10-21T22:03:12-0500" Sequence="203">
+  <Message>License 446339 assigned to device iDRAC expires in 2 days.</Message>
+  <MessageID>LIC201</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>446339</Arg>
+    <Arg>iDRAC</Arg>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Warning" Timestamp="2022-10-22T22:08:35-0500" Sequence="204">
+  <Message>License 446339 assigned to device iDRAC expires in 1 days.</Message>
+  <MessageID>LIC201</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>446339</Arg>
+    <Arg>iDRAC</Arg>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Warning" Timestamp="2022-10-23T22:13:59-0500" Sequence="205">
+  <Message>License 446339 on device iDRAC has expired.</Message>
+  <MessageID>LIC207</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>446339</Arg>
+    <Arg>iDRAC</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-10-23T22:13:59-0500" Sequence="206">
+  <Message>The iDRAC feature set has changed.</Message>
+  <MessageID>LIC211</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-10-23T22:14:01-0500" Sequence="207">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T11:57:55-0500" Sequence="208">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T11:58:41-0500" Sequence="209">
+  <Message>Successfully logged in using root, from 192.168.1.166 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-12-21T11:59:01-0500" Sequence="210">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:01:28-0500" Sequence="211">
+  <Message>Successfully logged in using root, from 192.168.1.166 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:01:40-0500" Sequence="212">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:02:44-0500" Sequence="213">
+  <Message>The (installation or configuration) job JID_716421644879 is successfully created on iDRAC.</Message>
+  <MessageID>JCP027</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716421644879</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:02:44-0500" Sequence="214">
+  <Message>The (installation or configuration) job RID_716421645144 is successfully created on iDRAC.</Message>
+  <MessageID>JCP027</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>RID_716421645144</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:02:44-0500" Sequence="215">
+  <Message>A reboot is pending.</Message>
+  <MessageID>RED029</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:02:47-0500" Sequence="216">
+  <Message>Requested system graceful shutdown.</Message>
+  <MessageID>RAC0705</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:03:17-0500" Sequence="217">
+  <Message>Successfully logged in using root, from 192.168.1.166 and eHTML5 Virtual Console.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:03:21-0500" Sequence="218">
+  <Message>User root via IP 192.168.1.166 requested state / configuration change to Power Control using eHTML5 Virtual Console.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:03:22-0500" Sequence="219">
+  <Message>Requested system hardreset.</Message>
+  <MessageID>RAC0703</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:03:22-0500" Sequence="220">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:04:27-0500" Sequence="221">
+  <Message>Reboot is complete.</Message>
+  <MessageID>RED030</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:07:08-0500" Sequence="222">
+  <Message>Configuration changes successfully applied to device: PowerEdge R6515(System BIOS Setup)</Message>
+  <MessageID>PR6</MessageID>
+  <FQDD>BIOS.Setup.1-1</FQDD>
+  <MessageArgs>
+    <Arg>PowerEdge R6515(System BIOS Setup)</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+  <ConfigResults>
+    <JobID>JID_716421644879</JobID>
+    <FQDD>BIOS.Setup.1-1</FQDD>
+    <Operation name="CHANGE">
+      <DisplayValue>SetupPassword</DisplayValue>
+      <Name>SetupPassword</Name>
+      <Detail></Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+    <Operation name="CHANGE">
+      <DisplayValue>OldSetupPassword</DisplayValue>
+      <Name>OldSetupPassword</Name>
+      <Detail></Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+    <Operation name="CHANGE">
+      <DisplayValue>SysPassword</DisplayValue>
+      <Name>SysPassword</Name>
+      <Detail></Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+    <Operation name="CHANGE">
+      <DisplayValue>OldSysPassword</DisplayValue>
+      <Name>OldSysPassword</Name>
+      <Detail></Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+  </ConfigResults>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:07:09-0500" Sequence="223">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:13:18-0500" Sequence="224">
+  <Message>The (installation or configuration) job JID_716421644879 is successfully completed.</Message>
+  <MessageID>JCP037</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716421644879</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-12-21T12:14:14-0500" Sequence="225">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-12-21T12:15:31-0500" Sequence="226">
+  <Message>The Patrol Read operation completed for Integrated RAID Controller 1.</Message>
+  <MessageID>CTL38</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:18:23-0500" Sequence="227">
+  <Message>Package successfully downloaded.</Message>
+  <MessageID>RED002</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:18:31-0500" Sequence="228">
+  <Message>Processing of update packages is starting.</Message>
+  <MessageID>RED052</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:18:31-0500" Sequence="229">
+  <Message>The (installation or configuration) job JID_716431112310 is successfully created on iDRAC.</Message>
+  <MessageID>JCP027</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716431112310</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:18:32-0500" Sequence="230">
+  <Message>Downloading the BIOS_61GYN_WN64_2.9.3_02.EXE update package.</Message>
+  <MessageID>RED110</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>BIOS_61GYN_WN64_2.9.3_02.EXE</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:18:32-0500" Sequence="231">
+  <Message>An update job JID_716431112310 was created.</Message>
+  <MessageID>RED054</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716431112310</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:18:46-0500" Sequence="232">
+  <Message>Package successfully downloaded.</Message>
+  <MessageID>RED002</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:18:52-0500" Sequence="233">
+  <Message>The (installation or configuration) job RID_716431326755 is successfully created on iDRAC.</Message>
+  <MessageID>JCP027</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>RID_716431326755</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:18:52-0500" Sequence="234">
+  <Message>A reboot is pending.</Message>
+  <MessageID>RED029</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:18:52-0500" Sequence="235">
+  <Message>A reboot job RID_716431326755 was created.</Message>
+  <MessageID>RED055</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>RID_716431326755</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:18:57-0500" Sequence="236">
+  <Message>Requested system graceful shutdown.</Message>
+  <MessageID>RAC0705</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:19:16-0500" Sequence="237">
+  <Message>User root via IP 192.168.1.166 requested state / configuration change to Power Control using eHTML5 Virtual Console.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:19:16-0500" Sequence="238">
+  <Message>Requested system hardreset.</Message>
+  <MessageID>RAC0703</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:19:16-0500" Sequence="239">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:20:22-0500" Sequence="240">
+  <Message>Reboot is complete.</Message>
+  <MessageID>RED030</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="UEFI SS/USC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:20:35-0500" Sequence="241">
+  <Message>Updating firmware for PowerEdge BIOS to version 2.9.3.</Message>
+  <MessageID>SUP0516</MessageID>
+  <FQDD>BIOS.Setup.1-1</FQDD>
+  <MessageArgs>
+    <Arg>PowerEdge BIOS</Arg>
+    <Arg>2.9.3</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:22:58-0500" Sequence="242">
+  <Message>Unable to log in for NULL from 192.168.1.166 using eHTML5 Virtual Console.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="UEFI SS/USC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:24:42-0500" Sequence="243">
+  <Message>Successfully updated the PowerEdge BIOS firmware to version 2.9.3.</Message>
+  <MessageID>SUP0518</MessageID>
+  <FQDD>BIOS.Setup.1-1</FQDD>
+  <MessageArgs>
+    <Arg>PowerEdge BIOS</Arg>
+    <Arg>2.9.3</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Warning" Timestamp="2022-12-21T12:24:42-0500" Sequence="244">
+  <Message>The Embedded NIC 1 Port 2 network link is down.</Message>
+  <MessageID>NIC100</MessageID>
+  <FQDD>NIC.Embedded.2-1-1</FQDD>
+  <MessageArgs>
+    <Arg>Embedded NIC 1</Arg>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:24:42-0500" Sequence="245">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:24:42-0500" Sequence="246">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:24:50-0500" Sequence="247">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:27:33-0500" Sequence="248">
+  <Message>Version change detected for BIOS firmware. Previous version:2.6.6, Current version:2.9.3</Message>
+  <MessageID>PR36</MessageID>
+  <FQDD>BIOS.Setup.1-1</FQDD>
+  <MessageArgs>
+    <Arg>BIOS</Arg>
+    <Arg>2.6.6</Arg>
+    <Arg>2.9.3</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2022-12-21T12:27:39-0500" Sequence="249">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:27:43-0500" Sequence="250">
+  <Message>The (installation or configuration) job JID_716431112310 is successfully completed.</Message>
+  <MessageID>JCP037</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716431112310</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:28:09-0500" Sequence="251">
+  <Message>The (installation or configuration) job JID_716436892007 is successfully created on iDRAC.</Message>
+  <MessageID>JCP027</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716436892007</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:28:19-0500" Sequence="252">
+  <Message>Exporting Server Configuration Profile.</Message>
+  <MessageID>SYS057</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:28:48-0500" Sequence="253">
+  <Message>The (installation or configuration) job JID_716436892007 is successfully completed.</Message>
+  <MessageID>JCP037</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716436892007</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:28:48-0500" Sequence="254">
+  <Message>Successfully exported Server Configuration Profile.</Message>
+  <MessageID>SYS043</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:31:05-0500" Sequence="255">
+  <Message>The session for root from 192.168.1.166 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:31:45-0500" Sequence="256">
+  <Message>User root via IP 192.168.1.166 requested state / configuration change to Power Control using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:31:46-0500" Sequence="257">
+  <Message>Requested system hardreset.</Message>
+  <MessageID>RAC0703</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T12:31:46-0500" Sequence="258">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:37:23-0500" Sequence="259">
+  <Message>The (installation or configuration) job JID_716442432518 is successfully created on iDRAC.</Message>
+  <MessageID>JCP027</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716442432518</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T12:37:23-0500" Sequence="260">
+  <Message>The (installation or configuration) job RID_716442433052 is successfully created on iDRAC.</Message>
+  <MessageID>JCP027</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>RID_716442433052</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Updates" Severity="Informational" Timestamp="2022-12-21T12:37:23-0500" Sequence="261">
+  <Message>A reboot is pending.</Message>
+  <MessageID>RED029</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T13:06:56-0500" Sequence="262">
+  <Message>The session for root from 192.168.1.166 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T13:17:41-0500" Sequence="263">
+  <Message>The session for root from 192.168.1.166 using eHTML5 Virtual Console is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T13:18:05-0500" Sequence="264">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T14:29:09-0500" Sequence="265">
+  <Message>Unable to log in for NULL from 192.168.1.166 using eHTML5 Virtual Console.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.166</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:25:57-0500" Sequence="266">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:07-0500" Sequence="267">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Power Control using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:07-0500" Sequence="268">
+  <Message>Requested system powerdown.</Message>
+  <MessageID>RAC0704</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2022-12-21T23:26:09-0500" Sequence="269">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Warning" Timestamp="2022-12-21T23:26:11-0500" Sequence="270">
+  <Message>The Embedded NIC 1 Port 2 network link is down.</Message>
+  <MessageID>NIC100</MessageID>
+  <FQDD>NIC.Embedded.2-1-1</FQDD>
+  <MessageArgs>
+    <Arg>Embedded NIC 1</Arg>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:11-0500" Sequence="271">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:11-0500" Sequence="272">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:13-0500" Sequence="273">
+  <Message>Successfully logged in using root, from 192.168.1.6 and eHTML5 Virtual Console.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:17-0500" Sequence="274">
+  <Message>The session for root from 192.168.1.6 using eHTML5 Virtual Console is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:35-0500" Sequence="275">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:36-0500" Sequence="276">
+  <Message>Requested system powerup.</Message>
+  <MessageID>RAC0701</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:37-0500" Sequence="277">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Updates" Severity="Informational" Timestamp="2022-12-21T23:26:41-0500" Sequence="278">
+  <Message>Reboot is complete.</Message>
+  <MessageID>RED030</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:49-0500" Sequence="279">
+  <Message>Successfully logged in using root, from 192.168.1.6 and eHTML5 Virtual Console.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:58-0500" Sequence="280">
+  <Message>User root via IP 192.168.1.6 requested state / configuration change to Power Control using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:26:58-0500" Sequence="281">
+  <Message>Requested system powerdown.</Message>
+  <MessageID>RAC0704</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:27:02-0500" Sequence="282">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:27:02-0500" Sequence="283">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-21T23:56:58-0500" Sequence="284">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-22T01:56:17-0500" Sequence="285">
+  <Message>The session for root from 192.168.1.6 using eHTML5 Virtual Console is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2022-12-22T11:22:49-0500" Sequence="286">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2022-12-22T11:22:49-0500" Sequence="287">
+  <Message>Unable to log in for NULL from 192.168.1.6 using eHTML5 Virtual Console.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-03T15:23:40-0500" Sequence="288">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-03T15:56:06-0500" Sequence="289">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-04T20:50:32-0500" Sequence="290">
+  <Message>Successfully logged in using root, from 10.8.0.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>10.8.0.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-04T21:20:41-0500" Sequence="291">
+  <Message>The session for root from 10.8.0.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>10.8.0.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-04T22:07:02-0500" Sequence="292">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-04T22:37:19-0500" Sequence="293">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-11T22:27:53-0500" Sequence="294">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-11T22:58:06-0500" Sequence="295">
+  <Message>The session for root from 192.168.1.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-12T14:34:57-0500" Sequence="296">
+  <Message>Successfully logged in using root, from 10.8.0.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>10.8.0.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-01-12T15:05:01-0500" Sequence="297">
+  <Message>The session for root from 10.8.0.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>10.8.0.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:14:58-0500" Sequence="298">
+  <Message>Successfully logged in using root, from 192.168.1.7 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-02-17T21:15:09-0500" Sequence="299">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:18:07-0500" Sequence="300">
+  <Message>Successfully logged in using root, from 192.168.1.7 and eHTML5 Virtual Console.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-02-17T21:19:09-0500" Sequence="301">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:19:15-0500" Sequence="302">
+  <Message>Virtual Media session started.</Message>
+  <MessageID>VME0002</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:19:15-0500" Sequence="303">
+  <Message>Virtual Media session created.</Message>
+  <MessageID>VME0008</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:19:15-0500" Sequence="304">
+  <Message>Successfully logged in using root, from 192.168.1.7 and eHTML5 Virtual Media.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:22:17-0500" Sequence="305">
+  <Message>User root via IP 192.168.1.7 requested state / configuration change to Power Control using eHTML5 Virtual Console.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:22:17-0500" Sequence="306">
+  <Message>Requested system powerup.</Message>
+  <MessageID>RAC0701</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:22:18-0500" Sequence="307">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-02-17T21:24:01-0500" Sequence="308">
+  <Message>Configuration changes successfully applied to device: PowerEdge R6515(System BIOS Setup)</Message>
+  <MessageID>PR6</MessageID>
+  <FQDD>BIOS.Setup.1-1</FQDD>
+  <MessageArgs>
+    <Arg>PowerEdge R6515(System BIOS Setup)</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+  <ConfigResults>
+    <JobID>JID_716442432518</JobID>
+    <FQDD>BIOS.Setup.1-1</FQDD>
+    <Operation name="CHANGE">
+      <DisplayValue>SHA256SetupPassword</DisplayValue>
+      <Name>SHA256SetupPassword</Name>
+      <Detail></Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+    <Operation name="CHANGE">
+      <DisplayValue>SHA256SetupPasswordSalt</DisplayValue>
+      <Name>SHA256SetupPasswordSalt</Name>
+      <Detail></Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+    <Operation name="CHANGE">
+      <DisplayValue>SHA256SystemPassword</DisplayValue>
+      <Name>SHA256SystemPassword</Name>
+      <Detail></Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+    <Operation name="CHANGE">
+      <DisplayValue>SHA256SystemPasswordSalt</DisplayValue>
+      <Name>SHA256SystemPasswordSalt</Name>
+      <Detail></Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+    <Operation name="CHANGE">
+      <DisplayValue>PasswordStatus</DisplayValue>
+      <Name>PasswordStatus</Name>
+      <Detail>
+        <OldValue>Unlocked</OldValue>
+        <NewValue>Unlocked</NewValue>
+      </Detail>
+      <Status>Success</Status>
+      <ErrorCode>0</ErrorCode>
+    </Operation>
+  </ConfigResults>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:24:02-0500" Sequence="309">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-02-17T21:25:54-0500" Sequence="310">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2023-02-17T21:26:10-0500" Sequence="311">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-02-17T21:26:16-0500" Sequence="312">
+  <Message>The (installation or configuration) job JID_716442432518 is successfully completed.</Message>
+  <MessageID>JCP037</MessageID>
+  <FQDD>N/A</FQDD>
+  <MessageArgs>
+    <Arg>JID_716442432518</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Warning" Timestamp="2023-02-17T21:31:54-0500" Sequence="313">
+  <Message>The Embedded NIC 1 Port 2 network link is down.</Message>
+  <MessageID>NIC100</MessageID>
+  <FQDD>NIC.Embedded.2-1-1</FQDD>
+  <MessageArgs>
+    <Arg>Embedded NIC 1</Arg>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="System Health" Severity="Informational" Timestamp="2023-02-17T21:31:58-0500" Sequence="314">
+  <Message>The Embedded NIC 1 Port 2 network link is started.</Message>
+  <MessageID>NIC101</MessageID>
+  <FQDD>NIC.Embedded.2-1-1</FQDD>
+  <MessageArgs>
+    <Arg>Embedded NIC 1</Arg>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2023-02-17T21:32:37-0500" Sequence="315">
+  <Message>The Patrol Read operation completed for Integrated RAID Controller 1.</Message>
+  <MessageID>CTL38</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:38:36-0500" Sequence="316">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2023-02-17T21:41:38-0500" Sequence="317">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:47:07-0500" Sequence="318">
+  <Message>The session for root from 192.168.1.7 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T21:58:27-0500" Sequence="319">
+  <Message>Successfully logged in using root, from 192.168.1.7 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC_GUI" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:25:47-0500" Sequence="320">
+  <Message>User root via IP 192.168.1.7 requested state / configuration change to Power Control using GUI.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:25:48-0500" Sequence="321">
+  <Message>Requested system graceful shutdown.</Message>
+  <MessageID>RAC0705</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:26:11-0500" Sequence="322">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:26:11-0500" Sequence="323">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:34:45-0500" Sequence="324">
+  <Message>The session for root from 192.168.1.7 using eHTML5 Virtual Console is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:34:51-0500" Sequence="325">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:34:51-0500" Sequence="326">
+  <Message>The session for root from 192.168.1.7 using eHTML5 Virtual Media is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:34:51-0500" Sequence="327">
+  <Message>Virtual Media session exited.</Message>
+  <MessageID>VME0006</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-17T22:55:47-0500" Sequence="328">
+  <Message>The session for root from 192.168.1.7 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-18T12:06:13-0500" Sequence="329">
+  <Message>Unable to log in for NULL from 192.168.1.7 using eHTML5 Virtual Console.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-18T12:06:13-0500" Sequence="330">
+  <Message>Unable to log in for NULL from 192.168.1.7 using eHTML5 Virtual Media.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-18T12:06:14-0500" Sequence="331">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Warning" Timestamp="2023-02-18T12:06:14-0500" Sequence="332">
+  <Message>Login attempt alert for NULL from 192.168.1.7 using eHTML5 Virtual Media, IP will be blocked for 60 seconds.</Message>
+  <MessageID>USR0034</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+    <Arg>60</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-18T12:07:18-0500" Sequence="333">
+  <Message>Unable to log in for NULL from 192.168.1.7 using eHTML5 Virtual Media.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-18T12:07:20-0500" Sequence="334">
+  <Message>The previous log entry was repeated 2 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>2</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Warning" Timestamp="2023-02-18T12:07:20-0500" Sequence="335">
+  <Message>Login attempt alert for NULL from 192.168.1.7 using eHTML5 Virtual Media, IP will be blocked for 60 seconds.</Message>
+  <MessageID>USR0034</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+    <Arg>60</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-18T12:08:24-0500" Sequence="336">
+  <Message>Unable to log in for NULL from 192.168.1.7 using eHTML5 Virtual Media.</Message>
+  <MessageID>USR0031</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>NULL</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-20T14:52:42-0500" Sequence="337">
+  <Message>Successfully logged in using root, from 192.168.1.7 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-02-20T14:52:54-0500" Sequence="338">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-20T15:23:01-0500" Sequence="339">
+  <Message>The session for root from 192.168.1.7 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:18:07-0500" Sequence="340">
+  <Message>Successfully logged in using root, from 192.168.1.7 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-02-21T01:18:09-0500" Sequence="341">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:18:17-0500" Sequence="342">
+  <Message>Successfully logged in using root, from 192.168.1.7 and eHTML5 Virtual Console.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:18:21-0500" Sequence="343">
+  <Message>Virtual Media session started.</Message>
+  <MessageID>VME0002</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:18:21-0500" Sequence="344">
+  <Message>Virtual Media session created.</Message>
+  <MessageID>VME0008</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:18:21-0500" Sequence="345">
+  <Message>Successfully logged in using root, from 192.168.1.7 and eHTML5 Virtual Media.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:21:21-0500" Sequence="346">
+  <Message>User root via IP 192.168.1.7 requested state / configuration change to Power Control using eHTML5 Virtual Console.</Message>
+  <MessageID>RAC1195</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>Power Control</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:21:21-0500" Sequence="347">
+  <Message>Requested system powerup.</Message>
+  <MessageID>RAC0701</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:21:22-0500" Sequence="348">
+  <Message>System is turning on.</Message>
+  <MessageID>SYS1000</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-02-21T01:21:24-0500" Sequence="349">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:23:34-0500" Sequence="350">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2023-02-21T01:23:34-0500" Sequence="351">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2023-02-21T01:25:28-0500" Sequence="352">
+  <Message>A Patrol Read operation started for Integrated RAID Controller 1.</Message>
+  <MessageID>CTL37</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2023-02-21T01:30:49-0500" Sequence="353">
+  <Message>The Patrol Read operation completed for Integrated RAID Controller 1.</Message>
+  <MessageID>CTL38</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T01:48:12-0500" Sequence="354">
+  <Message>The session for root from 192.168.1.7 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-21T02:39:01-0500" Sequence="355">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Storage" Severity="Informational" Timestamp="2023-02-21T02:42:03-0500" Sequence="356">
+  <Message>The boot media of the Controller Integrated RAID Controller 1 is Disk.Virtual.0:RAID.Integrated.1-1.</Message>
+  <MessageID>CTL129</MessageID>
+  <FQDD>RAID.Integrated.1-1</FQDD>
+  <MessageArgs>
+    <Arg>Integrated RAID Controller 1</Arg>
+    <Arg>Disk.Virtual.0:RAID.Integrated.1-1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-21T02:45:17-0500" Sequence="357">
+  <Message>System CPU Resetting.</Message>
+  <MessageID>SYS1003</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-21T02:45:17-0500" Sequence="358">
+  <Message>System is turning off.</Message>
+  <MessageID>SYS1001</MessageID>
+  <FQDD>iDRAC.Embedded.1#HostPowerCtrl</FQDD>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T12:02:28-0500" Sequence="359">
+  <Message>The session for root from 192.168.1.7 using eHTML5 Virtual Console is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Console</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="DM" Category="Audit" Severity="Informational" Timestamp="2023-02-21T12:02:28-0500" Sequence="360">
+  <Message>The previous log entry was repeated 1 times.</Message>
+  <MessageID>LOG007</MessageID>
+  <FQDD/>
+  <MessageArgs>
+    <Arg>1</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T12:02:28-0500" Sequence="361">
+  <Message>The session for root from 192.168.1.7 using eHTML5 Virtual Media is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.7</Arg>
+    <Arg>eHTML5 Virtual Media</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-21T12:02:28-0500" Sequence="362">
+  <Message>Virtual Media session exited.</Message>
+  <MessageID>VME0006</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-28T02:52:43-0500" Sequence="363">
+  <Message>Successfully logged in using root, from 10.8.0.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>10.8.0.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-02-28T03:23:16-0500" Sequence="364">
+  <Message>The session for root from 10.8.0.6 using GUI is logged off.</Message>
+  <MessageID>USR0032</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>10.8.0.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="RACLOG" Category="Audit" Severity="Informational" Timestamp="2023-03-11T00:57:35-0500" Sequence="365">
+  <Message>Successfully logged in using root, from 192.168.1.6 and GUI.</Message>
+  <MessageID>USR0030</MessageID>
+  <FQDD>iDRAC.Embedded.1</FQDD>
+  <MessageArgs>
+    <Arg>root</Arg>
+    <Arg>192.168.1.6</Arg>
+    <Arg>GUI</Arg>
+  </MessageArgs>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+<Event AgentID="iDRAC" Category="Configuration" Severity="Informational" Timestamp="2023-03-11T00:57:50-0500" Sequence="366">
+  <Message>An existing hash value is updated because some system configuration items are changed.</Message>
+  <MessageID>SYS336</MessageID>
+  <FQDD/>
+  <MessageArgs/>
+  <RawEventData/>
+  <Comment/>
+  <Source/>
+  <JobID/>
+</Event>
+</LCLogEvents>

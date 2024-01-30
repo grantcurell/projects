@@ -1,2 +1,0 @@
-# How vSAN Redundancy Works
-

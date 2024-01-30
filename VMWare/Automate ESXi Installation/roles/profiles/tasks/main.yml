@@ -1,0 +1,25 @@
+---
+
+- name: Generate RootPw
+  command: "openssl passwd -1 {{ root_password | join('==') | b64decode }}"
+  register: rootpw
+
+- name: Kick template dir
+  file:
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+    setype: httpd_sys_content_t
+    path: "{{ ks_template_dir }}"
+
+- name: Kick template dir
+  file:
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+    setype: httpd_sys_content_t
+    path: "{{ ks_template_dir }}/uefi"
+
+- import_tasks: esxi.yml

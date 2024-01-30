@@ -1,6 +1,0 @@
----
-
-#Path where iso is to be mounted ex: /mnt
-mnt_pth: /mnt
-
-...
