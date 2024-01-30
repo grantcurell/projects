@@ -1,0 +1,44 @@
+{"features": [
+{
+    "geometry": {
+    "coordinates": [
+      35.685,
+      33.3978
+    ],
+    "type": "Point"
+  },
+  "properties": {
+    "actor1": "Protesters (Lebanon)",
+    "actor2": "",
+    "admin1": "Nabatiye",
+    "admin2": "Hasbaya",
+    "admin3": "",
+    "assoc_actor_1": "",
+    "assoc_actor_2": "",
+    "country": "Lebanon",
+    "data_id": "7075587",
+    "event_date": "2-May-20",
+    "event_id_cnty": "LBN5080",
+    "event_id_no_cnty": "5080",
+    "event_type": "Protests",
+    "fatalities": "0",
+    "geo_precision": "1",
+    "inter1": "6",
+    "inter2": "0",
+    "interaction": "60",
+    "iso": "422",
+    "iso3": "LBN",
+    "latitude": 33.3978,
+    "location": "Hasbaya",
+    "longitude": 35.685,
+    "notes": "On 2 May 2020, protesters from the movement against the political system in Lebanon held a march through the town of Hasbaya, in demonstration against the high US dollar exchange rate and dire economic living conditions. Protesters also demand the recovery of looted funds and that the corrupt be held accountable for their actions. [size=no report]",
+    "region": "Middle East",
+    "source": "El Nashra",
+    "source_scale": "National",
+    "sub_event_type": "Peaceful protest",
+    "time_precision": "1",
+    "timestamp": "1588619925",
+    "year": "2020"
+  },
+  "type": "Feature"
+}]}

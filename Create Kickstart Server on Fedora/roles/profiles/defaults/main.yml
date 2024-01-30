@@ -1,0 +1,4 @@
+---
+# defaults file for roles/kickstart
+#
+ks_template_dir: "{{ web_root }}/ks"

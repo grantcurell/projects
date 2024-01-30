@@ -1,0 +1,9 @@
+---
+
+- name: Restart Servers
+  hosts: servers
+  connection: local
+  gather_facts: False
+  roles:
+    - power
+  tags: force-restart

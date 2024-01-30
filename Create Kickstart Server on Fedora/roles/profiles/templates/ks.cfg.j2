@@ -1,0 +1,66 @@
+################################
+# Custom Fedora kickstart file #
+################################
+
+# Determine what drives to use based on inventory file
+{% if item is defined %}{% set boot_drive = hostvars[item].boot_drive %}{% else %}{% set boot_drive = 'sda' %}{% endif %}
+
+ignoredisk --only-use=sda
+# System authorization information
+auth --enableshadow --passalgo=sha512
+# Use CDROM installation media
+url --url http://{{ server_ip }}/iso
+# Run the Setup Agent on first boot
+firstboot --disable
+# Keyboard layouts
+keyboard --vckeymap=us --xlayouts='us'
+# System language
+lang en_US.UTF-8
+# Disable Firewalld
+firewall --enabled
+eula --agreed
+text
+
+#Reboot when its all over
+reboot
+
+# Network information
+# item here will be the name you placed as the node name for each individual server in the inventory file.
+network --device=link --bootproto=dhcp --noipv6 --activate
+{% if item is defined %}
+network  --hostname={{ item }}
+{% endif %}
+
+#Set password
+rootpw --plaintext {{ root_password }}
+user --groups=wheel --name=assessor --plaintext --password={{ root_password }} --groups=wheel
+# System services
+services --disabled="chronyd"
+# System timezone
+timezone {{ timezone }} --isUtc --nontp
+# System bootloader configuration
+bootloader --append="rhgb quiet crashkernel=auto" --location=mbr --boot-drive={{ boot_drive }}
+
+zerombr
+clearpart --all
+
+# Examples if you want to set up logical volumes (currently set to autopartition)
+# part /boot/efi --fstype=efi --grow --maxsize=200 --size=20 --ondrive={{ boot_drive }}
+# part /boot --fstype="xfs" --size=500 --ondrive={{ boot_drive }}
+# part pv.01 --size=1 --grow --ondrive={{ boot_drive }}
+# volgroup vg_root pv.01
+# logvol / --fstype="xfs" --name=root --vgname=vg_root --grow --percent=20
+# logvol /tmp --fstype="xfs" --name=tmp --vgname=vg_root --grow --percent=5
+# logvol /home --fstype="xfs" --name=home --vgname=vg_root --grow --percent=10
+# logvol /var --fstype="xfs" --name=var --vgname=vg_root --grow --percent=35
+# logvol /var/log --fstype="xfs" --name=log --vgname=vg_root --grow --percent=20
+# logvol /var/log/audit --fstype="xfs" --name=audit --vgname=vg_root --grow --percent=3
+autopart --type=lvm
+
+%packages
+@^workstation-product-environment
+%end
+
+%post
+systemctl set-default graphical.target
+%end

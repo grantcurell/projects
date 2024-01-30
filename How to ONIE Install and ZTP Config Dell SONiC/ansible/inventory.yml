@@ -1,0 +1,20 @@
+all:
+  children:
+    datacenter:
+      children:
+        #leaf:
+          #hosts:
+            #leaf1:
+            #  ansible_host: 192.168.1.100
+            #leaf2:
+            #  ansible_host: 192.168.1.101
+            #leaf25:
+            #  ansible_host: 192.168.1.102
+            #leaf26:
+            #  ansible_host: 192.168.1.103
+        spine:
+          hosts:
+            #spine1:
+            #  ansible_host: 192.168.1.98
+            spine2:
+              ansible_host: 192.168.1.94

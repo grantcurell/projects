@@ -1,0 +1,16 @@
+---
+
+- name: gateway variable is required
+  fail:
+    msg: "gateway variable is not valid.  gateway variable is required. Make sure it is defined in your inventory file."
+  when: gateway == "" or gateway is not defined or gateway is none
+
+- name: netmask variable is required
+  fail:
+    msg: "netmask variable is not valid.  netmask variable is required. Make sure it is defined in your inventory file."
+  when: netmask == "" or netmask is not defined or netmask is none
+
+- name: root_password variable is required
+  fail:
+    msg: "root_password variable is not valid.  root_password variable is required. Make sure it is defined in your inventory file."
+  when: root_password == "" or root_password is not defined or root_password is none

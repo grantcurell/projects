@@ -1,0 +1,78 @@
+---
+# The inventory defines which hosts belong to which groups and what variables are applied to them. The playbooks
+# themselves in our scheme do not define any variables. The names you see on the far left here correspond to the limit
+# function you can run with the ansible-playbook command. For example ansible-playbook site.yml --limit sensor would
+# look at this inventory file and see the hosts that are part of the sensor group. When site.yml imports the sensors.yml
+# file, sensor.yml will only apply itself to the servers listed in the sensors group in this inventory file.
+
+all:
+  vars:
+
+    # The DNS servers you would like your ESXi instance to use
+    dns: 192.168.1.1
+
+    # A DHCP server is required to pxe / kickstart the nodes.
+    # The following variables configure a dhcp server on the ansible controller.
+    # dhcp: a dhcp server is required to properly pxe machines.  By default the ansible controller will act as the dhcp server.
+    # If this is set to false then the proper options such must be configured on the external dhcp server.
+    # Default: true
+    dhcp: true
+    # dhcp_start: This is the DHCP range starting ip address. This will be used
+    # on the hosts while they are being kickstarted
+    # Default: null
+    dhcp_start: 192.168.1.110
+    # dhcp_end: This is the DHCP range ending ip address.
+    # Default: null
+    dhcp_end: 192.168.1.120
+    # dhcp_mask: Subnet mask used for dhcp configuration.
+    # Default: The same subnet as the ansible controller.
+
+    # gateway: This will be the default gateway set on ESXi.
+    # Default: null
+    gateway: 192.168.1.1
+    # netmask: The subnet mask to be used for your ESXi hosts
+    # Default: null
+    netmask: 255.255.255.0
+    domain: "lan"
+
+    # The following variables are used for kickstart options.
+    # root_password: Sets root password for each node.
+    # Define: empty
+    root_password: "1qaz2wsx!QAZ@WSX"
+    # timezone: Set the timezone for each node.
+    # Define: America/Chicago
+    timezone: 'UTC'
+
+    # server_ip: ansible controller ip address used to define kickstart server
+    # Default: ansible controller ip address
+    server_ip: 192.168.1.101
+
+    # Path to the ESXi ISO on your host
+    iso_esxi_pth: "/root/VMware-VMvisor-Installer-6.7.0.update03-14320388.x86_64.iso"
+    iso_esxi_checksum: fcbaa4cd952abd9e629fb131b8f46a949844405d8976372e7e5b55917623fbe0
+
+    kick_cfg: ks.cfg
+    tftp_dir: /var/lib/tftpboot
+    web_root: /var/www/html
+
+  children:
+    nodes:
+      children:
+        servers:
+          hosts:
+            vmhost.lan:
+              ip: "192.168.1.90"
+              mac: "00:50:56:a6:39:bc"
+
+              # This is the drive from which ESXi will boot
+              boot_drive: "mpx.vmhba0:C0:T0:L0"
+
+              # Below are the definitions for the datastores you would like to create.
+              # You must have one or more. You create them with the following syntax:
+              # <DATASTORE_1_NAME>:
+              #   disk: <DISK ON WHICH TO INSTALL DATASTORE>
+              # <DATASTORE_2_NAME>:
+              #   disk: <DISK ON WHICH TO INSTALL DATASTORE>
+                datastore1:
+                  disk: "mpx.vmhba0:C0:T1:L0"
+              pxe_type: "bios"

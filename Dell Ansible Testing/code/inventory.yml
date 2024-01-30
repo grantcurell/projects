@@ -1,0 +1,21 @@
+all:
+  vars:
+    tail_number: 9
+    ansible_python_interpreter: /usr/bin/python3
+  children:
+    nodes:
+      children:
+
+    #############################
+    # Sensor Settings           #
+    #############################
+
+    # Here you will define any variables specific to each sensor host.
+
+        servers:
+          hosts:
+            r440:
+              ansible_host: "r440idrac.lan"
+              idrac_ip_address: "192.168.1.63"
+              idrac_user: "{{ global_idrac_user }}"
+              idrac_password: "{{ global_idrac_pwd }}"                    

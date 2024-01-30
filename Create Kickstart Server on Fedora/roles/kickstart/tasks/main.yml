@@ -1,0 +1,5 @@
+---
+- import_tasks: 05_httpd.yml
+- import_tasks: 10_tftp.yml
+- import_tasks: 15_dhcp.yml
+...

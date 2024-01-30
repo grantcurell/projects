@@ -1,0 +1,67 @@
+From be289978c7883a8343faee723f6324f52943d23f Mon Sep 17 00:00:00 2001
+From: Grant Curell <grantcurell@gmail.com>
+Date: Wed, 1 Apr 2020 10:12:31 -0500
+Subject: [PATCH 1/1] Fix two bugs in simple switch 13 examples
+
+- dpid with leading 0s would be truncated to less than 16 characters
+- Response object incorrectly used body type when it should use text
+
+Signed-off-by: Grant Curell <grant_curell@dell.com>
+---
+ ryu/app/simple_switch_13.py      | 2 +-
+ ryu/app/simple_switch_rest_13.py | 8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/ryu/app/simple_switch_13.py b/ryu/app/simple_switch_13.py
+index 06a5d0ed..907425c9 100644
+--- a/ryu/app/simple_switch_13.py
++++ b/ryu/app/simple_switch_13.py
+@@ -85,7 +85,7 @@ class SimpleSwitch13(app_manager.RyuApp):
+         dst = eth.dst
+         src = eth.src
+ 
+-        dpid = datapath.id
++        dpid = format(datapath.id, "d").zfill(16)
+         self.mac_to_port.setdefault(dpid, {})
+ 
+         self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
+diff --git a/ryu/app/simple_switch_rest_13.py b/ryu/app/simple_switch_rest_13.py
+index aaf5d509..31f834f0 100644
+--- a/ryu/app/simple_switch_rest_13.py
++++ b/ryu/app/simple_switch_rest_13.py
+@@ -85,21 +85,21 @@ class SimpleSwitchController(ControllerBase):
+     def list_mac_table(self, req, **kwargs):
+ 
+         simple_switch = self.simple_switch_app
+-        dpid = dpid_lib.str_to_dpid(kwargs['dpid'])
++        dpid = kwargs['dpid']
+ 
+         if dpid not in simple_switch.mac_to_port:
+             return Response(status=404)
+ 
+         mac_table = simple_switch.mac_to_port.get(dpid, {})
+         body = json.dumps(mac_table)
+-        return Response(content_type='application/json', body=body)
++        return Response(content_type='application/json', text=body)
+ 
+     @route('simpleswitch', url, methods=['PUT'],
+            requirements={'dpid': dpid_lib.DPID_PATTERN})
+     def put_mac_table(self, req, **kwargs):
+ 
+         simple_switch = self.simple_switch_app
+-        dpid = dpid_lib.str_to_dpid(kwargs['dpid'])
++        dpid = kwargs['dpid']
+         try:
+             new_entry = req.json if req.body else {}
+         except ValueError:
+@@ -111,6 +111,6 @@ class SimpleSwitchController(ControllerBase):
+         try:
+             mac_table = simple_switch.set_mac_to_port(dpid, new_entry)
+             body = json.dumps(mac_table)
+-            return Response(content_type='application/json', body=body)
++            return Response(content_type='application/json', text=body)
+         except Exception as e:
+             return Response(status=500)
+-- 
+2.17.1
+

@@ -1,0 +1,31 @@
+---
+
+- name: Configure web server
+  block:
+    - name: Install packages
+      yum:
+        name: "{{ apache }}"
+        state: latest
+
+    - name: Remove apache welcome page
+      file:
+        path: /etc/httpd/conf.d/welcome.conf
+        state: absent
+
+    - name: Start the {{ apache }} service
+      service:
+        name: "{{ apache }}"
+        state: started
+        enabled: true
+
+    - name: Configure the firewall
+      firewalld:
+        service: "{{ item }}"
+        immediate: yes
+        permanent: yes
+        state: enabled
+      with_items:
+      - "http"
+      - "https"
+
+...

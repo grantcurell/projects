@@ -1,0 +1,208 @@
+{
+  "version": "1.1.0",
+  "topology" : {
+    "name": "L2VLT-FABRIC",
+    "description": "Leaf-spine VLT topology",
+	"fabric_type": "L2_VLT",
+    "nodes": [
+      {
+        "id": "Spine-1",
+        "name": "S6010-SPINE-1",
+        "mgmt_ip_address": "100.72.23.29",
+        "mgmt_interface_name" : "mgmt1/1/1",
+        "role": "SPINE",
+        "credential": {
+          "username": "admin",
+          "password": "admin"
+        },
+        "ports": [
+          {
+            "id": "S1-To-L1",
+            "name": "ethernet1/1/26",
+            "port_type": "ETHERNET",
+            "link_type": "INTERLINK"
+          },
+          {
+            "id": "S1-To-S2",
+            "name": "ethernet1/1/25",
+            "port_type": "ETHERNET",
+            "link_type": "VLTLINK"
+          },
+          {
+            "id": "S1-To-L2",
+            "name": "ethernet1/1/29",
+            "port_type": "ETHERNET",
+            "link_type": "INTERLINK"
+          }
+        ]
+      },
+	  {
+        "id": "Spine-2",
+        "name": "S6010-SPINE-2",
+        "mgmt_ip_address": "100.72.23.30",
+        "mgmt_interface_name" : "mgmt1/1/1",
+        "role": "SPINE",
+        "credential": {
+          "username": "admin",
+          "password": "admin"
+        },
+        "ports": [
+          {
+            "id": "S2-To-L1",
+            "name": "ethernet1/1/29",
+            "port_type": "ETHERNET",
+            "link_type": "INTERLINK"
+          },
+          {
+            "id": "S2-To-S1",
+            "name": "ethernet1/1/25",
+            "port_type": "ETHERNET",
+            "link_type": "VLTLINK"
+          },
+          {
+            "id": "S2-To-L2",
+            "name": "ethernet1/1/26",
+            "port_type": "ETHERNET",
+            "link_type": "INTERLINK"
+          }
+		    ]
+      },
+    {
+        "id": "Leaf-1",
+        "name": "S4148-LEAF-1",
+        "mgmt_ip_address": "100.72.23.31",
+        "mgmt_interface_name" : "mgmt1/1/1",
+        "role": "LEAF",
+        "credential": {
+          "username": "admin",
+          "password": "admin"
+        },
+        "ports": [
+          {
+            "id": "L1-To-L2",
+            "name": "ethernet1/1/25:1",
+            "port_type": "ETHERNET",
+            "link_type": "VLTLINK"
+          },
+          {
+            "id": "L1-To-S1",
+            "name": "ethernet1/1/26",
+            "port_type": "ETHERNET",
+            "link_type": "INTERLINK"
+          },
+		  {
+            "id": "L1-To-S2",
+            "name": "ethernet1/1/29:1",
+            "port_type": "ETHERNET",
+            "link_type": "INTERLINK"
+          },
+          {
+            "id": "L1-To-Server1",
+            "name": "ethernet1/1/1",
+            "port_type": "ETHERNET",
+            "link_type": "HOSTLINK"
+          },
+		  {
+            "id": "L1-To-Server2",
+            "name": "ethernet1/1/12",
+            "port_type": "ETHERNET",
+            "link_type": "HOSTLINK"
+          },
+		  {
+            "id": "L1-To-Server3",
+            "name": "ethernet1/1/13",
+            "port_type": "ETHERNET",
+            "link_type": "HOSTLINK"
+          }
+        ]
+      },
+      {
+        "id": "Leaf-2",
+        "name": "S4148-LEAF-2",
+        "mgmt_ip_address": "100.72.23.32",
+        "mgmt_interface_name" : "mgmt1/1/1",
+        "role": "LEAF",
+        "credential": {
+          "username": "admin",
+          "password": "admin"
+        },
+        "ports": [
+          {
+            "id": "L2-To-L1",
+            "name": "ethernet1/1/25:1",
+            "port_type": "ETHERNET",
+            "link_type": "VLTLINK"
+          },
+          {
+            "id": "L2-To-S1",
+            "name": "ethernet1/1/29:1",
+            "port_type": "ETHERNET",
+            "link_type": "INTERLINK"
+          },
+		  {
+            "id": "L2-To-S2",
+            "name": "ethernet1/1/26",
+            "port_type": "ETHERNET",
+            "link_type": "INTERLINK"
+          },
+          {
+            "id": "L2-To-Server1",
+            "name": "ethernet1/1/1",
+            "port_type": "ETHERNET",
+            "link_type": "HOSTLINK"
+          },
+		  {
+            "id": "L2-To-Server2",
+            "name": "ethernet1/1/12",
+            "port_type": "ETHERNET",
+            "link_type": "HOSTLINK"
+          },
+		  {
+            "id": "L2-To-Server3",
+            "name": "ethernet1/1/13",
+            "port_type": "ETHERNET",
+            "link_type": "HOSTLINK"
+          }
+		  ]
+      }
+    ],
+    "connections": [
+      {
+        "id": "Link-1",
+        "name": "spine1-1/1/26_leaf1-1/1/26",
+        "port1_id": "S1-To-L1",
+        "port2_id": "L1-To-S1"
+      },
+	  {
+        "id": "Link-2",
+        "name": "spine1-1/1/29_leaf2-1/1/29",
+        "port1_id": "S1-To-L2",
+        "port2_id": "L2-To-S1"
+      },
+	  {
+        "id": "Link-3",
+        "name": "spine2-1/1/29_leaf1-1/1/29",
+        "port1_id": "S2-To-L1",
+        "port2_id": "L1-To-S2"
+      },
+       {
+        "id": "Link-4",
+        "name": "spine2-1/1/26_leaf2-1/1/26",
+        "port1_id": "S2-To-L2",
+        "port2_id": "L2-To-S2"
+      },
+       {
+        "id": "Link-5",
+        "name": "spine1-1/1/25_spine2-1/1/25",
+        "port1_id": "S1-To-S2",
+        "port2_id": "S2-To-S1"
+      },
+	  {
+        "id": "Link-6",
+        "name": "leaf1-1/1/25_leaf2-1/1/25",
+        "port1_id": "L1-To-L2",
+        "port2_id": "L2-To-L1"
+      }
+    ]
+  }
+}
