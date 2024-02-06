@@ -153,14 +153,90 @@ ssize_t circular_buffer_read_proc(struct file *filp, char __user *buffer, size_t
     return ret; // Return the number of bytes copied
 }
 
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/proc_fs.h>
+#include <linux/workqueue.h>
+#include <linux/blkdev.h>
+#include <linux/nvme_ioctl.h>
+#include <linux/fs.h>
+
 static struct proc_dir_entry *proc_file_entry;
 
-int init_module(void) { // Module initialization function
-    proc_file_entry = proc_create("nvme_circular_buffer", 0444, NULL, &proc_fops);
-    if (proc_file_entry == NULL) {
-        return -ENOMEM; // Return an error if unable to create proc entry
+static int __init nvme_core_init(void)
+{
+    int result = -ENOMEM;
+
+    nvme_wq = alloc_workqueue("nvme-wq",
+                              WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_SYSFS, 0);
+    if (!nvme_wq)
+        goto out;
+
+    nvme_reset_wq = alloc_workqueue("nvme-reset-wq",
+                                    WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_SYSFS, 0);
+    if (!nvme_reset_wq)
+        goto destroy_wq;
+
+    nvme_delete_wq = alloc_workqueue("nvme-delete-wq",
+                                     WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_SYSFS, 0);
+    if (!nvme_delete_wq)
+        goto destroy_reset_wq;
+
+    result = alloc_chrdev_region(&nvme_ctrl_base_chr_devt, 0,
+                                 NVME_MINORS, "nvme");
+    if (result < 0)
+        goto destroy_delete_wq;
+
+    nvme_class = class_create(THIS_MODULE, "nvme");
+    if (IS_ERR(nvme_class)) {
+        result = PTR_ERR(nvme_class);
+        goto unregister_chrdev;
     }
-    return 0; // Success
+
+    nvme_subsys_class = class_create(THIS_MODULE, "nvme-subsystem");
+    if (IS_ERR(nvme_subsys_class)) {
+        result = PTR_ERR(nvme_subsys_class);
+        goto destroy_class;
+    }
+
+    result = alloc_chrdev_region(&nvme_ns_chr_devt, 0, NVME_MINORS, "nvme-generic");
+    if (result < 0)
+        goto destroy_subsys_class;
+
+    nvme_ns_chr_class = class_create(THIS_MODULE, "nvme-generic");
+    if (IS_ERR(nvme_ns_chr_class)) {
+        result = PTR_ERR(nvme_ns_chr_class);
+        goto unregister_generic_ns;
+    }
+
+    // Here, the proc file for nvme_circular_buffer is created
+    proc_file_entry = proc_create("nvme_circular_buffer", 0444, NULL, &proc_fops);
+    if (!proc_file_entry) {
+        printk(KERN_ERR "Could not create /proc/nvme_circular_buffer\n");
+        result = -ENOMEM;
+        goto destroy_ns_chr_class;
+    }
+
+    return 0; // Initialization success
+
+destroy_ns_chr_class:
+    class_destroy(nvme_ns_chr_class);
+unregister_generic_ns:
+    unregister_chrdev_region(nvme_ns_chr_devt, NVME_MINORS);
+destroy_subsys_class:
+    class_destroy(nvme_subsys_class);
+destroy_class:
+    class_destroy(nvme_class);
+unregister_chrdev:
+    unregister_chrdev_region(nvme_ctrl_base_chr_devt, NVME_MINORS);
+destroy_delete_wq:
+    destroy_workqueue(nvme_delete_wq);
+destroy_reset_wq:
+    destroy_workqueue(nvme_reset_wq);
+destroy_wq:
+    destroy_workqueue(nvme_wq);
+out:
+    return result;
 }
 
 static const struct file_operations proc_fops = {
