@@ -32,6 +32,12 @@
     - [Sine Waves and Two-Phase Power](#sine-waves-and-two-phase-power)
     - [Two Phase Power Delivery](#two-phase-power-delivery)
   - [Three-Phase Power](#three-phase-power)
+    - [What is the Wye (Y) Configuration?](#what-is-the-wye-y-configuration)
+      - [Key Points of Wye Configuration:](#key-points-of-wye-configuration)
+      - [480V 3 Phase Wye (480Y/277V)](#480v-3-phase-wye-480y277v)
+        - [What Does it Mean to be Both 480V and 277V?](#what-does-it-mean-to-be-both-480v-and-277v)
+    - [Ok, but why is it 480V and 277V? Where are those numbers coming from?](#ok-but-why-is-it-480v-and-277v-where-are-those-numbers-coming-from)
+      - [Mathematical Representation](#mathematical-representation)
 
 
 ## Basics of Electrical Power
@@ -200,3 +206,66 @@ Three-phase power is the most common method of power transmission in the world f
 3. **Reduced Wiring Costs**: Despite using three phases, the overall need for conductor material is less than that required to deliver the same amount of power in single-phase systems, due to the more efficient use of the electrical current.
 
 The idea behind the sine wave is pretty much the same as it was with two phase except now there's a third wire in the mix so power is even more consistent.
+
+### What is the Wye (Y) Configuration?
+
+In a Wye (Y) configuration, the three phases are connected at a single neutral point, forming a Y shape. The neutral point allows for the connection of both phase-to-phase loads (between any two phases) and phase-to-neutral loads (between any one phase and neutral).
+
+#### Key Points of Wye Configuration:
+
+- **Three-Phase, Four-Wire System**: This configuration typically includes three hot wires (phases) and one neutral wire, making it a three-phase, four-wire system.
+- **Voltage Measurements**:
+  - **Phase-to-Phase Voltage**: Measured between any two phases.
+  - **Phase-to-Neutral Voltage**: Measured between any one phase and the neutral.
+
+#### 480V 3 Phase Wye (480Y/277V)
+
+- **Phase-to-Phase Voltage**: In a 480V 3 Phase Wye system, the phase-to-phase voltage is 480 volts. This is the voltage measured between any two of the three phases.
+- **Phase-to-Neutral Voltage**: The phase-to-neutral voltage for this system is 277 volts. This is calculated by dividing the phase-to-phase voltage by the square root of 3 (\(\sqrt{3}\) or approximately 1.732), which is the mathematical relationship between phase-to-phase and phase-to-neutral voltages in a Wye configuration. \(480V / \sqrt{3} = 277V\).
+- **Applications**: The ability to provide 277V directly from any phase to neutral makes the 480V 3 Phase Wye system ideal for powering 277V single-phase lighting loads, which are common in commercial and industrial settings. This avoids the need for additional transformers to step down the voltage for lighting circuits.
+
+##### What Does it Mean to be Both 480V and 277V?
+
+In a 480Y/277V three-phase Wye system, you have both 480V and 277V available, but it depends on how you connect to the system:
+
+- **480V**: This is the phase-to-phase voltage. If you connect a device across any two of the three phases, it will receive 480 volts. This higher voltage is typically used for powering heavy-duty industrial or commercial equipment that requires more power, such as large motors, HVAC systems, and machinery.
+- **277V**: This is the phase-to-neutral voltage. If you connect a device between any one of the phases and the neutral wire, it will receive 277 volts. This voltage is commonly used for lighting in commercial buildings, as well as for some types of equipment designed to operate at this voltage.
+
+Which one you get is determined by the type of outlet you use.
+
+- **For 277V Applications**: Outlets providing 277V are connected phase-to-neutral.
+- **For 480V Applications**: Outlets or connection points providing 480V are connected phase-to-phase. These are less common for general outlet use and more often used for direct wiring to high-powered equipment.
+
+### Ok, but why is it 480V and 277V? Where are those numbers coming from?
+
+The mathematical relationship between phase-to-phase and phase-to-neutral voltages in a Wye configuration stems from the geometry of a balanced three-phase system and the principles of alternating current (AC) electricity.
+
+In a three-phase AC system, the three phases are ideally 120 electrical degrees apart. In a Wye configuration, each phase extends from a common neutral point to its respective phase terminal, creating a Y shape when drawn. This configuration allows for both phase-to-phase (line-to-line) and phase-to-neutral (line-to-neutral) connections.
+
+The key to understanding the voltage relationship lies in the geometry of an equilateral triangle formed by the phase vectors in a three-phase system. When you draw the three phases as vectors (with each vector representing the magnitude and direction of the voltage) 120 degrees apart, they form an equilateral triangle if you're considering phase-to-phase voltages. I imagine that's pretty confusing to read if you're not doing geometry on the regular so here is a picture:
+
+![](images/2024-02-07-16-20-46.png)
+
+See [code](./3_phase_triangle.py)
+
+All of the angles formed by the blue lines are 60 degrees. All of the angles formed by the red lines are 120 degrees. That's where the 120 is coming from.
+
+The reason we divide the phase-to-phase voltage by the square root of 3 to find the phase-to-neutral voltage involves trigonometry. If you consider the geometry of the equilateral triangle formed by the phase vectors, the line from the center (neutral point) to any one corner of the triangle (a phase voltage) bisects the 120-degree angle, creating a 30-60-90 triangle. 
+
+![](images/2024-02-07-16-24-51.png)
+
+See [code](./3_phase_triangle_bisect.py)
+
+The length of the line from the center to any corner (representing the phase-to-neutral voltage) is shorter than the line representing the phase-to-phase voltage, which is the length of one side of the equilateral triangle.
+
+In a 30-60-90 triangle, the ratio of the length of the side opposite the 30-degree angle (which would represent our phase-to-neutral voltage) to the length of the hypotenuse (the phase-to-phase voltage) is 1 to the square root of 3. This is because in such a triangle, the sides are in a specific ratio: 1 (short side, or phase-to-neutral voltage), √3 (long side, or half the phase-to-phase voltage across the neutral point), and 2 (hypotenuse, or full phase-to-phase voltage). This is based on the Pythagorean Theorem if you remember that from school.
+
+#### Mathematical Representation
+
+So, the formula to calculate the phase-to-neutral voltage ($V_{LN}$) from the phase-to-phase voltage ($V_{LL}$) is:
+
+$V_{LN} = \frac{V_{LL}}{\sqrt{3}}$
+
+This formula reflects the intrinsic geometric relationship in the electrical system's design, allowing for the efficient calculation of voltages in a Wye-configured three-phase system. For a 480V phase-to-phase system, the phase-to-neutral voltage calculation would be:
+
+$480V / \sqrt{3} \approx 277V$
