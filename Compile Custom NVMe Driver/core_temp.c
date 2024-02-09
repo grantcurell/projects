@@ -279,7 +279,6 @@ static void nvme_delete_ctrl_sync(struct nvme_ctrl *ctrl)
 struct debug_entry {
 	char info[256]; // Adjust based on what you need to store, e.g., error messages
 	unsigned long jiffies; // Timestamp
-	// Extend with more fields if needed
 };
 
 static int debug_buf_pos = 0;
@@ -289,7 +288,7 @@ static struct debug_entry debug_buf[DEBUG_BUF_SIZE];
  * Define the circular buffer
  *************************************************************/
 
-// Prototype for simplicity; ensure it matches your actual setup
+// TODO - I can probably just remove this by moving the below
 static ssize_t circular_buffer_read_proc(struct file *filp, char __user *buffer, size_t length, loff_t *offset);
 
 static const struct file_operations proc_file_fops = {
@@ -355,22 +354,29 @@ void add_debug_entry(const char *info) {
 }
 
 void log_specific_nvme_error(u16 status) {
-	char error_msg[256]; // Adjust size as necessary
+    char error_msg[256]; // Adjust size as necessary
 
-	// Construct an appropriate message based on the NVMe status code
-	snprintf(error_msg, sizeof(error_msg), "Specific NVMe error encountered: Status = 0x%x", status);
+    if (status == NVME_SC_SUCCESS) {
+        // Use the custom success message
+        strncpy(error_msg, "We have success! Our driver works!", sizeof(error_msg) - 1);
+        error_msg[sizeof(error_msg) - 1] = '\0'; // Ensure null termination
+    } else {
+        // Construct an appropriate message based on the NVMe status code
+        snprintf(error_msg, sizeof(error_msg), "Specific NVMe error encountered: Status = 0x%x", status);
+    }
 
-	// Log this occurrence to the circular DRAM buffer
-	add_debug_entry(error_msg);
+    // Log this occurrence to the circular DRAM buffer
+    add_debug_entry(error_msg);
 }
 
-static blk_status_t nvme_error_status(u16 status)
-{
-	blk_status_t blk_status;
+static blk_status_t nvme_error_status(u16 status) {
+    blk_status_t blk_status;
 
-	switch (status & 0x7ff) {
-	case NVME_SC_SUCCESS:
-		return BLK_STS_OK;
+    switch (status & 0x7ff) {
+    case NVME_SC_SUCCESS:
+        // Log success with a custom message and return OK
+        log_specific_nvme_error(status);
+        return BLK_STS_OK;
 	case NVME_SC_CAP_EXCEEDED:
 		return BLK_STS_NOSPC;
 	case NVME_SC_LBA_RANGE:
