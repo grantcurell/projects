@@ -1,6 +1,6 @@
-# Compile Custom NVMe Driver
+# Custom NVMe Debug Driver
 
-- [Compile Custom NVMe Driver](#compile-custom-nvme-driver)
+- [Custom NVMe Debug Driver](#custom-nvme-debug-driver)
   - [Building the Driver](#building-the-driver)
     - [Command Description](#command-description)
   - [Using the Driver](#using-the-driver)
