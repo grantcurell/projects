@@ -396,8 +396,9 @@ cp -f /boot/config-$(uname -r) .config
 cp -f /usr/src/kernels/$(uname -r)/Module.symvers .
 make -j$(nproc --all) scripts prepare modules_prepare
 make ARCH=x86_64 -j$(nproc --all) M=drivers/nvme
-insmod drivers/nvme/common/nvme-common.ko
+insmod drivers/nvme/common/nvme-common.ko  # Note: This has symbols needed by core
 insmod drivers/nvme/host/nvme-core.ko
+insmod drivers/nvme/host/nvme.ko  # Note: This is what actually gets the NVMe drives to show up
 ```
 
 If you want the minor version to match on the driver add `-362.18.1.el9_3.x86_64` to CONFIG_LOCALVERSION.
