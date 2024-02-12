@@ -315,52 +315,56 @@ This function is designed to log specific NVMe errors using a human-readable mes
 #### Modify the existing nvme_error_status
 
 ```c
-static blk_status_t nvme_error_status(u16 status)
-{
-    blk_status_t blk_status;
+static blk_status_t nvme_error_status(u16 status) {
+	blk_status_t blk_status;
 
-    switch (status & 0x7ff) {
-    case NVME_SC_SUCCESS:
-        return BLK_STS_OK;
-    case NVME_SC_CAP_EXCEEDED:
-        return BLK_STS_NOSPC;
-    case NVME_SC_LBA_RANGE:
-    case NVME_SC_CMD_INTERRUPTED:
-    case NVME_SC_NS_NOT_READY:
-        return BLK_STS_TARGET;
-    case NVME_SC_BAD_ATTRIBUTES:
-    case NVME_SC_ONCS_NOT_SUPPORTED:
-    case NVME_SC_INVALID_OPCODE:
-    case NVME_SC_INVALID_FIELD:
-    case NVME_SC_INVALID_NS:
-        return BLK_STS_NOTSUPP;
-    // Special handling for specific NVMe errors
-    case NVME_SC_WRITE_FAULT:
-    case NVME_SC_READ_ERROR:
-    case NVME_SC_UNWRITTEN_BLOCK:
-    case NVME_SC_ACCESS_DENIED:
-    case NVME_SC_READ_ONLY:
-    case NVME_SC_COMPARE_FAILED:
-        blk_status = BLK_STS_MEDIUM;
-        // Call custom function to log specific NVMe errors
-        log_specific_nvme_error(status);
-        return blk_status;
-    case NVME_SC_GUARD_CHECK:
-    case NVME_SC_APPTAG_CHECK:
-    case NVME_SC_REFTAG_CHECK:
-    case NVME_SC_INVALID_PI:
-        return BLK_STS_PROTECTION;
-    case NVME_SC_RESERVATION_CONFLICT:
-        return BLK_STS_RESV_CONFLICT;
-    case NVME_SC_HOST_PATH_ERROR:
-        return BLK_STS_TRANSPORT;
-    case NVME_SC_ZONE_TOO_MANY_ACTIVE:
-        return BLK_STS_ZONE_ACTIVE_RESOURCE;
-    case NVME_SC_ZONE_TOO_MANY_OPEN:
-        return BLK_STS_ZONE_OPEN_RESOURCE;
-    default:
-        return BLK_STS_IOERR;
-    }
+	// printk(KERN_INFO "nvme_error_status: error status 0x%x\n", status);
+
+	switch (status & 0x7ff) {
+	case NVME_SC_SUCCESS:
+		// Log success with a custom message and return OK
+		// UNCOMMENT THE BELOW TO LOG SUCCESSES TO TEST THE DRIVER
+		// log_specific_nvme_error(status);
+		return BLK_STS_OK;
+	case NVME_SC_CAP_EXCEEDED:
+		return BLK_STS_NOSPC;
+	case NVME_SC_LBA_RANGE:
+	case NVME_SC_CMD_INTERRUPTED:
+	case NVME_SC_NS_NOT_READY:
+		return BLK_STS_TARGET;
+	case NVME_SC_BAD_ATTRIBUTES:
+	case NVME_SC_ONCS_NOT_SUPPORTED:
+	case NVME_SC_INVALID_OPCODE:
+	case NVME_SC_INVALID_FIELD:
+	case NVME_SC_INVALID_NS:
+		return BLK_STS_NOTSUPP;
+	// Special handling for specific NVMe errors
+	case NVME_SC_WRITE_FAULT:
+	case NVME_SC_READ_ERROR:
+	case NVME_SC_UNWRITTEN_BLOCK:
+	case NVME_SC_ACCESS_DENIED:
+	case NVME_SC_READ_ONLY:
+	case NVME_SC_COMPARE_FAILED:
+		blk_status = BLK_STS_MEDIUM;
+		// Call custom function to log specific NVMe errors
+		log_specific_nvme_error(status);
+		return blk_status;
+	case NVME_SC_GUARD_CHECK:
+	case NVME_SC_APPTAG_CHECK:
+	case NVME_SC_REFTAG_CHECK:
+	case NVME_SC_INVALID_PI:
+		return BLK_STS_PROTECTION;
+	case NVME_SC_RESERVATION_CONFLICT:
+		return BLK_STS_NEXUS;
+	case NVME_SC_HOST_PATH_ERROR:
+		return BLK_STS_TRANSPORT;
+	case NVME_SC_ZONE_TOO_MANY_ACTIVE:
+		return BLK_STS_ZONE_ACTIVE_RESOURCE;
+	case NVME_SC_ZONE_TOO_MANY_OPEN:
+		return BLK_STS_ZONE_OPEN_RESOURCE;
+	default:
+		return BLK_STS_IOERR;
+	}
 }
 ```
 
@@ -382,57 +386,59 @@ The `nvme_error_status` function translates NVMe status codes into block layer s
 #include <linux/proc_fs.h> // For proc file operations
 #include <linux/seq_file.h> // For sequential reads
 
-// Prototype for simplicity; ensure it matches your actual setup
-static ssize_t circular_buffer_read_proc(struct file *filp, char __user *buffer, size_t length, loff_t *offset);
+ssize_t circular_buffer_read_proc(struct file *filp, char __user *buffer, size_t length, loff_t *offset) {
+	static int finished = 0; // Static variable to keep track if we've finished reading the buffer
+	int i;
+	ssize_t ret = 0;
+
+	if (finished) { // Check if we have finished reading the circular buffer
+		// printk(KERN_INFO "circular_buffer_read_proc: finished reading\n");
+		finished = 0; // Reset for the next call
+		return 0;
+	}
+
+	if (*offset >= DEBUG_BUF_SIZE) // Check if the offset is beyond our buffer size
+		return 0;
+
+	// Iterate over the circular buffer from the current offset
+	for (i = *offset; i < DEBUG_BUF_SIZE; i++) {
+		int bytes_not_copied;
+		char entry_info[512]; // Buffer to hold the formatted entry for copying
+		int entry_len;
+
+		// Format the debug entry into entry_info, including the jiffies timestamp
+		entry_len = snprintf(entry_info, sizeof(entry_info), "[%lu] %s\n", debug_buf[i].jiffies, debug_buf[i].info);
+
+		// Ensure we don't copy more than the user buffer can hold
+		if (length < entry_len) break;
+
+		// printk(KERN_INFO "circular_buffer_read_proc: copying entry [%lu] %s\n", debug_buf[i].jiffies, debug_buf[i].info);
+
+		// Copy the formatted string to user space
+		bytes_not_copied = copy_to_user(buffer + ret, entry_info, entry_len);
+		if (bytes_not_copied == 0) {
+			ret += entry_len; // Increment return value by the number of bytes successfully copied
+			*offset = i + 1;  // Update offset for partial reads
+		} else {
+			break; // Break the loop if we couldn't copy data to user space
+		}
+
+		if (ret >= length) break; // Check if we've filled the user buffer
+	}
+
+	finished = 1; // Indicate we've finished reading the circular buffer
+	return ret; // Return the number of bytes copied
+}
 
 static const struct file_operations proc_file_fops = {
-    .owner = THIS_MODULE,
-    .read = circular_buffer_read_proc,
+	.owner = THIS_MODULE,
+	.read = circular_buffer_read_proc,
 };
-
-ssize_t circular_buffer_read_proc(struct file *filp, char __user *buffer, size_t length, loff_t *offset) {
-    static int finished = 0; // Static variable to keep track if we've finished reading the buffer
-    int i;
-    ssize_t ret = 0;
-
-    if (finished) { // Check if we have finished reading the circular buffer
-        finished = 0; // Reset for the next call
-        return 0;
-    }
-
-    if (*offset >= DEBUG_BUF_SIZE) // Check if the offset is beyond our buffer size
-        return 0;
-
-    // Iterate over the circular buffer from the current offset
-    for (i = *offset; i < DEBUG_BUF_SIZE; i++) {
-        int bytes_not_copied;
-        char entry_info[512]; // Buffer to hold the formatted entry for copying
-        int entry_len;
-
-        // Format the debug entry into entry_info, including the jiffies timestamp
-        entry_len = snprintf(entry_info, sizeof(entry_info), "[%lu] %s\n", debug_buf[i].jiffies, debug_buf[i].info);
-
-        // Ensure we don't copy more than the user buffer can hold
-        if (length < entry_len) break;
-
-        // Copy the formatted string to user space
-        bytes_not_copied = copy_to_user(buffer + ret, entry_info, entry_len);
-        if (bytes_not_copied == 0) {
-            ret += entry_len; // Increment return value by the number of bytes successfully copied
-            *offset = i + 1;  // Update offset for partial reads
-        } else {
-            break; // Break the loop if we couldn't copy data to user space
-        }
-
-        if (ret >= length) break; // Check if we've filled the user buffer
-    }
-
-    finished = 1; // Indicate we've finished reading the circular buffer
-    return ret; // Return the number of bytes copied
-}
 ```
 
 #### Register with /proc
+
+Note: This is the entire NVMe init function. Our modifications are toward the end.
 
 ```c
 #include <linux/init.h>
