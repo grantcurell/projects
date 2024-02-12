@@ -45,20 +45,48 @@ In the commands below I pull `Module.symvers` file from the kernel headers direc
 
 
 ```bash
+# Installs necessary packages for building and compiling the kernel and kernel modules
 dnf install -y rpm-build rpmdevtools git python3-devel make gcc flex bison kernel-headers ncurses-devel tmux elfutils-libelf-devel openssl-devel bc kernel-devel-$(uname -r) dwarves
+
+# Sets up the RPM build environment directories under ~/rpmbuild
 rpmdev-setuptree
+
+# Downloads the source RPM package for the kernel
 dnf download --source kernel
+
+# Installs the source RPM package, which comes with the exact kernel build used to build this version of Rocky
 rpm -ivh kernel-5.14.0-362.18.1.el9_3.src.rpm
+
+# SPECS in the context of RPM has everything needed to build to include the source code 
+# and OS-specific kernel patches
 cd /root/rpmbuild/SPECS
+
+# Executes the pre-build steps of the kernel build process, preparing the environment for the actual build 
+# to include applying Rocky-specific patches
 rpmbuild -bp kernel.spec
+
 cd /root/rpmbuild/BUILD/kernel-5.14.0-362.18.1.el9_3/linux-5.14.0-362.18.1.el9.x86_64/
+
+# Copies the current kernel's configuration file to the build directory as the base 
+# configuration for the new kernel. This includes all the compile options used for the original kernel build
 cp -f /boot/config-$(uname -r) .config
+
+# Copies the Module symbol versioning information from the current kernel for compatibility. 
+# This is how we make sure symbols match for any exported functions
 cp -f /usr/src/kernels/$(uname -r)/Module.symvers .
+```
+
+Before continuing you need to edit `drivers/nvme/host/core.c`. Replace it with the contents of [the modified core.c file](./core.c). After the modifications are complete run:
+
+```bash
 make -j$(nproc --all) scripts prepare modules_prepare
 make ARCH=x86_64 -j$(nproc --all) M=drivers/nvme
-insmod drivers/nvme/common/nvme-common.ko  # Note: This has symbols needed by core
+# Common must come first because it has several functions it exports to core and if you
+# try to load core first you will get symbol errors
+insmod drivers/nvme/common/nvme-common.ko
 insmod drivers/nvme/host/nvme-core.ko
-insmod drivers/nvme/host/nvme.ko  # Note: This is what actually gets the NVMe drives to show up
+# nvme.ko is what makes the drives actually show up on Linux
+insmod drivers/nvme/host/nvme.ko
 ```
 
 If you want the minor version to match on the driver add `-362.18.1.el9_3.x86_64` to CONFIG_LOCALVERSION.
@@ -122,6 +150,51 @@ cat /proc/nvme_circular_buffer
 ```
 
 I used the above message because otherwise it just says `[0]` which looks like we're logging successes when in fact the buffer is just otherwise initialized to zero.
+
+When there is an error it logs to both the /proc and to dmesg:
+
+```bash
+[root@nvme linux-5.14.0-362.18.1.el9.x86_64]# dmesg
+[  966.884545] log_specific_nvme_error: logging error status 0x0
+[  966.884581] log_specific_nvme_error: logging error status 0x0
+[  966.884653] log_specific_nvme_error: logging error status 0x0
+[  966.884689] log_specific_nvme_error: logging error status 0x0
+[  966.884760] log_specific_nvme_error: logging error status 0x0
+[  966.884797] log_specific_nvme_error: logging error status 0x0
+[  966.884869] log_specific_nvme_error: logging error status 0x0
+[  966.884905] log_specific_nvme_error: logging error status 0x0
+[  966.884977] log_specific_nvme_error: logging error status 0x0
+[  966.885012] log_specific_nvme_error: logging error status 0x0
+[  966.885086] log_specific_nvme_error: logging error status 0x0
+[  966.885122] log_specific_nvme_error: logging error status 0x0
+[  966.885195] log_specific_nvme_error: logging error status 0x0
+[  966.885231] log_specific_nvme_error: logging error status 0x0
+[  966.885303] log_specific_nvme_error: logging error status 0x0
+[  966.885339] log_specific_nvme_error: logging error status 0x0
+[  966.885411] log_specific_nvme_error: logging error status 0x0
+[  966.885446] log_specific_nvme_error: logging error status 0x0
+[root@nvme linux-5.14.0-362.18.1.el9.x86_64]# cat /proc/nvme_circular_buffer
+[4295632365] We have success! Our driver works!
+[4295632365] We have success! Our driver works!
+[4295632365] We have success! Our driver works!
+[4295632365] We have success! Our driver works!
+[4295632365] We have success! Our driver works!
+[4295632365] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+[4295632366] We have success! Our driver works!
+```
+
+I didn't have a system with issues to test against so I just forced it to log successes to prove out the concept. The logic is in the function `log_specific_nvme_error` and `nvme_error_status`. You can uncomment/comment the indicated lines to have the driver log successes just to prove that it is working. Otherwise, it will only log errors.
 
 ## Driver Modifications
 
