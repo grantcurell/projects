@@ -289,14 +289,6 @@ static struct debug_entry debug_buf[DEBUG_BUF_SIZE];
  * Define the circular buffer
  *************************************************************/
 
-// Prototype for simplicity; ensure it matches your actual setup
-static ssize_t circular_buffer_read_proc(struct file *filp, char __user *buffer, size_t length, loff_t *offset);
-
-static const struct file_operations proc_file_fops = {
-	.owner = THIS_MODULE,
-	.read = circular_buffer_read_proc,
-};
-
 ssize_t circular_buffer_read_proc(struct file *filp, char __user *buffer, size_t length, loff_t *offset) {
 	static int finished = 0; // Static variable to keep track if we've finished reading the buffer
 	int i;
@@ -341,6 +333,11 @@ ssize_t circular_buffer_read_proc(struct file *filp, char __user *buffer, size_t
 	return ret; // Return the number of bytes copied
 }
 
+static const struct file_operations proc_file_fops = {
+	.owner = THIS_MODULE,
+	.read = circular_buffer_read_proc,
+};
+
 // Adds an entry to the circular debug buffer
 void add_debug_entry(const char *info) {
 	unsigned long flags;
@@ -352,7 +349,6 @@ void add_debug_entry(const char *info) {
 
 	strncpy(debug_buf[debug_buf_pos].info, info, sizeof(debug_buf[debug_buf_pos].info) - 1);
 	debug_buf[debug_buf_pos].jiffies = jiffies;
-	// Initialize additional fields here if added
 
 	debug_buf_pos = (debug_buf_pos + 1) % DEBUG_BUF_SIZE;
 
@@ -5621,6 +5617,12 @@ static int __init nvme_core_init(void)
 		result = -ENOMEM;
 		goto destroy_ns_chr_class;
 	}
+
+    for (int i = 0; i < DEBUG_BUF_SIZE; i++) {
+        strncpy(debug_buf[i].info, "Circular buffer initialized and working. You will see this message multiple times. I just put it here because otherwise you just see \"[0]\" which may be confusing.", sizeof(debug_buf[i].info) - 1);
+        debug_buf[i].info[sizeof(debug_buf[i].info) - 1] = '\0'; // Ensure null termination
+        debug_buf[i].jiffies = jiffies; // You might want to record the initialization time
+    }
 
 	printk(KERN_INFO "Custom debug driver finished loading.\n");
 
