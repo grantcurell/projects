@@ -373,6 +373,7 @@ void log_specific_nvme_error(u16 status) {
 	*/
 
 	// Construct an appropriate message based on the NVMe status code
+	// COMMENT ME OUT IF YOU UNCOMMENT THE ABOVE
 	snprintf(error_msg, sizeof(error_msg), "Specific NVMe error encountered: Status = 0x%x", status);
 
 	// Log this occurrence to the circular DRAM buffer
