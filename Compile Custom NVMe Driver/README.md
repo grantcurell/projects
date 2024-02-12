@@ -4,6 +4,7 @@
   - [Building the Driver](#building-the-driver)
     - [Command Description](#command-description)
   - [Using the Driver](#using-the-driver)
+  - [Original core.c](#original-corec)
   - [Driver Modifications](#driver-modifications)
     - [Circular Buffer Definition](#circular-buffer-definition)
       - [Macro Definition](#macro-definition)
@@ -76,7 +77,7 @@ cp -f /boot/config-$(uname -r) .config
 cp -f /usr/src/kernels/$(uname -r)/Module.symvers .
 ```
 
-Before continuing you need to edit `drivers/nvme/host/core.c`. Replace it with the contents of [the modified core.c file](./core.c). After the modifications are complete run:
+Before continuing you need to edit `drivers/nvme/host/core.c`. Replace it with the contents of [the modified `core.c` file](./core.c). After the modifications are complete run:
 
 ```bash
 make -j$(nproc --all) scripts prepare modules_prepare
@@ -195,6 +196,10 @@ When there is an error it logs to both the /proc and to dmesg:
 ```
 
 I didn't have a system with issues to test against so I just forced it to log successes to prove out the concept. The logic is in the function `log_specific_nvme_error` and `nvme_error_status`. You can uncomment/comment the indicated lines to have the driver log successes just to prove that it is working. Otherwise, it will only log errors.
+
+## Original core.c
+
+I downloaded a copy of the original `core.c` file [here](./core_original.c).
 
 ## Driver Modifications
 
