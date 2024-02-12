@@ -154,6 +154,8 @@ I used the above message because otherwise it just says `[0]` which looks like w
 
 When there is an error it logs to both the /proc and to dmesg:
 
+**NOTE**: Just to fully clarify, it will not do this by deafult. I just did this for testing. I left the code in place so you can uncomment it.
+
 ```bash
 [root@nvme linux-5.14.0-362.18.1.el9.x86_64]# dmesg
 [  966.884545] log_specific_nvme_error: logging error status 0x0
