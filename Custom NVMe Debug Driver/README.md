@@ -77,7 +77,7 @@ cp -f /boot/config-$(uname -r) .config
 cp -f /usr/src/kernels/$(uname -r)/Module.symvers .
 ```
 
-Before continuing you need to edit `drivers/nvme/host/core.c`. Replace it with the contents of [the modified `core.c` file](./core.c). After the modifications are complete run:
+Before continuing you need to edit `drivers/nvme/host/core.c`. Replace it with the contents of [the modified `core.c` file](./core.c). If you are running on a 6.X kernel use [this version instead](./6_x_core.c). After the modifications are complete run:
 
 ```bash
 make -j$(nproc --all) scripts prepare modules_prepare
