@@ -39,60 +39,68 @@ grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
 ```
 sudo dnf install rpm-build redhat-rpm-config make gcc
 mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
-mkdir -p custom-kernel-nvme-6.6.16/
-cd custom-kernel-nvme-6.6.16/
-cp /boot/vmlinuz-$(uname -r) .
-cp /boot/System.map-$(uname -r) .
-cp ~/linux-6.6.16/.config config-$(uname -r)
+mkdir 6.6.16-grant-nvme/
+cd 6.6.16-grant-nvme/
+cp /boot/vmlinuz-$(uname -r) vmlinuz-6.6.16-grant-nvme
+cp /boot/System.map-$(uname -r) System.map-6.6.16-grant-nvme
+cp ~/linux-6.6.16/.config config-6.6.16-grant-nvme
 cp -R /lib/modules/$(uname -r) modules
+tar --use-compress-program=pigz -cvf ../6.6.16-grant-nvme.tar.gz .
 cd ..
-mv custom-kernel-distro/ custom-kernel-nvme-6.6.16
-tar --use-compress-program=pigz -cvf custom-kernel-nvme-6.6.16.tar.gz custom-kernel-nvme-6.6.16/
-mv custom-kernel-nvme-6.6.16.tar.gz rpmbuild/SOURCES/
-vim ~/rpmbuild/SPECS/custom-kernel-nvme-6.6.16.spec
+mv 6.6.16-grant-nvme.tar.gz ~/rpmbuild/SOURCES/
+vim ~/rpmbuild/SPECS/6.6.16-grant-nvme.spec
 ```
 
-Paste the following content:
+Paste the following content and save it.
 
 ```
 Summary: Custom Kernel Package with NVMe Debug Driver
-Name: custom-kernel-nvme
+Name: kernel-grant-nvme
 Version: 6.6.16
 Release: 1
 License: GPL
 Group: System Environment/Kernel
-Source: custom-kernel-nvme-6.6.16.tar.gz
+Source: 6.6.16-grant-nvme.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
+# Disable automatic debuginfo and debugsource package generation
+%global debug_package %{nil}
+
 %description
-This package provides a custom Linux kernel version 6.6.16, specifically built for debugging NVMe.
+This package provides a custom Linux kernel version 6.6.16-grant-nvme, specifically built for debugging and enhancing NVMe support.
 
 %prep
-%setup -q
+%setup -c -T -n 6.6.16-grant-nvme
+pigz -dc %{_sourcedir}/6.6.16-grant-nvme.tar.gz | tar -xf -
 
 %build
 # Since we're packaging a precompiled kernel, no build commands are necessary
 
 %install
-%install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/boot
-mkdir -p $RPM_BUILD_ROOT/lib/modules/6.6.16
-cp vmlinuz-6.6.16 $RPM_BUILD_ROOT/boot/
-cp System.map-6.6.16 $RPM_BUILD_ROOT/boot/
-cp config-6.6.16 $RPM_BUILD_ROOT/boot/
-cp -a modules/* $RPM_BUILD_ROOT/lib/modules/6.6.16/
-
+mkdir -p $RPM_BUILD_ROOT/lib/modules/6.6.16-grant-nvme
+cp vmlinuz-6.6.16-grant-nvme $RPM_BUILD_ROOT/boot/
+cp System.map-6.6.16-grant-nvme $RPM_BUILD_ROOT/boot/
+cp config-6.6.16-grant-nvme $RPM_BUILD_ROOT/boot/
+cp -a modules/* $RPM_BUILD_ROOT/lib/modules/6.6.16-grant-nvme/
+grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
+dracut --force /boot/initramfs-6.6.16-grant-nvme.img 6.6.16-grant-nvme
 
 %files
-/boot/vmlinuz-6.6.16
-/boot/System.map-6.6.16
-/boot/config-6.6.16
-/lib/modules/*
+/boot/vmlinuz-6.6.16-grant-nvme
+/boot/System.map-6.6.16-grant-nvme
+/boot/config-6.6.16-grant-nvme
+/lib/modules/6.6.16-grant-nvme/*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
+```
 
+Next run these commands:
+
+```bash
+rpmbuild -ba ~/rpmbuild/SPECS/6.6.16-grant-nvme.spec
 ```
 
 ## Research
