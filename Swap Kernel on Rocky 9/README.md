@@ -22,33 +22,41 @@ Pull the Linux kernel from [here](https://www.kernel.org/)
 cp -f /boot/config-$(uname -r) .config
 
 # This accepts all the defaults for the new kernel options
-yes "" | make -j$(nproc --all) oldconfig
-make -j$(nproc)
-make -j$(nproc) modules
-make -j$(nproc) modules_install
+yes "" | make -j$(nproc --all) oldconfig &&
+make -j$(nproc) &&
+make -j$(nproc) modules &&
+make -j$(nproc) modules_install &&
+make -j$(nproc) install &&
 grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
 # sudo dnf reinstall grub2-efi-x64 shim-x64
 ```
 
-**CERTIFICATE ERROR** If you get a certificate error you need to get `rhel.pem` from the kernel source. [Follow these instructions](https://unix.stackexchange.com/a/769359/240147)
+**CERTIFICATE ERROR** If you get a certificate error you need to get `rhel.pem` from the kernel source. Do this: https://unix.stackexchange.com/a/294116/240147
+
+
 
 **RANDOM ERRORS** I also had some random errors I think were due to race conditions. I just dropped it down to `make -j 10` and it worked.
 
 ## Create RPM Package for It
 
+- vim .config - go to CONFIG_LOCALVERSION AND ADD -grant-nvme
+
 ```
-sudo dnf install rpm-build redhat-rpm-config make gcc
+set -e
+sudo dnf -y install rpm-build redhat-rpm-config make gcc
+rm -rf ~/rpmbuild 6.6.16-grant-nvme
 mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 mkdir 6.6.16-grant-nvme/
 cd 6.6.16-grant-nvme/
-cp /boot/vmlinuz-$(uname -r) vmlinuz-6.6.16-grant-nvme
-cp /boot/System.map-$(uname -r) System.map-6.6.16-grant-nvme
+cp /boot/vmlinuz-6.6.16-grant-nvme vmlinuz-6.6.16-grant-nvme
+cp /boot/System.map-6.6.16-grant-nvme System.map-6.6.16-grant-nvme
 cp ~/linux-6.6.16/.config config-6.6.16-grant-nvme
-cp -R /lib/modules/$(uname -r) modules
+cp -R /lib/modules/6.6.16-grant-nvme modules
 tar --use-compress-program=pigz -cvf ../6.6.16-grant-nvme.tar.gz .
 cd ..
 mv 6.6.16-grant-nvme.tar.gz ~/rpmbuild/SOURCES/
 vim ~/rpmbuild/SPECS/6.6.16-grant-nvme.spec
+set +e
 ```
 
 Paste the following content and save it.
@@ -80,21 +88,47 @@ pigz -dc %{_sourcedir}/6.6.16-grant-nvme.tar.gz | tar -xf -
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/boot
 mkdir -p $RPM_BUILD_ROOT/lib/modules/6.6.16-grant-nvme
+mkdir -p $RPM_BUILD_ROOT/boot/loader/entries
 cp vmlinuz-6.6.16-grant-nvme $RPM_BUILD_ROOT/boot/
 cp System.map-6.6.16-grant-nvme $RPM_BUILD_ROOT/boot/
 cp config-6.6.16-grant-nvme $RPM_BUILD_ROOT/boot/
 cp -a modules/* $RPM_BUILD_ROOT/lib/modules/6.6.16-grant-nvme/
-grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
-dracut --force /boot/initramfs-6.6.16-grant-nvme.img 6.6.16-grant-nvme
+dracut --force $RPM_BUILD_ROOT/boot/initramfs-6.6.16-grant-nvme.img 6.6.16-grant-nvme
 
 %files
 /boot/vmlinuz-6.6.16-grant-nvme
 /boot/System.map-6.6.16-grant-nvme
 /boot/config-6.6.16-grant-nvme
+/boot/initramfs-6.6.16-grant-nvme.img
 /lib/modules/6.6.16-grant-nvme/*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
+
+%post
+# Create the BLS snippet for the custom kernel
+# Note: No /boot prefix, as BLS expects paths relative to the boot partition
+cat > /boot/loader/entries/6.6.16-grant-nvme.conf << EOF
+title Custom Kernel 6.6.16 with NVMe Debug
+version 6.6.16-grant-nvme
+linux /vmlinuz-6.6.16-grant-nvme
+initrd /initramfs-6.6.16-grant-nvme.img
+options root=/dev/mapper/rl-root ro crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M resume=/dev/mapper/rl-swap rd.lvm.lv=rl/root rd.lvm.lv=rl/swap rhgb quiet
+EOF
+
+# Regenerate the GRUB2 configuration to pick up the new BLS entry
+grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
+
+%postun
+if [ $1 -eq 0 ]; then
+    # This is a full uninstall
+    rm -f /boot/loader/entries/6.6.16-grant-nvme.conf
+    # It is not recommended to automatically regenerate GRUB config in %postun
+    # because it can leave the system unbootable if something goes wrong.
+    # Instead, we inform the user to do this manually.
+    echo "Please run 'grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg' to update your GRUB configuration."
+fi
+
 ```
 
 Next run these commands:
