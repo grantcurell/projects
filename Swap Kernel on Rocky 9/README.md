@@ -42,21 +42,19 @@ grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
 - vim .config - go to CONFIG_LOCALVERSION AND ADD -grant-nvme
 
 ```
-set -e
-sudo dnf -y install rpm-build redhat-rpm-config make gcc
-rm -rf ~/rpmbuild 6.6.16-grant-nvme
-mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
-mkdir 6.6.16-grant-nvme/
-cd 6.6.16-grant-nvme/
-cp /boot/vmlinuz-6.6.16-grant-nvme vmlinuz-6.6.16-grant-nvme
-cp /boot/System.map-6.6.16-grant-nvme System.map-6.6.16-grant-nvme
-cp ~/linux-6.6.16/.config config-6.6.16-grant-nvme
-cp -R /lib/modules/6.6.16-grant-nvme modules
-tar --use-compress-program=pigz -cvf ../6.6.16-grant-nvme.tar.gz .
-cd ..
-mv 6.6.16-grant-nvme.tar.gz ~/rpmbuild/SOURCES/
+sudo dnf -y install rpm-build redhat-rpm-config make gcc &&
+rm -rf ~/rpmbuild 6.6.16-grant-nvme &&
+mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS} &&
+mkdir 6.6.16-grant-nvme/ &&
+cd 6.6.16-grant-nvme/ &&
+cp /boot/vmlinuz-6.6.16-grant-nvme vmlinuz-6.6.16-grant-nvme &&
+cp /boot/System.map-6.6.16-grant-nvme System.map-6.6.16-grant-nvme &&
+cp ~/linux-6.6.16/.config config-6.6.16-grant-nvme &&
+cp -R /lib/modules/6.6.16-grant-nvme modules &&
+tar --use-compress-program=pigz -cvf ../6.6.16-grant-nvme.tar.gz . &&
+cd .. &&
+mv 6.6.16-grant-nvme.tar.gz ~/rpmbuild/SOURCES/ &&
 vim ~/rpmbuild/SPECS/6.6.16-grant-nvme.spec
-set +e
 ```
 
 Paste the following content and save it.
