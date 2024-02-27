@@ -6,7 +6,7 @@
   - [Forcing the Drive to Write all NAND](#forcing-the-drive-to-write-all-nand)
   - [Tips for Increasing Performance](#tips-for-increasing-performance)
     - [Write Amplification](#write-amplification)
-  - [](#)
+  - [Multiuse vs Read Intensive Drives](#multiuse-vs-read-intensive-drives)
 
 
 When I first encountered overprovisioning, the high level concept seemed quite clear, but the implications and math behind it I found confusing. This paper is for anyone who needs to have an understanding of the mechanics of overprovisioning but it isn't something they look at every day.
@@ -46,6 +46,8 @@ $$
 \frac{1,099,511,627,776 (\text{1TiB}) - 960,000,000,000\text{(960GB)}}{960,000,000,000\text{(960GB)}}= 14.5\% \text{ Overprovisioned}
 $$
 
+It's worth mentioning these are rough estimations though because this doesn't account for space used by the NVMe drive's internal parallelization mechanisms or proprietary variations.
+
 ## Forcing the Drive to Write all NAND
 
 Let's say you want to test the worst-case scenario; it's necessary to completely fill the drive. The objective is to guarantee that all Logical Block Addresses (LBAs) have been written to and every NAND flash cell has been utilized at least once. Below is how you do that:
@@ -57,7 +59,7 @@ After completing these steps, the drive is prepared for Write Amplification (WA)
 
 ## Tips for Increasing Performance
  
-1. **Use only the capacity you need**: This helps reduce the problem of write amplification [(explaind below)](#write-amplification).
+1. **Use only the capacity you need**: This helps reduce the problem of write amplification [(explained below)](#write-amplification).
 2. **Enhanced Random Write Performance**: SSDs perform best when they have ample unused space to distribute write and erase cycles evenly across the NAND cells, a process known as wear leveling. Keeping a portion of the SSD's capacity unused or 'over-provisioned' ensures that the controller has more flexibility in managing data, which can significantly improve random write performance.
 3. **Reduced Power Consumption**: Less used capacity means fewer active write and erase cycles, and less work for the SSD's controller. This efficiency translates into lower power consumption, which is beneficial for both operational costs and, in the case of battery-powered devices, extended device usage between charges.
 4. **Use the deallocate Command**: The DEALLOCATE command marks blocks as available for garbage collection and wear leveling.
@@ -73,4 +75,10 @@ Write Amplification (WA) is an inefficiency in SSDs where the amount of data phy
 3. **Optimized Garbage Collection**: Garbage collection is the process by which SSDs reclaim blocks that contain data no longer considered in use. When the SSD has more free space, the garbage collection process can be more selective and efficient, combining partial blocks of valid data into fewer blocks and erasing the now-empty blocks. This efficiency reduces the total number of write operations required for maintenance tasks, lowering WA.
 4. **Reduced Frequency of Write and Erase Cycles**: Every write operation on an SSD involves erasing and rewriting entire blocks of data, even if only a small amount of data needs to be changed. By using less of the SSD's capacity, there's less data being shuffled around during garbage collection and wear leveling, which means fewer write and erase cycles are needed. This direct reduction in write and erase cycles leads to a lower Write Amplification Factor (WAF).
 
-## 
+## Multiuse vs Read Intensive Drives
+
+In modern NVMe drives, generally the only difference between mixed use and read intensive drives is generally the amount of spare space allocated to them. It depends on manufacturer, but this is generally the case.
+
+Again, generally, a read intensive drive has around 14% spare space and a mixed use drive will have around 37% spare space. That is **after** you account for the delta between advertised being in base 10 and reality being base 2. If you don't account for that delta you will see lower numbers for percentage spare space.
+
+Here's the thing though, modern drives use uncommitted space as spare space. So if you artificially cap the amount of space you use on an RI drive you can effectively turn it into an MU drive. It is only if you completely fill the RI drive that you will see degraded performance due to WA.
