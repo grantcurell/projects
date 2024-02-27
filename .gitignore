@@ -2,3 +2,5 @@
 How Does Power Work/.idea/
 Compile Custom NVMe Driver/linux_source
 Swap Kernel on Rocky 9/source
+
+Custom NVMe Debug Driver/kernel-grant-nvme-6.6.16-1.x86_64.rpm
