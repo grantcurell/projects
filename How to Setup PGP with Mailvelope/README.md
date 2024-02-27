@@ -1,10 +1,6 @@
+# How to Set Up PGP with Mailvelope
 
-1. Download and install [Gpg4win from here](https://gpg4win.org/index.html)
-   1. Make sure during the installation you pick the add browser extensions option
-2. Install [mailvelope from here](https://mailvelope.com/en)
-
-## Setup Mailvelope
-
+- Install [mailvelope from here](https://mailvelope.com/en)
 - Click on Mailvelope in the browser bar
 
 ![](images/2024-02-27-16-00-37.png)
