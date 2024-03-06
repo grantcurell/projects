@@ -78,7 +78,13 @@ $$
 
 **Step 1: Calculate the determinant of $A$**
 
-The determinant of a 2x2 matrix $\begin{bmatrix} a & b \\ c & d \end{bmatrix}$ is calculated as $ad - bc$. For our matrix $A$:
+The determinant of a 2x2 matrix:
+
+$\begin{bmatrix} a & b \\ 
+c & d 
+\end{bmatrix}$ 
+
+is calculated as $ad - bc$. For our matrix $A$:
 
 $$
 \text{det}(A) = (4)(6) - (7)(2) = 24 - 14 = 10
@@ -98,7 +104,8 @@ The cofactor matrix is found by calculating the cofactor for each element of $A$
 So, the cofactor matrix is:
 
 $$
-\text{Cof}(A) = \begin{bmatrix} 6 & -2 \\ -7 & 4 \end{bmatrix}
+\text{Cof}(A) = \begin{bmatrix} 6 & -2 \\ 
+-7 & 4 \end{bmatrix}
 $$
 
 **Step 3: Transpose the matrix of cofactors to get the adjugate matrix**
@@ -106,7 +113,8 @@ $$
 The adjugate of $A$ is the transpose of the cofactor matrix. For a 2x2 matrix, this simply means swapping the non-diagonal elements:
 
 $$
-\text{adj}(A) = \text{Cof}(A)^T = \begin{bmatrix} 6 & -7 \\ -2 & 4 \end{bmatrix}
+\text{adj}(A) = \text{Cof}(A)^T = \begin{bmatrix} 6 & -7 \
+ -2 & 4 \end{bmatrix}
 $$
 
 **Step 4: Divide each element of the adjugate matrix by $\text{det}(A)$ to get $A^{-1}$**
@@ -114,13 +122,16 @@ $$
 Finally, we divide each element of the adjugate matrix by the determinant of $A$ to find the inverse:
 
 $$
-A^{-1} = \frac{1}{\text{det}(A)} \text{adj}(A) = \frac{1}{10} \begin{bmatrix} 6 & -7 \\ -2 & 4 \end{bmatrix} = \begin{bmatrix} 0.6 & -0.7 \\ -0.2 & 0.4 \end{bmatrix}
+A^{-1} = \frac{1}{\text{det}(A)} \text{adj}(A) = \frac{1}{10} \begin{bmatrix} 6 & -7 \\
+ -2 & 4 \end{bmatrix} = \begin{bmatrix} 0.6 & -0.7 \\
+ -0.2 & 0.4 \end{bmatrix}
 $$
 
 So, the inverse of matrix $A$ is:
 
 $$
-A^{-1} = \begin{bmatrix} 0.6 & -0.7 \\ -0.2 & 0.4 \end{bmatrix}
+A^{-1} = \begin{bmatrix} 0.6 & -0.7 \\
+ -0.2 & 0.4 \end{bmatrix}
 $$
 
 #### Issues with Direct Inversion:
@@ -139,7 +150,8 @@ LU decomposition expresses matrix $A$ as the product of a lower triangular matri
 #### Example of Using LU Decomposition for Matrix Inversion
 
 $$
-A = \begin{bmatrix} 4 & 7 \\ 2 & 6 \end{bmatrix}
+A = \begin{bmatrix} 4 & 7 \\
+ 2 & 6 \end{bmatrix}
 $$
 
 **Decompose $A$ into $L$ and $U$**
@@ -152,7 +164,9 @@ For LU decomposition, we want to break down $A$ into a lower triangular matrix $
 Now we have:
 
 $$
-L = \begin{bmatrix} 1 & 0 \\ \frac{1}{2} & 1 \end{bmatrix}, \quad U = \begin{bmatrix} 4 & 7 \\ 0 & \frac{5}{2} \end{bmatrix}
+L = \begin{bmatrix} 1 & 0 \\
+ \frac{1}{2} & 1 \end{bmatrix}, \quad U = \begin{bmatrix} 4 & 7 \\
+ 0 & \frac{5}{2} \end{bmatrix}
 $$
 
 **Step 2: Solve $LY = I$ for $Y$**
@@ -170,7 +184,8 @@ We compute $X$ by directly using backward substitution on the equation $UX = I$,
 After solving $UX = I$, we get:
 
 $$
-A^{-1} = \begin{bmatrix} 0.6 & -0.7 \\ -0.2 & 0.4 \end{bmatrix}
+A^{-1} = \begin{bmatrix} 0.6 & -0.7 \\
+ -0.2 & 0.4 \end{bmatrix}
 $$
 
 You can see the intermediate steps in this program:
@@ -429,8 +444,13 @@ A_{21} & A_{22}
 \end{array}
 \right] = \left[
 \begin{array}{cc}
-\begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix} & \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix} \\
-\begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix} & \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix}
+\begin{bmatrix} a_{11} & a_{12} \\
+ a_{21} & a_{22} \end{bmatrix} & \begin{bmatrix} a_{13} & a_{14} \\
+ a_{23} & a_{24} \end{bmatrix} \\
+
+\begin{bmatrix} a_{31} & a_{32} \\
+ a_{41} & a_{42} \end{bmatrix} & \begin{bmatrix} a_{33} & a_{34} \\
+ a_{43} & a_{44} \end{bmatrix}
 \end{array}
 \right]
 $$
@@ -442,8 +462,13 @@ B_{21} & B_{22}
 \end{array}
 \right] = \left[
 \begin{array}{cc}
-\begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix} & \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix} \\
-\begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix} & \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
+\begin{bmatrix} b_{11} & b_{12} \\
+ b_{21} & b_{22} \end{bmatrix} & \begin{bmatrix} b_{13} & b_{14} \\
+ b_{23} & b_{24} \end{bmatrix} \\
+
+\begin{bmatrix} b_{31} & b_{32} \\
+ b_{41} & b_{42} \end{bmatrix} & \begin{bmatrix} b_{33} & b_{34} \\
+ b_{43} & b_{44} \end{bmatrix}
 \end{array}
 \right]
 $$
@@ -451,19 +476,27 @@ $$
 Where each block $A_{ij}$ is a 2x2 matrix:
 
 $$
-A_{11} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix}, \quad B_{11} = \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix}
+A_{11} = \begin{bmatrix} a_{11} & a_{12} \\
+ a_{21} & a_{22} \end{bmatrix}, \quad B_{11} = \begin{bmatrix} b_{11} & b_{12} \\
+ b_{21} & b_{22} \end{bmatrix}
 $$
 
 $$
-A_{12} = \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix}, \quad B_{12} = \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix}
+A_{12} = \begin{bmatrix} a_{13} & a_{14} \\
+ a_{23} & a_{24} \end{bmatrix}, \quad B_{12} = \begin{bmatrix} b_{13} & b_{14} \\
+ b_{23} & b_{24} \end{bmatrix}
 $$
 
 $$
-A_{21} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix}, \quad B_{21} = \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}
+A_{21} = \begin{bmatrix} a_{31} & a_{32} \\
+ a_{41} & a_{42} \end{bmatrix}, \quad B_{21} = \begin{bmatrix} b_{31} & b_{32} \\
+ b_{41} & b_{42} \end{bmatrix}
 $$
 
 $$
-A_{22} = \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix}, \quad B_{22} = \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
+A_{22} = \begin{bmatrix} a_{33} & a_{34} \\
+ a_{43} & a_{44} \end{bmatrix}, \quad B_{22} = \begin{bmatrix} b_{33} & b_{34} \\
+ b_{43} & b_{44} \end{bmatrix}
 $$
 
 Now we multiply them as follows to get $C = AB$:
@@ -480,7 +513,11 @@ $$
 Breaking it down, the multiplication and addition are:
 
 $$
-C_{11} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix} \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix} + \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix} \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}
+C_{11} = \begin{bmatrix} a_{11} & a_{12} \\
+ a_{21} & a_{22} \end{bmatrix} \begin{bmatrix} b_{11} & b_{12} \\
+ b_{21} & b_{22} \end{bmatrix} + \begin{bmatrix} a_{13} & a_{14} \\
+ a_{23} & a_{24} \end{bmatrix} \begin{bmatrix} b_{31} & b_{32} \\
+ b_{41} & b_{42} \end{bmatrix}
 $$
 
 This results in a new 2x2 matrix for $C_{11}$.
@@ -492,7 +529,11 @@ C_{12} = A_{11}B_{12} + A_{12}B_{22}
 $$
 
 $$
-C_{12} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix} \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix} + \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix} \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
+C_{12} = \begin{bmatrix} a_{11} & a_{12} \\
+ a_{21} & a_{22} \end{bmatrix} \begin{bmatrix} b_{13} & b_{14} \\
+ b_{23} & b_{24} \end{bmatrix} + \begin{bmatrix} a_{13} & a_{14} \\
+ a_{23} & a_{24} \end{bmatrix} \begin{bmatrix} b_{33} & b_{34} \\
+ b_{43} & b_{44} \end{bmatrix}
 $$
 
 **For $C_{21}$**:
@@ -501,7 +542,11 @@ $$
 C_{21} = A_{21}B_{11} + A_{22}B_{21}
 $$
 $$
-C_{21} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix} \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix} + \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix} \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}
+C_{21} = \begin{bmatrix} a_{31} & a_{32} \\
+ a_{41} & a_{42} \end{bmatrix} \begin{bmatrix} b_{11} & b_{12} \\
+ b_{21} & b_{22} \end{bmatrix} + \begin{bmatrix} a_{33} & a_{34} \\
+ a_{43} & a_{44} \end{bmatrix} \begin{bmatrix} b_{31} & b_{32} \\
+ b_{41} & b_{42} \end{bmatrix}
 $$
 
 **For $C_{22}$**:
@@ -510,7 +555,11 @@ $$
 C_{22} = A_{21}B_{12} + A_{22}B_{22}
 $$
 $$
-C_{22} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix} \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix} + \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix} \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
+C_{22} = \begin{bmatrix} a_{31} & a_{32} \\
+ a_{41} & a_{42} \end{bmatrix} \begin{bmatrix} b_{13} & b_{14} \\
+ b_{23} & b_{24} \end{bmatrix} + \begin{bmatrix} a_{33} & a_{34} \\
+ a_{43} & a_{44} \end{bmatrix} \begin{bmatrix} b_{33} & b_{34} \\
+ b_{43} & b_{44} \end{bmatrix}
 $$
 
 Each $C_{ij}$ block is computed by adding the products of the 2x2 blocks from matrices $A$ and $B$. The summation of these products gives us the respective blocks of the resulting matrix $C$.
