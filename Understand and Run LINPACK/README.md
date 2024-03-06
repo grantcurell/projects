@@ -28,7 +28,8 @@
     - [Row Partial Pivoting](#row-partial-pivoting)
   - [Options](#options)
   - [Configuration](#configuration)
-    - [Default](#default)
+    - [Generic](#generic)
+    - [Intel-Specific](#intel-specific)
 
 
 The LINPACK Benchmarkfocuses on solving a dense system of linear equations. The core of the LINPACK Benchmark involves measuring the performance of a system when solving the equation $Ax = b$, where $A$ is a dense $n \times n$ matrix, $x$ is a vector of unknowns, and $b$ is a vector of knowns. The benchmark assesses the system's floating-point computation capabilities, primarily through the execution speed of Double Precision General Matrix Multiply (DGEMM) operations and the LU decomposition of the matrix $A$.
@@ -55,7 +56,7 @@ $$
 A^{-1} = \frac{1}{\text{det}(A)} \text{adj}(A)
 $$
 
-where adj$(A)$ is the adjugate (or adjoint) of $A$, and det$(A)$ is the determinant of $A$.
+where $\text{adj}(A)$ is the adjugate (or adjoint) of $A$, and det$(A)$ is the determinant of $A$.
 
 1. **Calculate the determinant** of $A$. If det$(A) = 0$, $A$ is not invertible.
    1. If this value is zero, it means the machine’s design doesn’t allow for reversal, indicating the matrix can't be inverted.
@@ -448,52 +449,68 @@ $$
 
 Where each block $A_{ij}$ is a 2x2 matrix:
 
-- $A_{11} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix}$ and $B_{11} = \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix}$
-- $A_{12} = \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix}$ and $B_{12} = \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix}$
-- $A_{21} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix}$ and $B_{21} = \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}$
-- $A_{22} = \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix}$ and $B_{22} = \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}$
+$$
+A_{11} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix}, \quad B_{11} = \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix}
+$$
 
+$$
+A_{12} = \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix}, \quad B_{12} = \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix}
+$$
+
+$$
+A_{21} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix}, \quad B_{21} = \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}
+$$
+
+$$
+A_{22} = \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix}, \quad B_{22} = \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
+$$
 
 Now we multiply them as follows to get $C = AB$:
 
 1. Multiply the corresponding 2x2 blocks of matrices $A$ and $B$ together.
 2. Add the resulting 2x2 matrices to form the blocks of the resulting matrix $C$.
 
-3. **For $C_{11}$**:
-   $$
-   C_{11} = A_{11}B_{11} + A_{12}B_{21}
-   $$
+**For $C_{11}$**:
+   
+$$
+C_{11} = A_{11}B_{11} + A_{12}B_{21}
+$$
 
-   Breaking it down, the multiplication and addition are:
-   $$
-   C_{11} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix} \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix} + \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix} \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}
-   $$
-   This results in a new 2x2 matrix for $C_{11}$.
+Breaking it down, the multiplication and addition are:
 
-4. **For $C_{12}$**:
-   $$
-   C_{12} = A_{11}B_{12} + A_{12}B_{22}
-   $$
+$$
+C_{11} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix} \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix} + \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix} \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}
+$$
 
-   $$
-   C_{12} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix} \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix} + \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix} \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
-   $$
+This results in a new 2x2 matrix for $C_{11}$.
 
-5. **For $C_{21}$**:
-   $$
-   C_{21} = A_{21}B_{11} + A_{22}B_{21}
-   $$
-   $$
-   C_{21} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix} \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix} + \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix} \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}
-   $$
+**For $C_{12}$**:
 
-6. **For $C_{22}$**:
-   $$
-   C_{22} = A_{21}B_{12} + A_{22}B_{22}
-   $$
-   $$
-   C_{22} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix} \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix} + \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix} \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
-   $$
+$$
+C_{12} = A_{11}B_{12} + A_{12}B_{22}
+$$
+
+$$
+C_{12} = \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix} \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix} + \begin{bmatrix} a_{13} & a_{14} \\ a_{23} & a_{24} \end{bmatrix} \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
+$$
+
+**For $C_{21}$**:
+
+$$
+C_{21} = A_{21}B_{11} + A_{22}B_{21}
+$$
+$$
+C_{21} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix} \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix} + \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix} \begin{bmatrix} b_{31} & b_{32} \\ b_{41} & b_{42} \end{bmatrix}
+$$
+
+**For $C_{22}$**:
+
+$$
+C_{22} = A_{21}B_{12} + A_{22}B_{22}
+$$
+$$
+C_{22} = \begin{bmatrix} a_{31} & a_{32} \\ a_{41} & a_{42} \end{bmatrix} \begin{bmatrix} b_{13} & b_{14} \\ b_{23} & b_{24} \end{bmatrix} + \begin{bmatrix} a_{33} & a_{34} \\ a_{43} & a_{44} \end{bmatrix} \begin{bmatrix} b_{33} & b_{34} \\ b_{43} & b_{44} \end{bmatrix}
+$$
 
 Each $C_{ij}$ block is computed by adding the products of the 2x2 blocks from matrices $A$ and $B$. The summation of these products gives us the respective blocks of the resulting matrix $C$.
 
@@ -626,7 +643,9 @@ HPL.out  output file name (if any)
 
 ## Configuration
 
-### Default
+### Generic
+
+This is the generic config - the Intel one is simplified.
 
 ```
 HPLinpack benchmark input file
@@ -662,3 +681,52 @@ HPL.out      output file name (if any)
 8            memory alignment in double (> 0)
 ```
 
+### Intel-Specific
+
+Intel has prepackaged binaries for different architectures. For example, below is the file for running against Xeon:
+
+```bash
+#!/bin/sh
+#===============================================================================
+# Copyright 2001-2022 Intel Corporation.
+#
+# This software and the related documents are Intel copyrighted  materials,  and
+# your use of  them is  governed by the  express license  under which  they were
+# provided to you (License).  Unless the License provides otherwise, you may not
+# use, modify, copy, publish, distribute,  disclose or transmit this software or
+# the related documents without Intel's prior written permission.
+#
+# This software and the related documents  are provided as  is,  with no express
+# or implied  warranties,  other  than those  that are  expressly stated  in the
+# License.
+#===============================================================================
+
+echo "This is a SAMPLE run script for running a shared-memory version of"
+echo "Intel(R) Distribution for LINPACK* Benchmark. Change it to reflect"
+echo "the correct number of CPUs/threads, problem input files, etc.."
+echo "*Other names and brands may be claimed as the property of others."
+
+# Setting up affinity for better threading performance
+export KMP_AFFINITY=nowarnings,compact,1,0,granularity=fine
+
+# Use numactl for better performance on multi-socket machines.
+nnodes=`numactl -H 2>&1 | awk '/available:/ {print $2}'`
+cpucores=`cat /proc/cpuinfo | awk '/cpu cores/ {print $4; exit}'`
+
+if [  $nnodes -gt 1 -a $cpucores -gt 8 ]
+then
+    numacmd="numactl --interleave=all"
+else
+    numacmd=
+fi
+
+arch=xeon64
+{
+  date
+  $numacmd ./xlinpack_$arch lininput_$arch
+  echo -n "Done: "
+  date
+} | tee lin_$arch.txt
+```
+
+It takes care of NUMA-alignment, selecting the amount of memory, and memory alignment all as part of the xlinpack binary. Ex: the `numactl --interleave=all` command automatically interleaves memory across all numa nodes for you.
