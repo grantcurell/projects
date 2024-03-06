@@ -72,7 +72,8 @@ where $\text{adj}(A)$ is the adjugate (or adjoint) of $A$, and det$(A)$ is the d
 Below is an example of this in action.
 
 $$
-A = \begin{bmatrix} 4 & 7 \\ 2 & 6 \end{bmatrix}
+A = \begin{bmatrix} 4 & 7 \\
+2 & 6 \end{bmatrix}
 $$
 
 **Step 1: Calculate the determinant of $A$**
