@@ -26,10 +26,29 @@
     - [What is Numerical Stability](#what-is-numerical-stability)
     - [Right Looking LU Factorization](#right-looking-lu-factorization)
     - [Row Partial Pivoting](#row-partial-pivoting)
-  - [Options](#options)
-  - [Configuration](#configuration)
-    - [Generic](#generic)
-    - [Intel-Specific](#intel-specific)
+  - [LINPACK Parameters](#linpack-parameters)
+  - [How MPI Processes Work](#how-mpi-processes-work)
+    - [What are MPI Processes?](#what-are-mpi-processes)
+    - [How MPI Processes Communicate](#how-mpi-processes-communicate)
+    - [Creating MPI Processes](#creating-mpi-processes)
+    - [Distribution of Work](#distribution-of-work)
+    - [Running MPI Programs](#running-mpi-programs)
+    - [MPI Ranks](#mpi-ranks)
+      - [MPI Ranks as Related to LU Decomposition](#mpi-ranks-as-related-to-lu-decomposition)
+    - [MPI Arguments](#mpi-arguments)
+    - [-np (Number of Processes)](#-np-number-of-processes)
+    - [-ppn (Processes Per Node) aka perhost](#-ppn-processes-per-node-aka-perhost)
+    - [Relation to Threads](#relation-to-threads)
+    - [Practical Example](#practical-example)
+      - [A Note About MPI Implementations](#a-note-about-mpi-implementations)
+  - [Run Against a Single Node](#run-against-a-single-node)
+    - [Install](#install-1)
+    - [Running the Code](#running-the-code)
+  - [Run on a Cluster w/SLURM](#run-on-a-cluster-wslurm)
+    - [Gain Access to Cluster](#gain-access-to-cluster)
+    - [Running Job](#running-job)
+  - [Useful Commands](#useful-commands)
+  - [Useful Links](#useful-links)
 
 
 The LINPACK Benchmarkfocuses on solving a dense system of linear equations. The core of the LINPACK Benchmark involves measuring the performance of a system when solving the equation $Ax = b$, where $A$ is a dense $n \times n$ matrix, $x$ is a vector of unknowns, and $b$ is a vector of knowns. The benchmark assesses the system's floating-point computation capabilities, primarily through the execution speed of Double Precision General Matrix Multiply (DGEMM) operations and the LU decomposition of the matrix $A$.
@@ -587,7 +606,7 @@ Right-looking LU factorization is a variant of the standard LU factorization. In
 
 Row-partial pivoting in LU factorization is a strategy to enhance numerical stability. It interchanges rows of the matrix as it's decomposed into lower (L) and upper (U) triangular matrices. Before zeroing out below-diagonal elements in a column, the algorithm swaps the current row with a below row that has the largest absolute value in the current column. This step helps prevent small pivot elements, which can lead to significant numerical errors, ensuring the algorithm remains stable even for matrices prone to inducing calculation inaccuracies.
 
-## Options
+## LINPACK Parameters
 
 I originally found this [here](https://www.netlib.org/benchmark/hpl/tuning.html) and updated it with additional explanation.
 
@@ -691,48 +710,134 @@ HPL.out  output file name (if any)
 **Line 31:** 
 - Specifies the memory alignment for allocations done by HPL. Common values are 4, 8, or 16, influencing how memory is aligned.
 
-## Configuration
+## How MPI Processes Work
 
-### Generic
+Helpful Presentation: https://www.uio.no/studier/emner/matnat/ifi/INF3380/v11/undervisningsmateriale/inf3380-week06.pdf
 
-This is the generic config - the Intel one is simplified.
+MPI (Message Passing Interface) processes are at the core of parallel computing in systems that use the MPI standard for communication.
 
+### What are MPI Processes?
+
+- **Independent Processes**: Each MPI process is an independent unit of computation that executes concurrently with other MPI processes. They can be thought of as separate instances of the program, often running on different cores or different nodes in a cluster.
+- **Separate Memory Spaces**: Each process has its own private memory space. This means variables and data in one process are not directly accessible to another process. Any data sharing or communication must be done explicitly using MPI's communication mechanisms.
+
+### How MPI Processes Communicate
+
+- **Message Passing**: The fundamental concept of MPI is that processes communicate by sending and receiving messages. These messages can contain any type of data, and the communication can occur between any two processes.
+- **Collective Communications**: Besides point-to-point communication, MPI provides collective communication operations (like broadcast, reduce, scatter, gather) that involve a group of processes. These operations are optimized for efficient communication patterns commonly found in parallel applications.
+
+### Creating MPI Processes
+
+- **MPI_Init and MPI_Finalize**: An MPI program starts with MPI_Init and ends with MPI_Finalize. Between these two calls, the MPI environment is active, and the program can utilize MPI functions.
+- **Parallel Region**: The code between MPI_Init and MPI_Finalize is executed by all processes in parallel, but each process can follow different execution paths based on their [rank](#mpi-ranks) or other conditional logic.
+- **Rank and Size**: Each process is assigned a unique identifier called its rank. The total number of processes is called the size. These are often used to divide work among processes or to determine the role of each process in communication patterns.
+
+### Distribution of Work
+
+- **Dividing the Problem**: In typical MPI applications, the large problem is divided into smaller parts, and each MPI process works on a portion of the problem. This division can be based on data (data parallelism) or tasks (task parallelism).
+- **Synchronization**: Processes can synchronize their execution, for example, by using barriers (MPI_Barrier), ensuring that all processes reach a certain point of execution before continuing.
+
+### Running MPI Programs
+
+- **MPI Executors**: MPI programs are usually executed with a command like `mpirun` or `mpiexec`, followed by options that specify the number of processes to launch and other execution parameters.
+- **Scalability**: The scalability of an MPI program depends on its ability to efficiently partition the workload among the available processes and the effectiveness of the communication between the processes.
+
+In the context of the LINPACK benchmark, the MPI processes would each handle a portion of the LINPACK workload, collaborating by exchanging messages to solve the large linear algebra problem in parallel.
+
+### MPI Ranks
+
+An MPI rank is a unique identifier assigned to each process in a parallel program that uses the Message Passing Interface (MPI) for communication. MPI is a standardized and portable message-passing system designed to function on a wide variety of parallel computing architectures. In an MPI program, multiple processes can run simultaneously, potentially on different physical machines or cores within a machine.
+
+Ranks are used for the following:
+
+- **Identification:** The rank allows each process to be uniquely identified within an MPI communicator. A communicator is a group of MPI processes that can communicate with each other. The most common communicator used is `MPI_COMM_WORLD`, which includes all the MPI processes in a program.
+- **Coordination and Communication:** By knowing its rank, a process can determine how to coordinate its actions with other processes, such as dividing data among processes for parallel computation or determining the order of operations in a parallel algorithm.
+- **Scalability:** Using ranks, MPI programs can be designed to scale efficiently with the number of processes, allowing for parallel execution on systems ranging from a single computer to a large-scale supercomputer.
+
+Ranks are typically represented as integers starting from 0. So, in a program with `N` processes, the ranks are numbered from 0 to `N-1`. This numbering is used in various MPI operations, such as sending and receiving messages, where you specify the rank of the target process.
+
+Here's a simple example to illustrate the use of ranks in MPI:
+
+```c
+#include <mpi.h>
+#include <stdio.h>
+
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
+
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+    int world_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    printf("Hello world from rank %d out of %d processes\n", world_rank, world_size);
+
+    MPI_Finalize();
+    return 0;
+}
 ```
-HPLinpack benchmark input file
-Innovative Computing Laboratory, University of Tennessee
-HPL.out      output file name (if any)
-6            device out (6=stdout,7=stderr,file)
-1            # of problems sizes (N)
-1000         Ns
-1            # of NBs
-192 256      NBs
-1            PMAP process mapping (0=Row-,1=Column-major)
-1            # of process grids (P x Q)
-6            Ps
-8            Qs
-1.0          threshold
-1            # of panel fact
-2 1 0        PFACTs (0=left, 1=Crout, 2=Right)
-1            # of recursive stopping criterium
-2            NBMINs (>= 1)
-1            # of panels in recursion
-2            NDIVs
-1            # of recursive panel fact.
-1 0 2        RFACTs (0=left, 1=Crout, 2=Right)
-1            # of broadcast
-0            BCASTs (0=1rg,1=1rM,2=2rg,3=2rM,4=Lng,5=LnM)
-1            # of lookahead depth
-0            DEPTHs (>=0)
-0            SWAP (0=bin-exch,1=long,2=mix)
-1            swapping threshold
-1            L1 in (0=transposed,1=no-transposed) form
-1            U  in (0=transposed,1=no-transposed) form
-0            Equilibration (0=no,1=yes)
-8            memory alignment in double (> 0)
-```
 
-### Intel-Specific
+In this example, each process finds out its rank within `MPI_COMM_WORLD` (with `MPI_Comm_rank`) and the total number of processes (with `MPI_Comm_size`) and prints a message including its rank and the total number of processes. When this program is run with MPI across multiple processes, each process will print its unique rank.
 
+#### MPI Ranks as Related to LU Decomposition
+
+LU decomposition involves breaking down a matrix $A$ into the product of a lower triangular matrix $L$ and an upper triangular matrix $U$. See [LU Decomposition](#lu-decomposition-factorization) for an explanation of LU decomposition.
+
+Recall that given a matrix $A$, the goal is to decompose it into:
+
+$$ A = LU $$
+
+where $L$ is a lower triangular matrix and $U$ is an upper triangular matrix. This decomposition is used to solve $Ax = b$ for $x$ by solving two simpler systems:
+
+1. $Ly = b$
+2. $Ux = y$
+
+When MPI is applied to matrices there are two main strategies used:
+
+- **2D Block Decomposition:** The matrix is divided into [blocks](#how-block-size-works) and distributed among the ranks. Each rank works on its block(s) performing necessary operations for the decomposition. This method requires communication between ranks to exchange bordering row and column information during the elimination steps.
+- **1D Block Decomposition:** The matrix is divided into horizontal or vertical strips. Each rank works on its strip, and operations are coordinated to ensure the matrix is correctly modified across all ranks. This can be simpler but might not balance load and communication as effectively as 2D blocking.
+
+### MPI Arguments
+
+### -np (Number of Processes)
+
+- **Usage:** `-np X`
+- **Description:** Specifies the total number of MPI processes to launch for the entire job. This is a global setting, affecting the total count of processes across all nodes involved in the MPI job.
+- **Relation to MPI:** Each MPI process is assigned a unique rank within the MPI communicator (usually `MPI_COMM_WORLD`), starting from 0 up to `X-1` if `-np X` is used. There's a one-to-one correspondence between an MPI process and its rank; thus, `-np` directly dictates the total number of unique ranks in your MPI job.
+
+### -ppn (Processes Per Node) aka perhost
+
+- **Usage:** `-ppn Y`
+- **Description:** Specifies the number of MPI processes to launch per node. This is used to control the distribution of the total MPI processes across the available nodes.
+- **Relation to MPI:** This option does not directly influence the assignment of ranks but rather how those ranks are distributed across nodes. If you have a total of `X` MPI processes (as specified by `-np`) and you want `Y` of those processes on each node, `-ppn` helps achieve that distribution. 
+
+### Relation to Threads
+
+Threads are typically managed by APIs like OpenMP or the threading facilities within the programming language being used (e.g., C++11 threads). 
+
+- **MPI Processes vs. Threads:** Each MPI process can independently execute its code path and has its memory space. Within each MPI process, you might employ threads to further parallelize computation, especially to leverage multicore processors effectively. The use of threads is completely independent of the distribution of MPI processes managed by `-np` and `-ppn`.
+- **OpenMP and MPI:** For hybrid MPI/OpenMP applications, the number of threads per MPI process is usually controlled by setting environment variables like `OMP_NUM_THREADS`.
+
+### Practical Example
+
+Let's say you have a cluster with 4 nodes, and you intend to run a total of 8 MPI processes.
+
+- Using `-np 8` tells MPI to start a total of 8 processes.
+- If you also specify `-ppn 2`, it instructs MPI to distribute these processes so that each of the 4 nodes runs 2 processes.
+
+In this setup, each MPI process operates independently (with its rank), and you could further parallelize each process internally using threads, e.g., via OpenMP, by setting `OMP_NUM_THREADS` appropriately for each process.
+
+#### A Note About MPI Implementations
+
+Intel has [its own MPI implementation](https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-windows/2023-0/overview-intel-distribution-for-linpack-benchmark.html). You can use [OpenMP with it](https://www.intel.com/content/www/us/en/developer/articles/technical/hybrid-applications-mpi-openmp.html).
+
+## Run Against a Single Node
+
+### Install
+
+1. Download from [here](https://downloadmirror.intel.com/793598/l_onemklbench_p_2024.0.0_49515.tgz)
+2. Download MPI from [here](https://registrationcenter-download.intel.com/akdlm/IRC_NAS/2c45ede0-623c-4c8e-9e09-bed27d70fa33/l_mpi_oneapi_p_2021.11.0.49513.sh)
 Intel has prepackaged binaries for different architectures. For example, below is the file for running against Xeon:
 
 ```bash
@@ -780,3 +885,68 @@ arch=xeon64
 ```
 
 It takes care of NUMA-alignment, selecting the amount of memory, and memory alignment all as part of the xlinpack binary. Ex: the `numactl --interleave=all` command automatically interleaves memory across all numa nodes for you.
+
+### Running the Code
+
+```bash
+cd /home/grant/Downloads/benchmarks_2024.0/linux/share/mkl/benchmarks/linpack
+./runme_xeon64
+```
+
+## Run on a Cluster w/SLURM
+
+### Gain Access to Cluster
+
+```bash
+[grant@mlogin01 current]$ pwd
+/cm/shared/docs/slurm/current
+[grant@mlogin01 current]$ ls
+AUTHORS  COPYING  DISCLAIMER  NEWS  README.rst  RELEASE_NOTES
+[grant@mlogin01 current]$ salloc -p 74F3 -t 0:30:00 -N 1
+salloc: Pending job allocation 18688
+salloc: job 18688 queued and waiting for resources
+salloc: job 18688 has been allocated resources
+salloc: Granted job allocation 18688
+salloc: Waiting for resource configuration
+salloc: Nodes m1-04 are ready for job
+[grant@m1-04 current]$ ls /cm/shared/docs/slurm/current/
+AUTHORS  COPYING  DISCLAIMER  NEWS  README.rst  RELEASE_NOTES
+```
+
+### Running Job
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=linpack
+#SBATCH --output=linpack_%j.out
+#SBATCH --partition=8480         # Specify the partition
+#SBATCH --nodes=2               # Adjust based on how many nodes you want to use
+#SBATCH --ntasks-per-node=8     # Assuming you want to utilize all cores
+#SBATCH --time=0:30:00          # Set the time limit; adjust as necessary
+#SBATCH --exclusive              # Optional: Request exclusive access to the nodes
+
+# Load the Intel MPI module
+module load intel/mpi/2019u12
+
+# Navigate to the directory containing the LINPACK files
+cd /home/grant/benchmarks_2024.0/linux/share/mkl/benchmarks/mp_linpack
+
+# Run the LINPACK benchmark
+bash runme_intel64_dynamic
+```
+
+## Useful Commands
+
+- **Check Module Availability**: `module avail`
+- **List partitions and node availability**: `sinfo`
+- **Allocate a node interactively**: `srun --partition 8480 --nodes=1 --ntasks=1 --time=01:00:00 --pty $SHELL`
+- **Check the job queue**: `squeue`
+- **Get Information on a Job**: `sacct --job=249580`
+
+## Useful Links
+
+- [How to use MPI with OpenMP or multi-threaded Intel MKL](https://researchcomputing.princeton.edu/faq/how-to-use-openmpi-with-o)
+- [HPL.dat Parameters](https://www.netlib.org/benchmark/hpl/tuning.html)
+- [MPI Explained PPT](https://www.uio.no/studier/emner/matnat/ifi/INF3380/v11/undervisningsmateriale/inf3380-week06.pdf)
+- [Intel MKL Download](https://downloadmirror.intel.com/793598/l_onemklbench_p_2024.0.0_49515.tgz)
+
