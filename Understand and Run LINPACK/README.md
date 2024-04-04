@@ -45,10 +45,25 @@
     - [Install](#install-1)
     - [Running the Code](#running-the-code)
   - [Run on a Cluster w/SLURM](#run-on-a-cluster-wslurm)
+    - [Configure runme\_intel64\_dynamic](#configure-runme_intel64_dynamic)
     - [Gain Access to Cluster](#gain-access-to-cluster)
     - [Running Job](#running-job)
   - [Useful Commands](#useful-commands)
   - [Useful Links](#useful-links)
+  - [TODO NOTES](#todo-notes)
+  - [Run a Job in SLURM that Gives You Node Access](#run-a-job-in-slurm-that-gives-you-node-access)
+  - [How does `-pernode / -ppn` work?](#how-does--pernode---ppn-work)
+    - [I\_MPI\_PERHOST](#i_mpi_perhost)
+      - [Syntax](#syntax)
+      - [Argument](#argument)
+      - [Description](#description)
+    - [I\_MPI\_JOB\_RESPECT\_PROCESS\_PLACEMENT](#i_mpi_job_respect_process_placement)
+      - [Syntax](#syntax-1)
+      - [Argument](#argument-1)
+      - [Description](#description-1)
+    - [Understanding What Rank and Node Mean in Output](#understanding-what-rank-and-node-mean-in-output)
+  - [PPN Reverse Engineering](#ppn-reverse-engineering)
+    - [Usage in `do_spawn`](#usage-in-do_spawn)
 
 
 The LINPACK Benchmarkfocuses on solving a dense system of linear equations. The core of the LINPACK Benchmark involves measuring the performance of a system when solving the equation $Ax = b$, where $A$ is a dense $n \times n$ matrix, $x$ is a vector of unknowns, and $b$ is a vector of knowns. The benchmark assesses the system's floating-point computation capabilities, primarily through the execution speed of Double Precision General Matrix Multiply (DGEMM) operations and the LU decomposition of the matrix $A$.
@@ -895,6 +910,10 @@ cd /home/grant/Downloads/benchmarks_2024.0/linux/share/mkl/benchmarks/linpack
 
 ## Run on a Cluster w/SLURM
 
+### Configure runme_intel64_dynamic
+
+
+
 ### Gain Access to Cluster
 
 ```bash
@@ -950,3 +969,147 @@ bash runme_intel64_dynamic
 - [MPI Explained PPT](https://www.uio.no/studier/emner/matnat/ifi/INF3380/v11/undervisningsmateriale/inf3380-week06.pdf)
 - [Intel MKL Download](https://downloadmirror.intel.com/793598/l_onemklbench_p_2024.0.0_49515.tgz)
 
+## TODO NOTES
+
+- mpirun ONLY RUNS ONCE ON THE CLUSTER - SLURM basically doesn't matter
+- They use a custom threading thing. Not OpenMP.
+- Spawned processes is controlled by the number of Ps and Qs NOT -np. -np must match but it is not the driving factor 
+- SLURM gives MPIRUN the list of hosts
+
+## Run a Job in SLURM that Gives You Node Access
+
+```bash
+!/bin/bash
+#SBATCH --time=1:00:00
+#SBATCH --nodes=3
+#SBATCH --exclusive
+#SBATCH --job-name=my_lightweight_job
+#SBATCH --ntasks-per-node=1
+#SBATCH --partition=8480
+#SBATCH --output=my_job_output_%j.txt
+#SBATCH --error=my_job_error_%j.txt
+
+# Run a minimal bash loop
+while true; do
+    echo "Timestamp: $(date)" >> /tmp/keepalive_${SLURM_JOB_ID}.txt
+    sleep 300 # Sleep for 5 minutes
+done
+```
+
+## How does `-pernode / -ppn` work?
+
+When you first look at this, it is very confusing. [`mpirun`](./binary/mpirun) is launched by either by runme_intel_dynamic or directly, and `mpirun` then launches mpiexec.hydra, which then launches multiple instances of runme_intel64_prv, which then launches xhpl_intel64_dynamic. Hydra's options are defined [here](https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/global-hydra-options.html). I_MPI_PERHOST is defined as:
+
+### I_MPI_PERHOST
+
+Define the default behavior for the `-perhost` option of the `mpiexec.hydra` command.
+
+#### Syntax
+
+`I_MPI_PERHOST=<value>`
+
+#### Argument
+
+| `<value>`     | Description                                     |
+|---------------|-------------------------------------------------|
+| `<value>`     | Define a value used for `-perhost` by default   |
+| `integer > 0` | Exact value for the option                      |
+| `all`         | All logical CPUs on the node                    |
+| `allcores`    | All cores (physical CPUs) on the node. This is the default value. |
+
+#### Description
+
+Set this environment variable to define the default behavior for the `-perhost` option. Unless specified explicitly, the `-perhost` option is implied with the value set in `I_MPI_PERHOST`.
+
+> **NOTE:** When running under a job scheduler, this environment variable is ignored by default. To control process placement with `I_MPI_PERHOST`, disable the [`I_MPI_JOB_RESPECT_PROCESS_PLACEMENT`](#I_MPI_JOB_RESPECT_PROCESS_PLACEMENT) variable.
+
+### I_MPI_JOB_RESPECT_PROCESS_PLACEMENT
+
+Specify whether to use the process-per-node placement provided by the job scheduler, or set explicitly.
+
+#### Syntax
+
+`I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=<arg>`
+
+#### Argument
+
+| `<value>`                  | Description                                                        |
+|----------------------------|--------------------------------------------------------------------|
+| `<value>`                  | Binary indicator                                                   |
+| `enable | yes | on | 1`    | Use the process placement provided by job scheduler. This is the default value |
+| `disable | no | off | 0`   | Do not use the process placement provided by job scheduler        |
+
+#### Description
+
+If the variable is set, the Hydra process manager uses the process placement provided by job scheduler (default). In this case, the `-ppn` option and its equivalents are ignored. If you disable the variable, the Hydra process manager uses the process placement set with `-ppn` or its equivalents.
+
+### Understanding What Rank and Node Mean in Output
+
+In your output you will see things like:
+
+```
+RANK=5, NODE=5-5
+RANK=3, NODE=3-3
+RANK=0, NODE=0-0
+RANK=1, NODE=1-1
+RANK=6, NODE=6-6
+RANK=2, NODE=2-2
+RANK=7, NODE=7-7
+RANK=4, NODE=4-4
+```
+
+But what does that mean? In Intel's scheme, this is printed by this line in [runme_intel64_prv](./binary/runme_intel64_prv):
+
+```bash
+echo RANK=${PMI_RANK}, NODE=${HPL_HOST_NODE}, HPL_DEVICE=${HPL_DEVICE}
+```
+
+Let's break down what is going on here. 
+
+## PPN Reverse Engineering
+
+![](images/2024-03-28-17-41-03.png)
+
+- Location in data section. `aPpn` should be an offset in memory to where the string ppn is stored and `aPerhost` is where the perhost string is.
+
+![](images/2024-03-28-17-43-03.png)
+
+- `ppn_help_fn` prints the help for `ppn`. `ppn_fn` should be the function for handling `ppn` itself
+- The below code converts the string `ppn` to a long and then places it in a configuration table (called cs:var) at offset 80h. This is where we need to look for references. `var` itself is in the global offset table (a table for global variables).
+
+![](images/2024-03-28-18-11-33.png)
+
+![](images/2024-03-28-18-08-32.png)
+
+- Now that we know about the configuration table, we need to find any instances that refer to `cs:var+80h`. The bad part is there is no easy way to search this because there are 151 individual references to `cs:var` and since `80h` is added after the fact there is no definitive way to find what we want.
+
+### Usage in `do_spawn`
+
+- We see it gets loaded inside `do_spawn` here:
+
+```assembly
+add     rsp, 0FFFFFFFFFFFFFFF0h
+mov     rdi, rsi        ; info_host
+lea     rcx, [rsp+3FE8h+node_count] ; node_count
+lea     r8, [rsp+3FE8h+node_list] ; node_list
+lea     r9, [rsp+3FE8h+max_node_count] ; max_node_count
+mov     [rsp+3FE8h+bstrap_params], r14 ; node_map
+mov     r10, [rcx-0Ch]
+mov     esi, [rcx+54h]  ; num_procs
+mov     edx, [r10+80h]  ; ppn
+call    HYD_spawn_handle_hosts_info
+add     rsp, 10h
+test    eax, eax
+jnz     loc_413A7A
+```
+
+- This jumps to `HYD_spawn_handle_hosts_info` which as the name implies seems to be some function for processing hosts_info:
+
+```assembly
+mov     [rsp+68h+num_procs], r15d
+mov     [rsp+68h+node_count], r12
+mov     [rsp+68h+nodes], r14
+mov     [rsp+68h+max_node_count], r13
+```
+
+- so we can see ppn being placed on the stack at the location of the `num_procs` variable.

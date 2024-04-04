@@ -1,0 +1,137 @@
+[grant@zlogin01 ~]$ cat ~/process_list_with_per_host_set_to_2.txt
+z1-34:
+grant    330706 330706 330703  0 17:03 ?        00:00:00 /bin/bash ./runme_intel64_prv
+grant    330707 330707 330703  0 17:03 ?        00:00:00 /bin/bash ./runme_intel64_prv
+grant    330708 330708 330703  0 17:03 ?        00:00:00 /bin/bash ./runme_intel64_prv
+grant    330709 330709 330703  0 17:03 ?        00:00:00 /bin/bash ./runme_intel64_prv
+grant    330710 330710 330708 96 17:03 ?        00:02:11 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330716 330708  0 17:03 ?        00:00:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330721 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330725 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330736 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330740 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330744 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330748 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330752 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330756 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330759 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330762 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330764 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330766 330708 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330710 330767 330708 96 17:03 ?        00:02:11 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330711 330707 96 17:03 ?        00:02:11 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330715 330707  0 17:03 ?        00:00:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330720 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330723 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330727 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330729 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330731 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330733 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330735 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330739 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330742 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330746 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330751 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330754 330707 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330711 330768 330707 96 17:03 ?        00:02:11 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330712 330709 96 17:03 ?        00:02:11 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330718 330709  0 17:03 ?        00:00:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330722 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330726 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330737 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330741 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330745 330709 88 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330749 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330753 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330757 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330760 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330761 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330763 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330765 330709 88 17:03 ?        00:02:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330712 330769 330709 96 17:03 ?        00:02:11 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330713 330706 96 17:03 ?        00:02:11 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330717 330706  0 17:03 ?        00:00:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330719 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330724 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330728 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330730 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330732 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330734 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330738 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330743 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330747 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330750 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330755 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330758 330706 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    330713 330770 330706 96 17:03 ?        00:02:11 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    331326 331326 331321  0 17:05 ?        00:00:00 /usr/bin/bash -c echo $(hostname): && ps -efT | grep intel
+grant    331330 331330 331326  0 17:05 ?        00:00:00 grep intel
+z1-33:
+grant    391455 391455 391436  0 17:03 ?        00:00:00 /bin/sh /home/modules/core/apps/oneapi/2023.0.0/mpi/2021.8.0/bin/mpirun -perhost 2 -np 8 -genv NUMA_PER_MPI=1 ./runme_intel64_prv
+grant    391461 391461 391455  0 17:03 ?        00:00:00 mpiexec.hydra -perhost 2 -np 8 -genv NUMA_PER_MPI=1 ./runme_intel64_prv
+grant    391479 391479 391476  0 17:03 ?        00:00:00 /bin/bash ./runme_intel64_prv
+grant    391480 391480 391476  0 17:03 ?        00:00:00 /bin/bash ./runme_intel64_prv
+grant    391481 391481 391476  0 17:03 ?        00:00:00 /bin/bash ./runme_intel64_prv
+grant    391482 391482 391476  0 17:03 ?        00:00:00 /bin/bash ./runme_intel64_prv
+grant    391483 391483 391480 96 17:03 ?        00:02:12 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391490 391480  0 17:03 ?        00:00:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391492 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391495 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391499 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391501 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391503 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391504 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391508 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391512 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391515 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391517 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391521 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391523 391480 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391483 391541 391480 97 17:03 ?        00:02:12 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391484 391479 96 17:03 ?        00:02:12 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391488 391479  0 17:03 ?        00:00:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391493 391479 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391496 391479 89 17:03 ?        00:02:02 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391500 391479 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391502 391479 89 17:03 ?        00:02:02 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391505 391479 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391509 391479 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391511 391479 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391514 391479 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391518 391479 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391520 391479 89 17:03 ?        00:02:02 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391524 391479 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391526 391479 89 17:03 ?        00:02:02 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391484 391543 391479 97 17:03 ?        00:02:12 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391485 391481 96 17:03 ?        00:02:12 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391489 391481  0 17:03 ?        00:00:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391494 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391498 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391507 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391510 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391513 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391516 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391519 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391522 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391525 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391527 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391529 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391530 391481 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391485 391542 391481 97 17:03 ?        00:02:12 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391486 391482 96 17:03 ?        00:02:12 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391491 391482  0 17:03 ?        00:00:00 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391497 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391506 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391528 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391531 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391532 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391533 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391534 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391535 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391536 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391537 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391538 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391539 391482 89 17:03 ?        00:02:01 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    391486 391540 391482 97 17:03 ?        00:02:12 /home/grant/mp_linpack/xhpl_intel64_dynamic
+grant    392104 392104 392097  0 17:05 ?        00:00:00 /usr/bin/bash -c echo $(hostname): && ps -efT | grep intel
+grant    392108 392108 392104  0 17:05 ?        00:00:00 grep intel
