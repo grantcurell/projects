@@ -46,6 +46,7 @@ Assuming you change nothing, Intel's MKL has a fairly complex process flow that 
 
 TODO - ADD LINKS
 
+```
 +---------------------+
 | runme_intel_dynamic |
 +---------------------+
@@ -69,6 +70,8 @@ TODO - ADD LINKS
    +-----------------------+
    | xhpl_intel64_dynamic  |
    +-----------------------+
+```
+
 
 TODO - figure out exactly how many of each and reword the below.
 
