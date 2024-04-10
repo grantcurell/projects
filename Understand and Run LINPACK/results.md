@@ -51,6 +51,13 @@
     - [runme](#runme-6)
     - [HPL.dat](#hpldat-6)
     - [Results](#results-7)
+  - [Removed SLURM](#removed-slurm)
+    - [Run 1](#run-1)
+      - [Notes](#notes-7)
+      - [Results](#results-8)
+    - [Run 2 Fri Apr  5 11:15:50 CDT 2024](#run-2-fri-apr--5-111550-cdt-2024)
+      - [Notes](#notes-8)
+      - [Results](#results-9)
 
 
 ## Host Info
@@ -2406,3 +2413,663 @@ Last Year  = 34C ( 93.2F ) [At Wed, 06 Dec 2023 13:46:21]
 Done: Tue Mar 26 15:11:05 CDT 2024
 ```
 
+## Removed SLURM
+
+### Run 1
+
+#### Notes
+
+- Suggestion from Intel support
+
+#### Results
+
+```bash
+Binary name: 
+-rwxr-xr-x 1 grant internal 7810144 Feb 20 11:48 xhpl_intel64_dynamic
+This script: 
+#!/bin/bash
+#===============================================================================
+# Copyright 2001-2023 Intel Corporation.
+#
+# This software and the related documents are Intel copyrighted  materials,  and
+# your use of  them is  governed by the  express license  under which  they were
+# provided to you (License).  Unless the License provides otherwise, you may not
+# use, modify, copy, publish, distribute,  disclose or transmit this software or
+# the related documents without Intel's prior written permission.
+#
+# This software and the related documents  are provided as  is,  with no express
+# or implied  warranties,  other  than those  that are  expressly stated  in the
+# License.
+#===============================================================================
+
+echo "This is a SAMPLE run script.  Change it to reflect the correct number"
+echo "of CPUs/threads, number of nodes, MPI processes per node, etc.."
+
+# Set total number of MPI processes for the HPL (should be equal to PxQ).
+export MPI_PROC_NUM=8
+
+# Set the MPI per node for each node.
+# MPI_PER_NODE should be equal to 1 or number of sockets on the system.
+# It will be same as -perhost or -ppn paramaters in mpirun/mpiexec.
+export MPI_PER_NODE=8
+
+# Set the number of NUMA nodes per MPI. (MPI_PER_NODE * NUMA_PER_MPI)
+# should be equal to number of NUMA nodes on the system.
+export NUMA_PER_MPI=1
+
+#====================================================================
+# Following option is for Intel(R) Optimized HPL-AI Benchmark
+#====================================================================
+
+# Comment in to enable Intel(R) Optimized HPL-AI Benchmark
+# export USE_HPL_AI=1
+
+#====================================================================
+# Following option is for Intel(R) Optimized HPL-AI Benchmark for GPU
+#====================================================================
+
+# By default, Intel(R) Optimized HPL-AI Benchmark for GPU will use
+# Bfloat16 matrix. If you prefer less iterations, you could choose
+# float based matrix. But it will reduce maximum problem size. 
+# export USE_BF16MAT=0
+
+#====================================================================
+# Following options are for Intel(R) Distribution for LINPACK
+# Benchmark for GPU and Intel(R) Optimized HPL-AI Benchmark for GPU
+#====================================================================
+
+# Comment in to enable GPUs
+# export USE_HPL_GPU=1
+
+# Select backend driver for GPU (OpenCL ... 0, Level Zero ... 1)
+# export HPL_DRIVER=0
+
+# Number of stacks on each GPU
+# export HPL_NUMSTACK=2
+
+# Total number of GPUs on each node
+# export HPL_NUMDEV=2
+
+#====================================================================
+
+export OUT=xhpl_intel64_dynamic_outputs.txt
+
+if [ -z ${USE_HPL_AI} ]; then
+if [ -z ${USE_HPL_GPU} ]; then
+export HPL_EXE=xhpl_intel64_dynamic
+else
+export HPL_EXE=xhpl_intel64_dynamic_gpu
+fi
+else
+if [ -z ${USE_HPL_GPU} ]; then
+export HPL_EXE=xhpl-ai_intel64_dynamic
+else
+export HPL_EXE=xhpl-ai_intel64_dynamic_gpu
+fi
+fi
+
+# Unset this variable to avoid initialization failure
+unset I_MPI_OFFLOAD
+
+echo -n "This run was done on: "
+date
+
+# Capture some meaningful data for future reference:
+echo -n "This run was done on: " >> $OUT
+date >> $OUT
+echo "HPL.dat: " >> $OUT
+cat HPL.dat >> $OUT
+echo "Binary name: " >> $OUT
+ls -l ${HPL_EXE} >> $OUT
+echo "This script: " >> $OUT
+cat runme_intel64_dynamic >> $OUT
+echo "Environment variables: " >> $OUT
+env >> $OUT
+echo "Actual run: " >> $OUT
+
+# Environment variables can also be also be set on the Intel(R) MPI Library command
+# line using the -genv option (to appear before the -np 1):
+
+mpirun -hostfile hosts -perhost ${MPI_PER_NODE} -np ${MPI_PROC_NUM} ./runme_intel64_prv "$@" | tee -a $OUT
+#mpirun -hostfile hosts -np ${MPI_PROC_NUM} ./runme_intel64_prv "$@" | tee -a $OUT
+
+echo -n "Done: " >> $OUT
+date >> $OUT
+
+echo -n "Done: "
+date
+Environment variables: 
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=01;05;37;41:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=01;36:*.au=01;36:*.flac=01;36:*.m4a=01;36:*.mid=01;36:*.midi=01;36:*.mka=01;36:*.mp3=01;36:*.mpc=01;36:*.ogg=01;36:*.ra=01;36:*.wav=01;36:*.oga=01;36:*.opus=01;36:*.spx=01;36:*.xspf=01;36:
+LD_LIBRARY_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib:/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/lib:/cm/shared/apps/slurm/current/lib64/slurm:/cm/shared/apps/slurm/current/lib64
+__LMOD_REF_COUNT_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/bin:1;/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/bin:1;/cm/shared/apps/slurm/current/sbin:1;/cm/shared/apps/slurm/current/bin:1;/usr/local/bin:1;/usr/bin:1;/usr/local/sbin:1;/usr/sbin:1;/opt/dell/srvadmin/bin:1;/home/grant/.local/bin:1;/home/grant/bin:1
+_ModuleTable002_=WyJzdGFja0RlcHRoIl09MCxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iY29yZSIsfSxbImludGVsL29uZUFQSSJdPXtbImZuIl09Ii9ob21lL21vZHVsZXMvY29yZS9tb2R1bGVmaWxlcy9pbnRlbC9vbmVBUEkvMjAyNC4xLjAubHVhIixbImZ1bGxOYW1lIl09ImludGVsL29uZUFQSS8yMDI0LjEuMCIsWyJsb2FkT3JkZXIiXT01LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImludGVsL29uZUFQSS8yMDI0LjEuMCIsfSxtcGk9e1siZm4iXT0iL2hvbWUvbW9kdWxlcy9jb3JlL2NvbXBpbGVyL21vZHVsZWZpbGVzL29uZUFQSS0yMDI0LjEuMC9tcGkvMjAyMS4xMiIsWyJmdWxsTmFtZSJdPSJtcGkvMjAy
+SSH_CONNECTION=10.140.50.2 44338 10.140.52.33 22
+LANG=en_US.UTF-8
+HISTCONTROL=ignoredups
+HOSTNAME=z1-33
+LMOD_SYSTEM_DEFAULT_MODULES=DefaultModules
+OLDPWD=/home/grant/benchmarks_2024.1/linux/share/mkl/benchmarks
+__LMOD_REF_COUNT__LMFILES_=/cm/local/modulefiles/shared:1;/usr/share/modulefiles/DefaultModules.lua:1;/cm/local/modulefiles/slurm/zenith/20.02.7:1;/cm/shared/modulefiles/core.lua:1;/home/modules/core/modulefiles/intel/oneAPI/2024.1.0.lua:1;/home/modules/core/compiler/modulefiles/oneAPI-2024.1.0/mpi/2021.12:1
+OUT=xhpl_intel64_dynamic_outputs.txt
+__LMOD_REF_COUNT_LD_LIBRARY_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib:1;/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/lib:1;/cm/shared/apps/slurm/current/lib64/slurm:1;/cm/shared/apps/slurm/current/lib64:1
+FI_PROVIDER_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib/prov:/usr/lib64/libfabric
+_ModuleTable004_=XT0xLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJzbHVybS96ZW5pdGgiLH0sfSxtcGF0aEE9eyIvaG9tZS9tb2R1bGVzL2NvcmUvY29tcGlsZXIvbW9kdWxlZmlsZXMvb25lQVBJLTIwMjQuMS4wIiwiL2hvbWUvbW9kdWxlcy9jb3JlL21vZHVsZWZpbGVzIiwiL2NtL2xvY2FsL21vZHVsZWZpbGVzIiwiL2V0Yy9tb2R1bGVmaWxlcyIsIi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMiLCIvdXNyL3NoYXJlL01vZHVsZXMvbW9kdWxlZmlsZXMiLCIvY20vc2hhcmVkL21vZHVsZWZpbGVzIix9LFsic3lzdGVtQmFzZU1QQVRIIl09Ii9jbS9sb2NhbC9tb2R1bGVmaWxlczovY20vc2hhcmVkL21vZHVsZWZpbGVzOi9ldGMvbW9kdWxlZmlsZXM6L3Vzci9zaGFyZS9tb2R1bGVm
+S_COLORS=auto
+which_declare=declare -f
+CLASSPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/share/java/mpi.jar
+XDG_SESSION_ID=15518
+USER=grant
+__LMOD_REF_COUNT_MODULEPATH=/home/modules/core/compiler/modulefiles/oneAPI-2024.1.0:1;/home/modules/core/modulefiles:1;/cm/local/modulefiles:1;/etc/modulefiles:1;/usr/share/modulefiles:1;/usr/share/Modules/modulefiles:1;/cm/shared/modulefiles:2
+__LMOD_REF_COUNT_LOADEDMODULES=shared:1;DefaultModules:1;slurm/zenith/20.02.7:1;core:1;intel/oneAPI/2024.1.0:1;mpi/2021.12:1
+PWD=/home/grant/benchmarks_2024.1/linux/share/mkl/benchmarks/mp_linpack
+ENABLE_LMOD=1
+HOME=/home/grant
+LMOD_COLORIZE=yes
+SSH_CLIENT=10.140.50.2 44338 22
+LMOD_VERSION=8.2.4
+CPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/include:/cm/shared/apps/slurm/current/include
+NUMA_PER_MPI=1
+LMOD_SETTARG_CMD=:
+BASH_ENV=/usr/share/lmod/lmod/init/bash
+MPI_PROC_NUM=8
+__LMOD_REF_COUNT_LIBRARY_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib:1;/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/lib:1;/cm/shared/apps/slurm/current/lib64/slurm:1;/cm/shared/apps/slurm/current/lib64:1
+LIBRARY_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib:/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/lib:/cm/shared/apps/slurm/current/lib64/slurm:/cm/shared/apps/slurm/current/lib64
+LMOD_sys=Linux
+MPI_PER_NODE=8
+_ModuleTable001_=X01vZHVsZVRhYmxlXz17WyJNVHZlcnNpb24iXT0zLFsiY19yZWJ1aWxkVGltZSJdPTg2NDAwLFsiY19zaG9ydFRpbWUiXT1mYWxzZSxkZXB0aFQ9e30sZmFtaWx5PXt9LG1UPXtEZWZhdWx0TW9kdWxlcz17WyJmbiJdPSIvdXNyL3NoYXJlL21vZHVsZWZpbGVzL0RlZmF1bHRNb2R1bGVzLmx1YSIsWyJmdWxsTmFtZSJdPSJEZWZhdWx0TW9kdWxlcyIsWyJsb2FkT3JkZXIiXT0yLHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09IkRlZmF1bHRNb2R1bGVzIix9LGNvcmU9e1siZm4iXT0iL2NtL3NoYXJlZC9tb2R1bGVmaWxlcy9jb3JlLmx1YSIsWyJmdWxsTmFtZSJdPSJjb3JlIixbImxvYWRPcmRlciJdPTQscHJvcFQ9e30s
+SLURM_CONF=/cm/shared/apps/slurm/var/etc/zenith/slurm.conf
+LOADEDMODULES=shared:DefaultModules:slurm/zenith/20.02.7:core:intel/oneAPI/2024.1.0:mpi/2021.12
+__LMOD_REF_COUNT_MANPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/share/man:1;/cm/shared/apps/slurm/current/man:1;/usr/share/lmod/lmod/share/man:1;/usr/local/share/man:1;/usr/share/man:1;/cm/local/apps/environment-modules/current/share/man:1
+_ModuleTable003_=MS4xMiIsWyJsb2FkT3JkZXIiXT02LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09Im1waS8yMDIxLjEyIix9LHNoYXJlZD17WyJmbiJdPSIvY20vbG9jYWwvbW9kdWxlZmlsZXMvc2hhcmVkIixbImZ1bGxOYW1lIl09InNoYXJlZCIsWyJsb2FkT3JkZXIiXT0xLHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTEsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09InNoYXJlZCIsfSxzbHVybT17WyJmbiJdPSIvY20vbG9jYWwvbW9kdWxlZmlsZXMvc2x1cm0vemVuaXRoLzIwLjAyLjciLFsiZnVsbE5hbWUiXT0ic2x1cm0vemVuaXRoLzIwLjAyLjciLFsibG9hZE9yZGVyIl09Myxwcm9wVD17fSxbInN0YWNrRGVwdGgi
+LMOD_ROOT=/usr/share/lmod
+SSH_TTY=/dev/pts/1
+MAIL=/var/spool/mail/grant
+LMOD_arch=x86_64
+__Init_Default_Modules=1
+CMD_WLM_CLUSTER_NAME=zenith
+SHELL=/bin/bash
+TERM=screen
+HPL_EXE=xhpl_intel64_dynamic
+_ModuleTable_Sz_=5
+__LMOD_REF_COUNT_CPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/include:1;/cm/shared/apps/slurm/current/include:1
+SPACK_SYSTEM_CONFIG=/home/modules/core/spack/etc
+SHLVL=2
+MANPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/share/man:/cm/shared/apps/slurm/current/man:/usr/share/lmod/lmod/share/man:/usr/local/share/man:/usr/share/man:/cm/local/apps/environment-modules/current/share/man
+__LMOD_REF_COUNT_CLASSPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/share/java/mpi.jar:1
+LMOD_PREPEND_BLOCK=normal
+MODULEPATH=/home/modules/core/compiler/modulefiles/oneAPI-2024.1.0:/home/modules/core/modulefiles:/cm/local/modulefiles:/etc/modulefiles:/usr/share/modulefiles:/usr/share/Modules/modulefiles:/cm/shared/modulefiles
+LOGNAME=grant
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/11208/bus
+CLUSTER=zenith
+XDG_RUNTIME_DIR=/run/user/11208
+MODULEPATH_ROOT=/usr/share/modulefiles
+PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/bin:/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/bin:/cm/shared/apps/slurm/current/sbin:/cm/shared/apps/slurm/current/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/dell/srvadmin/bin:/home/grant/.local/bin:/home/grant/bin
+_LMFILES_=/cm/local/modulefiles/shared:/usr/share/modulefiles/DefaultModules.lua:/cm/local/modulefiles/slurm/zenith/20.02.7:/cm/shared/modulefiles/core.lua:/home/modules/core/modulefiles/intel/oneAPI/2024.1.0.lua:/home/modules/core/compiler/modulefiles/oneAPI-2024.1.0/mpi/2021.12
+MODULESHOME=/usr/share/lmod/lmod
+LMOD_SETTARG_FULL_SUPPORT=no
+I_MPI_ROOT=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12
+HISTSIZE=1000
+LMOD_PKG=/usr/share/lmod/lmod
+LMOD_CMD=/usr/share/lmod/lmod/libexec/lmod
+_ModuleTable005_=aWxlczovdXNyL3NoYXJlL01vZHVsZXMvbW9kdWxlZmlsZXMiLH0=
+LESSOPEN=||/usr/bin/lesspipe.sh %s
+LMOD_FULL_SETTARG_SUPPORT=no
+LMOD_DIR=/usr/share/lmod/lmod/libexec
+BASH_FUNC_which%%=() {  ( alias;
+ eval ${which_declare} ) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot $@
+}
+BASH_FUNC_module%%=() {  eval $($LMOD_CMD bash "$@") && eval $(${LMOD_SETTARG_CMD:-:} -s sh)
+}
+BASH_FUNC_ml%%=() {  eval $($LMOD_DIR/ml_cmd "$@")
+}
+_=/usr/bin/env
+Actual run: 
+RANK=0, NODE=0-0
+RANK=6, NODE=6-6
+RANK=7, NODE=7-7
+RANK=5, NODE=5-5
+RANK=1, NODE=1-1
+RANK=2, NODE=2-2
+RANK=3, NODE=3-3
+RANK=4, NODE=4-4
+================================================================================
+HPLinpack 2.3  --  High-Performance Linpack benchmark  --   December 2, 2018
+Written by A. Petitet and R. Clint Whaley,  Innovative Computing Laboratory, UTK
+Modified by Piotr Luszczek, Innovative Computing Laboratory, UTK
+Modified by Julien Langou, University of Colorado Denver
+================================================================================
+
+An explanation of the input/output parameters follows:
+T/V    : Wall time / encoded variant.
+N      : The order of the coefficient matrix A.
+NB     : The partitioning blocking factor.
+P      : The number of process rows.
+Q      : The number of process columns.
+Time   : Time in seconds to solve the linear system.
+Gflops : Rate of execution for solving the linear system.
+
+The following parameter values will be used:
+
+N        :   80000 
+NB       :     384 
+PMAP     : Column-major process mapping
+P        :       4 
+Q        :       2 
+PFACT    :   Right 
+NBMIN    :       2 
+NDIV     :       2 
+RFACT    :   Crout 
+BCAST    :   1ring 
+DEPTH    :       0 
+SWAP     : Binary-exchange
+L1       : no-transposed form
+U        : no-transposed form
+EQUIL    : no
+ALIGN    :    8 double precision words
+
+--------------------------------------------------------------------------------
+
+- The matrix A is randomly generated for each test.
+- The following scaled residual check will be computed:
+      ||Ax-b||_oo / ( eps * ( || x ||_oo * || A ||_oo + || b ||_oo ) * N )
+- The relative machine precision (eps) is taken to be               1.110223e-16
+- Computational tests pass if scaled residuals are less than                 1.0
+
+z1-33           : Column=000768 Fraction=0.005 Kernel=    0.19 Mflops=11716921.90
+z1-33           : Column=001152 Fraction=0.010 Kernel=7363621.65 Mflops=9759666.47
+z1-33           : Column=001536 Fraction=0.015 Kernel=6612879.10 Mflops=8731528.63
+z1-33           : Column=001920 Fraction=0.020 Kernel=6950926.49 Mflops=8351479.45
+z1-33           : Column=002304 Fraction=0.025 Kernel=6924126.78 Mflops=8059259.53
+z1-33           : Column=002688 Fraction=0.030 Kernel=6765311.76 Mflops=7874392.60
+z1-33           : Column=003072 Fraction=0.035 Kernel=6873783.94 Mflops=7686750.05
+z1-33           : Column=003456 Fraction=0.040 Kernel=7024359.34 Mflops=7625245.21
+z1-33           : Column=003840 Fraction=0.045 Kernel=6893523.56 Mflops=7501441.99
+z1-33           : Column=004224 Fraction=0.050 Kernel=6926701.78 Mflops=7482072.71
+z1-33           : Column=004608 Fraction=0.055 Kernel=6718662.00 Mflops=7359253.03
+z1-33           : Column=004992 Fraction=0.060 Kernel=6764161.65 Mflops=7382277.10
+z1-33           : Column=005376 Fraction=0.065 Kernel=6662615.33 Mflops=7274460.46
+z1-33           : Column=005760 Fraction=0.070 Kernel=6636785.32 Mflops=7295180.05
+z1-33           : Column=006144 Fraction=0.075 Kernel=6851588.78 Mflops=7216028.17
+z1-33           : Column=006528 Fraction=0.080 Kernel=6850487.39 Mflops=7251642.27
+z1-33           : Column=006912 Fraction=0.085 Kernel=6782708.16 Mflops=7174633.41
+z1-33           : Column=007296 Fraction=0.090 Kernel=6784437.15 Mflops=7200357.88
+z1-33           : Column=007680 Fraction=0.095 Kernel=6727920.97 Mflops=7122304.82
+z1-33           : Column=008064 Fraction=0.100 Kernel=6652066.69 Mflops=7160605.40
+z1-33           : Column=008448 Fraction=0.105 Kernel=6895779.47 Mflops=7096245.40
+z1-33           : Column=008832 Fraction=0.110 Kernel=6861647.32 Mflops=7136957.32
+z1-33           : Column=009216 Fraction=0.115 Kernel=6791848.53 Mflops=7064777.92
+z1-33           : Column=009984 Fraction=0.120 Kernel=6793690.41 Mflops=7045771.43
+z1-33           : Column=010368 Fraction=0.125 Kernel=6749388.09 Mflops=7084333.14
+z1-33           : Column=010752 Fraction=0.130 Kernel=6856061.64 Mflops=7028699.91
+z1-33           : Column=011136 Fraction=0.135 Kernel=6961522.36 Mflops=7065222.47
+z1-33           : Column=011520 Fraction=0.140 Kernel=6876839.39 Mflops=7013362.57
+z1-33           : Column=011904 Fraction=0.145 Kernel=6969524.12 Mflops=7051004.31
+z1-33           : Column=012288 Fraction=0.150 Kernel=6774538.80 Mflops=6993509.61
+z1-33           : Column=012672 Fraction=0.155 Kernel=6979493.10 Mflops=7035167.25
+z1-33           : Column=013056 Fraction=0.160 Kernel=6786957.72 Mflops=6983105.79
+z1-33           : Column=013440 Fraction=0.165 Kernel=7073116.94 Mflops=7020960.90
+z1-33           : Column=013824 Fraction=0.170 Kernel=6816478.09 Mflops=6971082.61
+z1-33           : Column=014208 Fraction=0.175 Kernel=6557207.01 Mflops=7005285.23
+z1-33           : Column=014592 Fraction=0.180 Kernel=7154202.20 Mflops=6966675.88
+z1-33           : Column=014976 Fraction=0.185 Kernel=6849070.75 Mflops=6997789.73
+z1-33           : Column=015360 Fraction=0.190 Kernel=6752580.10 Mflops=6953314.50
+z1-33           : Column=015744 Fraction=0.195 Kernel=6966117.68 Mflops=6985288.95
+z1-33           : Column=016128 Fraction=0.200 Kernel=6956871.18 Mflops=6948461.52
+z1-33           : Column=016512 Fraction=0.205 Kernel=6675480.85 Mflops=6973188.78
+z1-33           : Column=016896 Fraction=0.210 Kernel=6876869.44 Mflops=6940900.05
+z1-33           : Column=017280 Fraction=0.215 Kernel=6585150.57 Mflops=6968534.48
+z1-33           : Column=017664 Fraction=0.220 Kernel=6813042.03 Mflops=6932521.51
+z1-33           : Column=018048 Fraction=0.225 Kernel=6536704.44 Mflops=6961467.67
+z1-33           : Column=018432 Fraction=0.230 Kernel=6649074.79 Mflops=6925063.42
+z1-33           : Column=018816 Fraction=0.235 Kernel=6601383.67 Mflops=6950548.91
+z1-33           : Column=019584 Fraction=0.240 Kernel=6623583.93 Mflops=6940546.93
+z1-33           : Column=019968 Fraction=0.245 Kernel=6802508.47 Mflops=6915730.38
+z1-33           : Column=020352 Fraction=0.250 Kernel=7000766.08 Mflops=6938240.41
+z1-33           : Column=020736 Fraction=0.255 Kernel=6798505.60 Mflops=6910594.47
+z1-33           : Column=021120 Fraction=0.260 Kernel=6642918.92 Mflops=6929815.79
+z1-33           : Column=021504 Fraction=0.265 Kernel=6821280.22 Mflops=6906166.51
+z1-33           : Column=021888 Fraction=0.270 Kernel=6667880.30 Mflops=6923757.15
+z1-33           : Column=022272 Fraction=0.275 Kernel=6785333.55 Mflops=6901454.39
+z1-33           : Column=022656 Fraction=0.280 Kernel=6579022.72 Mflops=6916404.63
+z1-33           : Column=023040 Fraction=0.285 Kernel=6687156.85 Mflops=6897139.71
+z1-33           : Column=023424 Fraction=0.290 Kernel=6498323.61 Mflops=6911070.48
+z1-33           : Column=023808 Fraction=0.295 Kernel=6686128.97 Mflops=6892180.96
+z1-33           : Column=024192 Fraction=0.300 Kernel=6263821.45 Mflops=6905904.15
+z1-33           : Column=024576 Fraction=0.305 Kernel=6850082.25 Mflops=6889335.51
+z1-33           : Column=024960 Fraction=0.310 Kernel=6890655.28 Mflops=6904143.63
+z1-33           : Column=025344 Fraction=0.315 Kernel=6473159.49 Mflops=6881478.56
+z1-33           : Column=025728 Fraction=0.320 Kernel=6555840.26 Mflops=6897980.25
+z1-33           : Column=026112 Fraction=0.325 Kernel=6756174.27 Mflops=6877624.69
+z1-33           : Column=026496 Fraction=0.330 Kernel=6411799.76 Mflops=6893025.86
+z1-33           : Column=026880 Fraction=0.335 Kernel=6593691.64 Mflops=6874181.95
+z1-33           : Column=027264 Fraction=0.340 Kernel=6573387.84 Mflops=6887976.33
+z1-33           : Column=027648 Fraction=0.345 Kernel=6500760.63 Mflops=6867231.24
+z1-33           : Column=028032 Fraction=0.350 Kernel=6783632.21 Mflops=6882431.46
+z1-33           : Column=028416 Fraction=0.355 Kernel=6912695.64 Mflops=6867181.91
+z1-33           : Column=029184 Fraction=0.360 Kernel=6473290.63 Mflops=6860569.57
+z1-33           : Column=029568 Fraction=0.365 Kernel=6829939.89 Mflops=6875906.26
+z1-33           : Column=029952 Fraction=0.370 Kernel=6874113.40 Mflops=6858682.15
+z1-33           : Column=030336 Fraction=0.375 Kernel=6284538.15 Mflops=6869121.28
+z1-33           : Column=030720 Fraction=0.380 Kernel=6723997.41 Mflops=6855053.48
+z1-33           : Column=031104 Fraction=0.385 Kernel=6950924.24 Mflops=6867698.78
+z1-33           : Column=031488 Fraction=0.390 Kernel=6295696.57 Mflops=6851010.76
+z1-33           : Column=031872 Fraction=0.395 Kernel=6533696.03 Mflops=6862301.28
+z1-33           : Column=032256 Fraction=0.400 Kernel=6591764.67 Mflops=6848292.84
+z1-33           : Column=032640 Fraction=0.405 Kernel=6641674.27 Mflops=6857273.70
+z1-33           : Column=033024 Fraction=0.410 Kernel=6619450.56 Mflops=6846316.53
+z1-33           : Column=033408 Fraction=0.415 Kernel=6524645.47 Mflops=6856317.84
+z1-33           : Column=033792 Fraction=0.420 Kernel=6391703.45 Mflops=6843535.61
+z1-33           : Column=034176 Fraction=0.425 Kernel=6677345.57 Mflops=6852521.31
+z1-33           : Column=034560 Fraction=0.430 Kernel=6736423.62 Mflops=6842071.36
+z1-33           : Column=034944 Fraction=0.435 Kernel=6133771.54 Mflops=6847441.02
+z1-33           : Column=035328 Fraction=0.440 Kernel=6978257.91 Mflops=6839812.58
+z1-33           : Column=035712 Fraction=0.445 Kernel=6657006.92 Mflops=6845187.92
+z1-33           : Column=036096 Fraction=0.450 Kernel=6434124.02 Mflops=6836435.96
+z1-33           : Column=036480 Fraction=0.455 Kernel=6691061.79 Mflops=6842612.55
+z1-33           : Column=036864 Fraction=0.460 Kernel=6339396.74 Mflops=6833410.05
+z1-33           : Column=037248 Fraction=0.465 Kernel=6682575.22 Mflops=6839242.67
+z1-33           : Column=037632 Fraction=0.470 Kernel=6306002.44 Mflops=6832465.77
+z1-33           : Column=038016 Fraction=0.475 Kernel=6526839.41 Mflops=6836852.84
+z1-33           : Column=038784 Fraction=0.480 Kernel=6665549.44 Mflops=6835280.94
+z1-33           : Column=039168 Fraction=0.485 Kernel=7019548.95 Mflops=6829552.56
+z1-33           : Column=039552 Fraction=0.490 Kernel=6810299.07 Mflops=6832005.64
+z1-33           : Column=039936 Fraction=0.495 Kernel=6503878.70 Mflops=6826189.68
+z1-33           : Column=041472 Fraction=0.515 Kernel=6561172.42 Mflops=6821878.14
+z1-33           : Column=043008 Fraction=0.535 Kernel=6627478.01 Mflops=6819029.43
+z1-33           : Column=044544 Fraction=0.555 Kernel=6458021.97 Mflops=6814101.30
+z1-33           : Column=046080 Fraction=0.575 Kernel=6521245.08 Mflops=6810515.31
+z1-33           : Column=047616 Fraction=0.595 Kernel=6497878.41 Mflops=6807044.95
+z1-33           : Column=049536 Fraction=0.615 Kernel=6436600.49 Mflops=6803282.93
+z1-33           : Column=051072 Fraction=0.635 Kernel=6326327.85 Mflops=6799011.81
+z1-33           : Column=052608 Fraction=0.655 Kernel=6274765.76 Mflops=6794789.77
+z1-33           : Column=054144 Fraction=0.675 Kernel=6381389.50 Mflops=6791883.93
+z1-33           : Column=055680 Fraction=0.695 Kernel=6110595.79 Mflops=6787471.87
+z1-33           : Column=063744 Fraction=0.795 Kernel=5810908.08 Mflops=6765762.19
+z1-33           : Column=071808 Fraction=0.895 Kernel=4042951.52 Mflops=6732907.06
+z1-33           : Column=079872 Fraction=0.995 Kernel=1283946.41 Mflops=6702622.18
+================================================================================
+T/V                N    NB     P     Q               Time                 Gflops
+--------------------------------------------------------------------------------
+WC00C2R2       80000   384     4     2              51.05            6.68634e+03
+HPL_pdgesv() start time Fri Apr  5 10:48:20 2024
+
+HPL_pdgesv() end time   Fri Apr  5 10:49:11 2024
+
+--------------------------------------------------------------------------------
+||Ax-b||_oo/(eps*(||A||_oo*||x||_oo+||b||_oo)*N)=   3.99007393e-03 ...... PASSED
+================================================================================
+
+Finished      1 tests with the following results:
+              1 tests completed and passed residual checks,
+              0 tests completed and failed residual checks,
+              0 tests skipped because of illegal input values.
+--------------------------------------------------------------------------------
+
+End of Tests.
+```
+
+### Run 2 Fri Apr  5 11:15:50 CDT 2024
+
+#### Notes
+
+- P and Q no longer work when just matching np it looks like. This performance was terrible.
+
+#### Results
+
+```bash
+Binary name: 
+-rwxr-xr-x 1 grant internal 7810144 Feb 20 11:48 xhpl_intel64_dynamic
+This script: 
+#!/bin/bash
+#===============================================================================
+# Copyright 2001-2023 Intel Corporation.
+#
+# This software and the related documents are Intel copyrighted  materials,  and
+# your use of  them is  governed by the  express license  under which  they were
+# provided to you (License).  Unless the License provides otherwise, you may not
+# use, modify, copy, publish, distribute,  disclose or transmit this software or
+# the related documents without Intel's prior written permission.
+#
+# This software and the related documents  are provided as  is,  with no express
+# or implied  warranties,  other  than those  that are  expressly stated  in the
+# License.
+#===============================================================================
+
+echo "This is a SAMPLE run script.  Change it to reflect the correct number"
+echo "of CPUs/threads, number of nodes, MPI processes per node, etc.."
+
+# Set total number of MPI processes for the HPL (should be equal to PxQ).
+export MPI_PROC_NUM=8
+
+# Set the MPI per node for each node.
+# MPI_PER_NODE should be equal to 1 or number of sockets on the system.
+# It will be same as -perhost or -ppn paramaters in mpirun/mpiexec.
+export MPI_PER_NODE=2
+
+# Set the number of NUMA nodes per MPI. (MPI_PER_NODE * NUMA_PER_MPI)
+# should be equal to number of NUMA nodes on the system.
+export NUMA_PER_MPI=1
+
+#====================================================================
+# Following option is for Intel(R) Optimized HPL-AI Benchmark
+#====================================================================
+
+# Comment in to enable Intel(R) Optimized HPL-AI Benchmark
+# export USE_HPL_AI=1
+
+#====================================================================
+# Following option is for Intel(R) Optimized HPL-AI Benchmark for GPU
+#====================================================================
+
+# By default, Intel(R) Optimized HPL-AI Benchmark for GPU will use
+# Bfloat16 matrix. If you prefer less iterations, you could choose
+# float based matrix. But it will reduce maximum problem size. 
+# export USE_BF16MAT=0
+
+#====================================================================
+# Following options are for Intel(R) Distribution for LINPACK
+# Benchmark for GPU and Intel(R) Optimized HPL-AI Benchmark for GPU
+#====================================================================
+
+# Comment in to enable GPUs
+# export USE_HPL_GPU=1
+
+# Select backend driver for GPU (OpenCL ... 0, Level Zero ... 1)
+# export HPL_DRIVER=0
+
+# Number of stacks on each GPU
+# export HPL_NUMSTACK=2
+
+# Total number of GPUs on each node
+# export HPL_NUMDEV=2
+
+#====================================================================
+
+export OUT=xhpl_intel64_dynamic_outputs.txt
+
+if [ -z ${USE_HPL_AI} ]; then
+if [ -z ${USE_HPL_GPU} ]; then
+export HPL_EXE=xhpl_intel64_dynamic
+else
+export HPL_EXE=xhpl_intel64_dynamic_gpu
+fi
+else
+if [ -z ${USE_HPL_GPU} ]; then
+export HPL_EXE=xhpl-ai_intel64_dynamic
+else
+export HPL_EXE=xhpl-ai_intel64_dynamic_gpu
+fi
+fi
+
+# Unset this variable to avoid initialization failure
+unset I_MPI_OFFLOAD
+
+echo -n "This run was done on: "
+date
+
+# Capture some meaningful data for future reference:
+echo -n "This run was done on: " >> $OUT
+date >> $OUT
+echo "HPL.dat: " >> $OUT
+cat HPL.dat >> $OUT
+echo "Binary name: " >> $OUT
+ls -l ${HPL_EXE} >> $OUT
+echo "This script: " >> $OUT
+cat runme_intel64_dynamic >> $OUT
+echo "Environment variables: " >> $OUT
+env >> $OUT
+echo "Actual run: " >> $OUT
+
+# Environment variables can also be also be set on the Intel(R) MPI Library command
+# line using the -genv option (to appear before the -np 1):
+
+#mpirun -hostfile hosts -perhost ${MPI_PER_NODE} -np ${MPI_PROC_NUM} ./runme_intel64_prv "$@" | tee -a $OUT
+mpirun -hostfile hosts -np ${MPI_PROC_NUM} ./runme_intel64_prv "$@" | tee -a $OUT
+
+echo -n "Done: " >> $OUT
+date >> $OUT
+
+echo -n "Done: "
+date
+Environment variables: 
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=01;05;37;41:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=01;36:*.au=01;36:*.flac=01;36:*.m4a=01;36:*.mid=01;36:*.midi=01;36:*.mka=01;36:*.mp3=01;36:*.mpc=01;36:*.ogg=01;36:*.ra=01;36:*.wav=01;36:*.oga=01;36:*.opus=01;36:*.spx=01;36:*.xspf=01;36:
+LD_LIBRARY_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib:/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/lib:/cm/shared/apps/slurm/current/lib64/slurm:/cm/shared/apps/slurm/current/lib64
+__LMOD_REF_COUNT_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/bin:1;/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/bin:1;/cm/shared/apps/slurm/current/sbin:1;/cm/shared/apps/slurm/current/bin:1;/usr/local/bin:1;/usr/bin:1;/usr/local/sbin:1;/usr/sbin:1;/opt/dell/srvadmin/bin:1;/home/grant/.local/bin:1;/home/grant/bin:1
+_ModuleTable002_=WyJzdGFja0RlcHRoIl09MCxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iY29yZSIsfSxbImludGVsL29uZUFQSSJdPXtbImZuIl09Ii9ob21lL21vZHVsZXMvY29yZS9tb2R1bGVmaWxlcy9pbnRlbC9vbmVBUEkvMjAyNC4xLjAubHVhIixbImZ1bGxOYW1lIl09ImludGVsL29uZUFQSS8yMDI0LjEuMCIsWyJsb2FkT3JkZXIiXT01LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImludGVsL29uZUFQSS8yMDI0LjEuMCIsfSxtcGk9e1siZm4iXT0iL2hvbWUvbW9kdWxlcy9jb3JlL2NvbXBpbGVyL21vZHVsZWZpbGVzL29uZUFQSS0yMDI0LjEuMC9tcGkvMjAyMS4xMiIsWyJmdWxsTmFtZSJdPSJtcGkvMjAy
+SSH_CONNECTION=10.140.50.2 44338 10.140.52.33 22
+LANG=en_US.UTF-8
+HISTCONTROL=ignoredups
+HOSTNAME=z1-33
+LMOD_SYSTEM_DEFAULT_MODULES=DefaultModules
+OLDPWD=/home/grant/benchmarks_2024.1/linux/share/mkl/benchmarks
+__LMOD_REF_COUNT__LMFILES_=/cm/local/modulefiles/shared:1;/usr/share/modulefiles/DefaultModules.lua:1;/cm/local/modulefiles/slurm/zenith/20.02.7:1;/cm/shared/modulefiles/core.lua:1;/home/modules/core/modulefiles/intel/oneAPI/2024.1.0.lua:1;/home/modules/core/compiler/modulefiles/oneAPI-2024.1.0/mpi/2021.12:1
+OUT=xhpl_intel64_dynamic_outputs.txt
+__LMOD_REF_COUNT_LD_LIBRARY_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib:1;/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/lib:1;/cm/shared/apps/slurm/current/lib64/slurm:1;/cm/shared/apps/slurm/current/lib64:1
+FI_PROVIDER_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib/prov:/usr/lib64/libfabric
+_ModuleTable004_=XT0xLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJzbHVybS96ZW5pdGgiLH0sfSxtcGF0aEE9eyIvaG9tZS9tb2R1bGVzL2NvcmUvY29tcGlsZXIvbW9kdWxlZmlsZXMvb25lQVBJLTIwMjQuMS4wIiwiL2hvbWUvbW9kdWxlcy9jb3JlL21vZHVsZWZpbGVzIiwiL2NtL2xvY2FsL21vZHVsZWZpbGVzIiwiL2V0Yy9tb2R1bGVmaWxlcyIsIi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMiLCIvdXNyL3NoYXJlL01vZHVsZXMvbW9kdWxlZmlsZXMiLCIvY20vc2hhcmVkL21vZHVsZWZpbGVzIix9LFsic3lzdGVtQmFzZU1QQVRIIl09Ii9jbS9sb2NhbC9tb2R1bGVmaWxlczovY20vc2hhcmVkL21vZHVsZWZpbGVzOi9ldGMvbW9kdWxlZmlsZXM6L3Vzci9zaGFyZS9tb2R1bGVm
+S_COLORS=auto
+which_declare=declare -f
+CLASSPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/share/java/mpi.jar
+XDG_SESSION_ID=15518
+USER=grant
+__LMOD_REF_COUNT_MODULEPATH=/home/modules/core/compiler/modulefiles/oneAPI-2024.1.0:1;/home/modules/core/modulefiles:1;/cm/local/modulefiles:1;/etc/modulefiles:1;/usr/share/modulefiles:1;/usr/share/Modules/modulefiles:1;/cm/shared/modulefiles:2
+__LMOD_REF_COUNT_LOADEDMODULES=shared:1;DefaultModules:1;slurm/zenith/20.02.7:1;core:1;intel/oneAPI/2024.1.0:1;mpi/2021.12:1
+PWD=/home/grant/benchmarks_2024.1/linux/share/mkl/benchmarks/mp_linpack
+ENABLE_LMOD=1
+HOME=/home/grant
+LMOD_COLORIZE=yes
+SSH_CLIENT=10.140.50.2 44338 22
+LMOD_VERSION=8.2.4
+CPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/include:/cm/shared/apps/slurm/current/include
+NUMA_PER_MPI=1
+LMOD_SETTARG_CMD=:
+BASH_ENV=/usr/share/lmod/lmod/init/bash
+MPI_PROC_NUM=8
+__LMOD_REF_COUNT_LIBRARY_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib:1;/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/lib:1;/cm/shared/apps/slurm/current/lib64/slurm:1;/cm/shared/apps/slurm/current/lib64:1
+LIBRARY_PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/lib:/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/lib:/cm/shared/apps/slurm/current/lib64/slurm:/cm/shared/apps/slurm/current/lib64
+LMOD_sys=Linux
+MPI_PER_NODE=2
+_ModuleTable001_=X01vZHVsZVRhYmxlXz17WyJNVHZlcnNpb24iXT0zLFsiY19yZWJ1aWxkVGltZSJdPTg2NDAwLFsiY19zaG9ydFRpbWUiXT1mYWxzZSxkZXB0aFQ9e30sZmFtaWx5PXt9LG1UPXtEZWZhdWx0TW9kdWxlcz17WyJmbiJdPSIvdXNyL3NoYXJlL21vZHVsZWZpbGVzL0RlZmF1bHRNb2R1bGVzLmx1YSIsWyJmdWxsTmFtZSJdPSJEZWZhdWx0TW9kdWxlcyIsWyJsb2FkT3JkZXIiXT0yLHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09IkRlZmF1bHRNb2R1bGVzIix9LGNvcmU9e1siZm4iXT0iL2NtL3NoYXJlZC9tb2R1bGVmaWxlcy9jb3JlLmx1YSIsWyJmdWxsTmFtZSJdPSJjb3JlIixbImxvYWRPcmRlciJdPTQscHJvcFQ9e30s
+SLURM_CONF=/cm/shared/apps/slurm/var/etc/zenith/slurm.conf
+LOADEDMODULES=shared:DefaultModules:slurm/zenith/20.02.7:core:intel/oneAPI/2024.1.0:mpi/2021.12
+__LMOD_REF_COUNT_MANPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/share/man:1;/cm/shared/apps/slurm/current/man:1;/usr/share/lmod/lmod/share/man:1;/usr/local/share/man:1;/usr/share/man:1;/cm/local/apps/environment-modules/current/share/man:1
+_ModuleTable003_=MS4xMiIsWyJsb2FkT3JkZXIiXT02LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09Im1waS8yMDIxLjEyIix9LHNoYXJlZD17WyJmbiJdPSIvY20vbG9jYWwvbW9kdWxlZmlsZXMvc2hhcmVkIixbImZ1bGxOYW1lIl09InNoYXJlZCIsWyJsb2FkT3JkZXIiXT0xLHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTEsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09InNoYXJlZCIsfSxzbHVybT17WyJmbiJdPSIvY20vbG9jYWwvbW9kdWxlZmlsZXMvc2x1cm0vemVuaXRoLzIwLjAyLjciLFsiZnVsbE5hbWUiXT0ic2x1cm0vemVuaXRoLzIwLjAyLjciLFsibG9hZE9yZGVyIl09Myxwcm9wVD17fSxbInN0YWNrRGVwdGgi
+LMOD_ROOT=/usr/share/lmod
+SSH_TTY=/dev/pts/1
+MAIL=/var/spool/mail/grant
+LMOD_arch=x86_64
+__Init_Default_Modules=1
+CMD_WLM_CLUSTER_NAME=zenith
+SHELL=/bin/bash
+TERM=screen
+HPL_EXE=xhpl_intel64_dynamic
+_ModuleTable_Sz_=5
+__LMOD_REF_COUNT_CPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/include:1;/cm/shared/apps/slurm/current/include:1
+SPACK_SYSTEM_CONFIG=/home/modules/core/spack/etc
+SHLVL=2
+MANPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/share/man:/cm/shared/apps/slurm/current/man:/usr/share/lmod/lmod/share/man:/usr/local/share/man:/usr/share/man:/cm/local/apps/environment-modules/current/share/man
+__LMOD_REF_COUNT_CLASSPATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/share/java/mpi.jar:1
+LMOD_PREPEND_BLOCK=normal
+MODULEPATH=/home/modules/core/compiler/modulefiles/oneAPI-2024.1.0:/home/modules/core/modulefiles:/cm/local/modulefiles:/etc/modulefiles:/usr/share/modulefiles:/usr/share/Modules/modulefiles:/cm/shared/modulefiles
+LOGNAME=grant
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/11208/bus
+CLUSTER=zenith
+XDG_RUNTIME_DIR=/run/user/11208
+MODULEPATH_ROOT=/usr/share/modulefiles
+PATH=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/opt/mpi/libfabric/bin:/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12/bin:/cm/shared/apps/slurm/current/sbin:/cm/shared/apps/slurm/current/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/dell/srvadmin/bin:/home/grant/.local/bin:/home/grant/bin
+_LMFILES_=/cm/local/modulefiles/shared:/usr/share/modulefiles/DefaultModules.lua:/cm/local/modulefiles/slurm/zenith/20.02.7:/cm/shared/modulefiles/core.lua:/home/modules/core/modulefiles/intel/oneAPI/2024.1.0.lua:/home/modules/core/compiler/modulefiles/oneAPI-2024.1.0/mpi/2021.12
+MODULESHOME=/usr/share/lmod/lmod
+LMOD_SETTARG_FULL_SUPPORT=no
+I_MPI_ROOT=/home/modules/core/apps/oneapi/2024.1.0/mpi/2021.12
+HISTSIZE=1000
+LMOD_PKG=/usr/share/lmod/lmod
+LMOD_CMD=/usr/share/lmod/lmod/libexec/lmod
+_ModuleTable005_=aWxlczovdXNyL3NoYXJlL01vZHVsZXMvbW9kdWxlZmlsZXMiLH0=
+LESSOPEN=||/usr/bin/lesspipe.sh %s
+LMOD_FULL_SETTARG_SUPPORT=no
+LMOD_DIR=/usr/share/lmod/lmod/libexec
+BASH_FUNC_which%%=() {  ( alias;
+ eval ${which_declare} ) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot $@
+}
+BASH_FUNC_module%%=() {  eval $($LMOD_CMD bash "$@") && eval $(${LMOD_SETTARG_CMD:-:} -s sh)
+}
+BASH_FUNC_ml%%=() {  eval $($LMOD_DIR/ml_cmd "$@")
+}
+_=/usr/bin/env
+Actual run: 
+RANK=0, NODE=0-0
+RANK=1, NODE=1-1
+RANK=2, NODE=0-0
+RANK=3, NODE=1-1
+RANK=4, NODE=0-0
+RANK=5, NODE=1-1
+RANK=6, NODE=0-0
+RANK=7, NODE=1-1
+================================================================================
+HPLinpack 2.3  --  High-Performance Linpack benchmark  --   December 2, 2018
+Written by A. Petitet and R. Clint Whaley,  Innovative Computing Laboratory, UTK
+Modified by Piotr Luszczek, Innovative Computing Laboratory, UTK
+Modified by Julien Langou, University of Colorado Denver
+================================================================================
+
+An explanation of the input/output parameters follows:
+T/V    : Wall time / encoded variant.
+N      : The order of the coefficient matrix A.
+NB     : The partitioning blocking factor.
+P      : The number of process rows.
+Q      : The number of process columns.
+Time   : Time in seconds to solve the linear system.
+Gflops : Rate of execution for solving the linear system.
+
+The following parameter values will be used:
+
+N        :  117120 
+NB       :     384 
+PMAP     : Column-major process mapping
+P        :       2 
+Q        :       4 
+PFACT    :   Right 
+NBMIN    :       2 
+NDIV     :       2 
+RFACT    :   Crout 
+BCAST    :   1ring 
+DEPTH    :       0 
+SWAP     : Binary-exchange
+L1       : no-transposed form
+U        : no-transposed form
+EQUIL    : no
+ALIGN    :    8 double precision words
+
+--------------------------------------------------------------------------------
+
+- The matrix A is randomly generated for each test.
+- The following scaled residual check will be computed:
+      ||Ax-b||_oo / ( eps * ( || x ||_oo * || A ||_oo + || b ||_oo ) * N )
+- The relative machine precision (eps) is taken to be               1.110223e-16
+- Computational tests pass if scaled residuals are less than                 1.0
+
+z1-33           : Column=000768 Fraction=0.005 Kernel=    0.61 Mflops=160604.34
+z1-33           : Column=001536 Fraction=0.010 Kernel=161173.44 Mflops=164478.46
+z1-33           : Column=001920 Fraction=0.015 Kernel=85724.20 Mflops=152336.54
+Done: Fri Apr  5 11:15:50 CDT 2024
+```

@@ -2,6 +2,7 @@
 
 - [Understand and Run LINPACK](#understand-and-run-linpack)
   - [Understanding Intel's MKL Process Flow](#understanding-intels-mkl-process-flow)
+    - [A Word of Warning on Job Managers](#a-word-of-warning-on-job-managers)
     - [runme\_intel\_dynamic](#runme_intel_dynamic)
       - [-hostfile  or -f ](#-hostfile--or--f-)
       - [-machinefile  or -machine ](#-machinefile--or--machine-)
@@ -78,6 +79,10 @@ TODO - figure out exactly how many of each and reword the below.
 When you first look at this, it is very confusing. [`mpirun`](./binary/mpirun) is launched by either by runme_intel64_dynamic or directly, and `mpirun` then launches mpiexec.hydra, which then launches multiple instances of runme_intel64_prv, which then launches xhpl_intel64_dynamic. Hydra's options are defined [here](https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/global-hydra-options.html). I_MPI_PERHOST is defined as:
 
 TODO - get rid of this
+
+### A Word of Warning on Job Managers
+
+I started this on SLURM. `mpirun` specifically checks a series of environment variables that modify how everything runs. I strongly recommend not running this under a job manager. I found it quite confusing. If environment variables are present from a job manager it is likely that the benchmark will autodetect them and silently begin overriding what you are doing.
 
 ### [runme_intel_dynamic](./binary/runme_intel64_dynamic)
 
@@ -231,7 +236,7 @@ Set this environment variable to define the default behavior for the `-perhost` 
 
 ### [runme_intel64_prv](./binary/runme_intel64_prv)
 
-This is where things get hairy. 
+This is where things get hairy in my opinion. Very hairy, so I will go through this one line by line.
 
 ### xhpl_intel64_dynamic
 
