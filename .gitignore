@@ -4,3 +4,15 @@ Compile Custom NVMe Driver/linux_source
 Swap Kernel on Rocky 9/source
 
 Custom NVMe Debug Driver/kernel-grant-nvme-6.6.16-1.x86_64.rpm
+
+Understand and Run LINPACK/.idea/
+
+Understand and Run LINPACK/binary/mpiexec.hydra
+
+Understand and Run LINPACK/binary/mpiexec.hydra.i64
+
+Understand and Run LINPACK/binary/xhpl_intel64_dynamic
+
+Understand and Run LINPACK/binary/xhpl_intel64_dynamic.i64
+
+Understand and Run LINPACK/tommy_notes.md
