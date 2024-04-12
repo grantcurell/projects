@@ -45,7 +45,7 @@
 
 ## Understanding Intel's MKL Process Flow
 
-Assuming you change nothing, Intel's MKL has a fairly complex process flow that isn't immediately obvious. Here is what it looks like visually:
+Assuming you change nothing, Intel's MKL has the following process flow:
 
 ```
                 +---------------------+
@@ -81,7 +81,7 @@ Assuming you change nothing, Intel's MKL has a fairly complex process flow that 
 
 ### A Word of Warning on Job Managers
 
-I started this on SLURM. `mpirun` specifically checks a series of environment variables that modify how everything runs. I strongly recommend not running this under a job manager. I found it quite confusing. If environment variables are present from a job manager it is likely that the benchmark will autodetect them and silently begin overriding what you are doing.
+I started this on SLURM. `mpirun` specifically checks a series of environment variables that modify how everything runs. I recommend not running this under a job manager. If you do, you will need to examine the contents of [`mpirun`](./binary/mpirun) and understand the mapping of your job manager's environment variables to Intel syntax.
 
 ### [runme_intel_dynamic](./binary/runme_intel64_dynamic)
 
