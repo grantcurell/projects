@@ -233,7 +233,7 @@ Set this environment variable to define the default behavior for the `-perhost` 
 
 #### But What the Heck Does that Mean
 
-Ok, so those were the descriptions in the docs for `-n` and `-ppn` but at least for me it wasn't immediately obvious what that would end up doing. WLet's start with `-n`. What `-n` does is it will spawn `-n` instances of whatever process is *fed to `mpiexec.hydra`*. In our case this is going to be `runme_intel64_prv`. So if `-n` is 8, you will have 8 instances of `runme_intel64_prv` spread out across all your nodes.
+Ok, so those were the descriptions in the docs for `-n` and `-ppn` but at least for me it wasn't immediately obvious what that would end up doing. Let's start with `-n`. What `-n` does is it will spawn `-n` instances of whatever process is *fed to `mpiexec.hydra`*. In our case this is going to be `runme_intel64_prv`. So if `-n` is 8, you will have 8 instances of `runme_intel64_prv` spread out across all your nodes.
 
 `-ppn` will control how many instances of `runme_intel64_prv` spawn per node. Each instance of `runme_intel64_prv` will in turn spawn one parent instance of `xhpl_intel64_dynamic` which will then spawn as many threads as are in the NUMA domains allocated to it (controlled by `NUMA_PER_MPI`).
 
