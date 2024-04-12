@@ -1,7 +1,7 @@
 # Understand and Run LINPACK
 
 - [Understand and Run LINPACK](#understand-and-run-linpack)
-  - [Understanding Intel's MKL Process Flow](#understanding-intels-mkl-process-flow)
+  - [Understanding Intel's MKL LINPACK Process Flow](#understanding-intels-mkl-linpack-process-flow)
     - [A Word of Warning on Job Managers](#a-word-of-warning-on-job-managers)
     - [runme\_intel\_dynamic](#runme_intel_dynamic)
       - [-hostfile  or -f ](#-hostfile--or--f-)
@@ -43,7 +43,7 @@
     - [Usage in `do_spawn`](#usage-in-do_spawn)
 
 
-## Understanding Intel's MKL Process Flow
+## Understanding Intel's MKL LINPACK Process Flow
 
 Assuming you change nothing, Intel's MKL has the following process flow:
 
