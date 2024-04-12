@@ -15,12 +15,12 @@
 
 # For Mvapich
 if [ -n "${MPIRUN_RANK}" ]
-then PMI_RANK=${MPIRUN_RANK}
+    then PMI_RANK=${MPIRUN_RANK}
 fi
 
 # For OpenMPI
 if [ -n "${OMPI_COMM_WORLD_RANK}" ]
-then PMI_RANK=${OMPI_COMM_WORLD_RANK}
+    then PMI_RANK=${OMPI_COMM_WORLD_RANK}
 fi
 
 LOCAL_RANK=$((PMI_RANK % MPI_PER_NODE))
@@ -28,43 +28,37 @@ LOCAL_RANK=$((PMI_RANK % MPI_PER_NODE))
 export HPL_HOST_NODE=$((LOCAL_RANK * NUMA_PER_MPI))-$(((LOCAL_RANK + 1) * NUMA_PER_MPI - 1))
 
 if [ -z ${USE_HPL_GPU} ]; then
-
-echo RANK=${PMI_RANK}, NODE=${HPL_HOST_NODE}
-
-./${HPL_EXE} "$@"
-
+    echo RANK=${PMI_RANK}, NODE=${HPL_HOST_NODE}
+    ./${HPL_EXE} "$@"
 else
+    # Device information
+    if [ ${PMI_RANK} -eq 0 ]; then
+        numactl -H
+        clinfo
+    fi
 
-# Device information
-if [ ${PMI_RANK} -eq 0 ]; then
-numactl -H
-clinfo
-fi
+    if [ -z ${HPL_NUMSTACK} ]; then
+        export HPL_NUMSTACK=2
+    fi
 
-if [ -z ${HPL_NUMSTACK} ]; then
-export HPL_NUMSTACK=2
-fi
+    DEV_START=$((HPL_NUMSTACK * HPL_NUMDEV / MPI_PER_NODE * LOCAL_RANK))
+    DEV_END=$((HPL_NUMSTACK * HPL_NUMDEV / MPI_PER_NODE * (LOCAL_RANK + 1)))
 
-DEV_START=$((HPL_NUMSTACK * HPL_NUMDEV / MPI_PER_NODE * LOCAL_RANK))
-DEV_END=$((HPL_NUMSTACK * HPL_NUMDEV / MPI_PER_NODE * (LOCAL_RANK + 1)))
+    for ((d = ${DEV_START}; d < ${DEV_END}; d++)); do
+        if [ $d -eq ${DEV_START} ]; then
+            HPL_DEVICE=
+        else
+            HPL_DEVICE=${HPL_DEVICE},
+        fi
+        export HPL_DEVICE=${HPL_DEVICE}:$((d / HPL_NUMSTACK)).$((d % HPL_NUMSTACK))
+    done
 
-for ((d = ${DEV_START}; d < ${DEV_END}; d ++)); do
- if [ $d -eq ${DEV_START} ]; then
-   HPL_DEVICE=
- else
-   HPL_DEVICE=${HPL_DEVICE},
- fi
- export HPL_DEVICE=${HPL_DEVICE}:$((d / HPL_NUMSTACK)).$((d % HPL_NUMSTACK))
-done
+    if [ $((LOCAL_RANK * NUMA_PER_MPI)) -eq $(((LOCAL_RANK + 1) * NUMA_PER_MPI - 1)) ]; then
+        NUMA_RANK=$((LOCAL_RANK * NUMA_PER_MPI))
+    else
+        NUMA_RANK=${HPL_HOST_NODE}
+    fi
 
-if [ $((LOCAL_RANK * NUMA_PER_MPI)) -eq $(((LOCAL_RANK + 1) * NUMA_PER_MPI - 1)) ]; then
-NUMA_RANK=$((LOCAL_RANK * NUMA_PER_MPI))
-else
-NUMA_RANK=${HPL_HOST_NODE}
-fi
-
-echo RANK=${PMI_RANK}, NODE=${HPL_HOST_NODE}, HPL_DEVICE=${HPL_DEVICE}
-
-./${HPL_EXE} "$@"
-
+    echo RANK=${PMI_RANK}, NODE=${HPL_HOST_NODE}, HPL_DEVICE=${HPL_DEVICE}
+    ./${HPL_EXE} "$@"
 fi
