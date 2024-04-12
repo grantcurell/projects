@@ -454,6 +454,30 @@ Thread ID  CPU Time   CPU Affinity    NUMA Node(s)
 184422     1.33       1               0
 ```
 
+This is a non-optimized layout and you can see that reflected in the fact that almost none of the threads are in use. This is what a well optimized setup looks like:
+
+```bash
+Thread ID  CPU Time   CPU Affinity    NUMA Node(s)   
+-----------------------------------------------------
+191804     500.00     98              7              
+191812     0.03       98-111          7              
+191827     489.41     111             7              
+191833     490.17     100             7              
+191841     490.44     101             7              
+191849     489.57     102             7              
+191869     489.55     103             7              
+191878     489.84     104             7              
+191884     490.37     105             7              
+191890     489.51     106             7              
+191896     490.28     107             7              
+191902     490.16     108             7              
+191908     489.85     109             7              
+191912     490.55     110             7              
+191919     499.48     99              7  
+```
+
+Notice how all threads are in use except one with low utilization. This is the `xhpl_intel64_dynamic` parent process I mention in the [`xhpl_intel64_dynamic section](#xhpl_intel64_dynamic).
+
 Next, we check if a GPU is in the mix and if not we output the RANK for the process and execute `xhpl_intel64_dynamic`
 
 ```bash
