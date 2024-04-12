@@ -66,17 +66,17 @@ export NUMA_PER_MPI=1
 export OUT=xhpl_intel64_dynamic_outputs.txt
 
 if [ -z ${USE_HPL_AI} ]; then
-if [ -z ${USE_HPL_GPU} ]; then
-export HPL_EXE=xhpl_intel64_dynamic
+    if [ -z ${USE_HPL_GPU} ]; then
+        export HPL_EXE=xhpl_intel64_dynamic
+    else
+        export HPL_EXE=xhpl_intel64_dynamic_gpu
+    fi
 else
-export HPL_EXE=xhpl_intel64_dynamic_gpu
-fi
-else
-if [ -z ${USE_HPL_GPU} ]; then
-export HPL_EXE=xhpl-ai_intel64_dynamic
-else
-export HPL_EXE=xhpl-ai_intel64_dynamic_gpu
-fi
+    if [ -z ${USE_HPL_GPU} ]; then
+        export HPL_EXE=xhpl-ai_intel64_dynamic
+    else
+        export HPL_EXE=xhpl-ai_intel64_dynamic_gpu
+    fi
 fi
 
 # Unset this variable to avoid initialization failure

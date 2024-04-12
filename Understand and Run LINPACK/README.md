@@ -12,6 +12,7 @@
       - [But What the Heck Does that Mean](#but-what-the-heck-does-that-mean)
     - [runme\_intel64\_prv](#runme_intel64_prv)
     - [xhpl\_intel64\_dynamic](#xhpl_intel64_dynamic)
+  - [How to Select Values and Optimize Intel's MKL LINPACK Benchmark](#how-to-select-values-and-optimize-intels-mkl-linpack-benchmark)
   - [How MPI Processes Work](#how-mpi-processes-work)
     - [What are MPI Processes?](#what-are-mpi-processes)
     - [How MPI Processes Communicate](#how-mpi-processes-communicate)
@@ -34,7 +35,7 @@
     - [2. Block Size (NB)](#2-block-size-nb)
       - [Understanding Block Size Math](#understanding-block-size-math)
     - [3. Process Grid (P x Q)](#3-process-grid-p-x-q)
-  - [Interpreting Benchmark Results](#interpreting-benchmark-results)
+  - [Interpreting Benchmark Results for Single Node Test](#interpreting-benchmark-results-for-single-node-test)
     - [What is Numerical Stability](#what-is-numerical-stability)
     - [Right Looking LU Factorization](#right-looking-lu-factorization)
     - [Row Partial Pivoting](#row-partial-pivoting)
@@ -46,45 +47,37 @@
 
 Assuming you change nothing, Intel's MKL has a fairly complex process flow that isn't immediately obvious. Here is what it looks like visually:
 
-TODO - ADD LINKS
+```
+                +---------------------+
+                | runme_intel_dynamic |
+                +---------------------+
+                         |
+                         v
+                     +-------+
+                     | mpirun |
+                     +-------+
+                         |
+                         v
+                 +--------------+
+                 | mpiexec.hydra|
+                 +--------------+
+                         |
+                         v
+             +-------------------+
+             | runme_intel64_prv |
+             +-------------------+
+                         |
+                         v
+           +-----------------------+
+           | xhpl_intel64_dynamic  |
+           +-----------------------+
+                         |
+                         v
+        +---------------------------------+
+        | xhpl_intel64_dynamic - threads  |
+        +---------------------------------+
 
 ```
-+---------------------+
-| runme_intel_dynamic |
-+---------------------+
-            |
-            v
-         +-------+
-         | mpirun |
-         +-------+
-            |
-            v
-      +--------------+
-      | mpiexec.hydra|
-      +--------------+
-            |
-            v
-   +-------------------+
-   | runme_intel64_prv |
-   +-------------------+
-            |
-            v
-   +-----------------------+
-   | xhpl_intel64_dynamic  |
-   +-----------------------+
-            |
-            v
-   +--------------------------------+
-   | xhpl_intel64_dynamic - threads |
-   +--------------------------------+
-```
-
-
-TODO - figure out exactly how many of each and reword the below.
-
-When you first look at this, it is very confusing. [`mpirun`](./binary/mpirun) is launched by either by runme_intel64_dynamic or directly, and `mpirun` then launches mpiexec.hydra, which then launches multiple instances of runme_intel64_prv, which then launches xhpl_intel64_dynamic. Hydra's options are defined [here](https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/global-hydra-options.html). I_MPI_PERHOST is defined as:
-
-TODO - get rid of this
 
 ### A Word of Warning on Job Managers
 
@@ -129,7 +122,7 @@ or
 where
 
 - **-n <size of the matrix>**: Determines the size of the problem matrix to be solved
-- **-m <memory size in Mbytes>**: If you're familiar with `HPL.dat` this option may confuse you because it isn't present. What this does is allow you to control the size of the problem matrix by specifying the total amount of memory dedicated to matrix storage across all nodes instead of specifying `-n`. When you set `-m` to 50000 Mbytes, you're instructing the application to use matrices that, when combined, fit within 50 GB of memory for their storage. The block size (`-b`) parameter, set to 256 in the example, defines the size of the sub-matrix or "block" used by the HPL algorithm during matrix factorization. TODO - add reference.
+- **-m <memory size in Mbytes>**: If you're familiar with `HPL.dat` this option may confuse you because it isn't present. What this does is allow you to control the size of the problem matrix by specifying the total amount of memory dedicated to matrix storage across all nodes instead of specifying `-n`. When you set `-m` to 50000 Mbytes, you're instructing the application to use matrices that, when combined, fit within 50 GB of memory for their storage. The block size (`-b`) parameter, set to 256 in the example, defines the size of the sub-matrix or "block" used by the HPL algorithm during matrix factorization.
 - **-b <block size>**: Specifies the block size used by the HPL algorithm
 - **-p <grid row dimension>**: Sets the rows dimension of the process grid
 - **-q <grid column dimension>**: Sets the columns dimension of the process grid
@@ -211,7 +204,7 @@ Use this option to place the specified number of consecutive MPI processes on ev
 
 **NOTE:** When running under a job scheduler, these options are ignored by default. To be able to control process placement with these options, disable the I_MPI_JOB_RESPECT_PROCESS_PLACEMENT variable.
 
-TODO - maybe mention how processes work here?
+Ultimately, the `-perhost` setting controls how many MPI processes will spawn on each node. On Intel MKL LINPACK, these processes are `runme_intel64_prv` which spawns one parent instance of `xhpl_intel64_dynamic` which then in turn spawns many child threads. This is explained in more detail later.
 
 `I_MPI_PERHOST` is defined as
 
@@ -242,9 +235,7 @@ Set this environment variable to define the default behavior for the `-perhost` 
 
 Ok, so those were the descriptions in the docs for `-n` and `-ppn` but at least for me it wasn't immediately obvious what that would end up doing. WLet's start with `-n`. What `-n` does is it will spawn `-n` instances of whatever process is *fed to `mpiexec.hydra`*. In our case this is going to be `runme_intel64_prv`. So if `-n` is 8, you will have 8 instances of `runme_intel64_prv` spread out across all your nodes.
 
-`-ppn` - TODO - need an example. It's going to end up being the ranks probably.
-
-What can be pretty confusing here is that each instance of `xhpl_intel64_dynamic` then spawns threads until TODO - until what?
+`-ppn` will control how many instances of `runme_intel64_prv` spawn per node. Each instance of `runme_intel64_prv` will in turn spawn one parent instance of `xhpl_intel64_dynamic` which will then spawn as many threads as are in the NUMA domains allocated to it (controlled by `NUMA_PER_MPI`).
 
 ### [runme_intel64_prv](./binary/runme_intel64_prv)
 
@@ -295,7 +286,7 @@ This is calculating the node local MPI rank. This effectively round robins the M
 export HPL_HOST_NODE=$((LOCAL_RANK * NUMA_PER_MPI))-$(((LOCAL_RANK + 1) * NUMA_PER_MPI - 1))
 ```
 
-Now this is getting confusing. The high level purpose of `HPL_HOST_NODE` is to define a range `x-y` for what NUMA nodes the MPI process will use based on `NUMA_PER_MPI`. So if you set this to 1, then the range will look like:
+Now this is getting confusing. The high level purpose of `HPL_HOST_NODE` is to define a range `x-y` for what NUMA nodes the MPI process will use based on `NUMA_PER_MPI`. There are a lot of parenthesis but all this does is make the range `LOCAL_RANK`$\times$`NUMA_PER_MPI` to (`LOCAL_RANK`+1)$\times$()  So if you set this to 1, then the range will look like:
 
 ```bash
 PMI_RANK=0
@@ -383,11 +374,108 @@ HPL_HOST_NODE=4-7
 RANK=7, NODE=4-7
 ```
 
+or in a more organized format:
 
+```
+| PMI_RANK | LOCAL_RANK | HPL_HOST (NUMA_PER_MPI 1) | HPL_HOST (NUMA_PER_MPI 4) |
+|----------|------------|---------------------------|---------------------------|
+| 0        | 0          | 0-0                       | 0-3                       |
+| 1        | 1          | 1-1                       | 4-7                       |
+| 2        | 0          | 0-0                       | 0-3                       |
+| 3        | 1          | 1-1                       | 4-7                       |
+| 4        | 0          | 0-0                       | 0-3                       |
+| 5        | 1          | 1-1                       | 4-7                       |
+| 6        | 0          | 0-0                       | 0-3                       |
+| 7        | 1          | 1-1                       | 4-7                       |
+```
+
+So what does this mean? What this is telling you is where each MPI process is going to land. Since you have 8 processes total, this is saying that, for example in the `NUMA_PER_MPI` config, MPI rank 0 (which is the same as Process Management Interface PMI rank) will be assigned to NUMA domains 0-3. You can see this reflected in the process allocation. I wrote [this script](./get_node_utilization.py) to display how the `xhpl_intel64_dynamic` processes are laid out:
+
+```bash
+PID: 184198, Name: xhpl_intel64_dynamic, Threads:
+Thread ID  CPU Time   CPU Affinity    NUMA Node(s)   
+-----------------------------------------------------
+184198     1.76       0               0              
+184202     0.01       0-27            0, 1           
+184206     0.00       2               0              
+184207     0.00       55              3              
+184208     0.00       4               0              
+184209     0.00       5               0              
+184210     0.00       6               0              
+184211     0.00       7               0              
+184212     0.00       8               0              
+184213     0.00       9               0              
+184214     0.00       10              0              
+184215     0.00       11              0              
+184216     0.00       12              0              
+184217     0.00       13              0              
+184218     0.00       14              1              
+184219     0.00       15              1              
+184220     0.00       16              1              
+184221     0.00       17              1              
+184222     0.00       18              1              
+184223     0.00       19              1              
+184224     0.00       20              1              
+184225     0.00       21              1              
+184226     0.00       22              1              
+184227     0.00       23              1              
+184228     0.00       24              1              
+184229     0.00       25              1              
+184230     0.00       26              1              
+184231     0.00       27              1              
+184232     0.00       28              2              
+184233     0.00       29              2              
+184234     0.00       30              2              
+184235     0.00       31              2              
+184236     0.00       32              2              
+184237     0.00       33              2              
+184238     0.00       34              2              
+184239     0.00       35              2              
+184240     0.00       36              2              
+184241     0.00       37              2              
+184242     0.00       38              2              
+184243     0.00       39              2              
+184244     0.00       40              2              
+184245     0.00       41              2              
+184246     0.00       3               0              
+184247     0.00       42              3              
+184248     0.00       43              3              
+184249     0.00       44              3              
+184250     0.00       45              3              
+184251     0.00       46              3              
+184252     0.00       47              3              
+184253     0.00       48              3              
+184254     0.00       49              3              
+184255     0.00       50              3              
+184256     0.00       51              3              
+184257     0.00       52              3              
+184258     0.00       53              3              
+184259     0.00       54              3              
+184422     1.33       1               0
+```
+
+Next, we check if a GPU is in the mix and if not we output the RANK for the process and execute `xhpl_intel64_dynamic`
+
+```bash
+if [ -z ${USE_HPL_GPU} ]; then
+    echo RANK=${PMI_RANK}, NODE=${HPL_HOST_NODE}
+    ./${HPL_EXE} "$@"
+else
+```
+
+Since I'm not running a GPU, this is where I stopped. All this does is print out the RANK and NODE numbers for convenience. Ex `RANK=0, NODE=0-3`. This is identical to `HPL_HOST_NODE`.
 
 ### xhpl_intel64_dynamic
 
-TODO - add link
+There is one parent `xhpl_intel64_dynamic` process spawned by each instance of `runme_intel64_prv`. The parent processes will coordinate such that child threads fill all available cores. You can see these running on the constituent servers with `ps -eTf`. The number of threads is dependent on the `NUMA_PER_MPI` setting. It will spawn threads across all available NUMA domains. For example, with `NUMA_PER_MPI` set to 4, `MPI_PER_NODE` set to 2, and a server with 8 NUMA domains and 112 cores, and , each instance of `xhpl_intel64_dynamic` (one MPI process) would spawn 56 threads plus the parent process.
+
+These threads do the actual lifting. I wrote [get_node_utilization.py](./get_node_utilization.py) to get their allocation.
+
+The above allocation would be non-optimal. For best performance, you want one MPI process per NUMA node.
+
+## How to Select Values and Optimize Intel's MKL LINPACK Benchmark
+
+See [How to Select Values and Optimize Intel's MKL LINPACK Benchmark](./optimizing.ipynb)
 
 ## How MPI Processes Work
 
@@ -862,9 +950,7 @@ where we choose $P$ and $Q$ such that their product is equal to the number of ph
 
 Extending [the example for block size](#understanding-block-size-math), this is effectively assigning a core to each subblock we create. Ideally they match perfectly, but you really just want to get it as close as you can.
 
-## Interpreting Benchmark Results
-
-TODO need to update this
+## Interpreting Benchmark Results for Single Node Test
 
 ```bash
 This is a SAMPLE run script for running a shared-memory version of
