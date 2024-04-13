@@ -261,7 +261,7 @@ fi
 
 By default, neither of these are used and this can be ignored.
 
-Before I explain the next few lines I need to quickly mention [MPI Ranks](#mpi-ranks). On our node this is how they'll be laid out:
+Before I explain the next few lines I need to quickly mention [MPI Ranks](#mpi-ranks). On our node this is how they'll be laid out where L:0, L1, etc are referring to local MPI instances:
 
 ```bash
 Node 1                   Node 2
@@ -280,7 +280,7 @@ See the [MPI Ranks section](#mpi-ranks) for more on how these work. Now remember
 LOCAL_RANK=$((PMI_RANK % MPI_PER_NODE))
 ```
 
-This is calculating the node local MPI rank. This effectively round robins the MPI processes across the nodes based on what you set for `-ppn`.
+This is calculating the node local MPI rank. This effectively round robins the MPI processes across the nodes based on what you set for `-ppn`. I explain the round robin portion specifically below.
 
 ```bash
 export HPL_HOST_NODE=$((LOCAL_RANK * NUMA_PER_MPI))-$(((LOCAL_RANK + 1) * NUMA_PER_MPI - 1))
