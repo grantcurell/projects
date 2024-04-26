@@ -17,7 +17,7 @@ def run_fio(block_size, io_type, size, device, ioengine, iodepth, numjobs):
         f'--filename={device}'
     ]
 
-    print("Starting FIO test. This may take a while, depending on the test parameters...")
+    print("Starting FIO with the following command: {}".format(' '.join(cmd)))
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
     # Print live output from FIO
@@ -72,7 +72,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run FIO to test drive performance with direct I/O.", add_help=False)
     default_numjobs = os.cpu_count()  # Default to the number of CPU cores
 
-    parser.add_argument("-e", "--ioengine", default="libaio", choices=['libaio', 'posixaio', 'mmap', 'sync'], help="I/O engine for the test (default: 'libaio').")
+    parser.add_argument("-e", "--ioengine", default="libaio", choices=['libaio', 'posixaio', 'mmap', 'sync', 'io_uring'], help="I/O engine for the test (default: 'libaio').")
     parser.add_argument("-b", "--block_size", default="4k", help="Block size for I/O operations (default: '4k').")
     parser.add_argument("-t", "--io_type", default="rw", choices=['read', 'write', 'rw', 'randrw'], help="Type of I/O operation (default: 'rw').")
     parser.add_argument("-s", "--size", default="2G", help="Size of the test data (default: '2G').")
