@@ -326,9 +326,43 @@ USER_EVENTS_REDIS:
     port: 6379
 ```
 
-- Create some Quay directory and put the config file in `<your_quay_directory>/config/config.yml`
-- Make the directory `<your_quay_directory>/storage`
-- Run `setfacl -m u:1001:-wx <your_quary_directory>/storage`
+- Create some Quay directory and put the config file in `$QUAY/config/config.yaml`
+  - **IT MUST HAVE THE YAML** suffix. It cannot be yml.
+- Make the directory `$QUAY/storage`
+- Run `setfacl -m u:1001:-wx $QUAY/storage`
+- Set up the firewall with:
+
+```bash
+firewall-cmd --permanent --add-port=80/tcp \
+&& firewall-cmd --permanent --add-port=443/tcp \
+&& firewall-cmd --permanent --add-port=5432/tcp \
+&& firewall-cmd --permanent --add-port=5433/tcp \
+&& firewall-cmd --permanent --add-port=6379/tcp \
+&& firewall-cmd --reload
+```
+
+- Next we need to set up the postgresql database Quay is going to use. Your pull secret is the one you [got from RedHat](https://console.redhat.com/openshift/install/pull-secret)
+
+```bash
+mkdir -p $QUAY/postgres-quay
+setfacl -m u:26:-wx $QUAY/postgres-quay
+sudo podman run -d --authfile ~/pull_secret --rm --name postgresql-quay \
+-e POSTGRESQL_USER=quayuser \
+-e POSTGRESQL_PASSWORD=quaypass \
+-e POSTGRESQL_DATABASE=quay \
+-e POSTGRESQL_ADMIN_PASSWORD=adminpass \
+-p 5432:5432 \
+-v $QUAY/postgres-quay:/var/lib/pgsql/data:Z \
+registry.redhat.io/rhel8/postgresql-13:1-109
+```
+
+- You can make sure it is running with `sudo podman exec -it postgresql-quay /bin/bash -c 'echo "CREATE EXTENSION IF NOT EXISTS pg_trgm" | psql -d quay -U postgres'`
+- Next start reddis with:
+
+```bash
+sudo podman run --authfile ~/pull_secret -d --rm --name redis -p 6379:6379 -e REDIS_PASSWORD=strongpassword registry.redhat.io/rhel8/redis-6:1-110
+```
+
 - Take the pull secret you [got from RedHat](https://console.redhat.com/openshift/install/pull-secret) and use it in the command:
 
 ```bash
@@ -339,10 +373,48 @@ sudo podman run --authfile ~/pull_secret -d --rm -p 80:8080 -p 443:8443  \
    registry.redhat.io/quay/quay-rhel8:v3.11.1
 ```
 
-## Online Assisted Install
+### Mirror the Images
 
+- This is done on the box with Quay on it
+- Next we have to mirror the images themselves. This is detailed in [these instructions](https://docs.openshift.com/container-platform/4.15/installing/disconnected_install/installing-mirroring-disconnected.html)
 
 ## Offline Install on VMWare
+
+The first thing you have to do is fill out the install-config.yml:
+
+1. **baseDomain**: The base domain for your OpenShift cluster.
+2. **compute**: Configuration for your worker nodes.
+    - `name`: A label for your worker nodes.
+    - `replicas`: Number of worker node replicas (usually more than 0 for production).
+3. **controlPlane**: Configuration for your control plane nodes.
+    - `name`: A label for your control plane nodes.
+    - `replicas`: Number of control plane replicas (usually 3).
+4. **metadata**: General metadata for your cluster.
+    - `name`: The name of your cluster.
+5. **networking**: Add any specific networking configuration here.
+6. **vsphere**: Configuration specific to your vSphere environment.
+    - `failureDomains`: Define failure domains.
+        - `name`: Name of the failure domain.
+        - `region`: Region name.
+        - `server`: Fully qualified domain name of your vSphere server.
+        - `topology`: Details of your vSphere topology.
+            - `computeCluster`: Path to the compute cluster.
+            - `datacenter`: Name of the datacenter.
+            - `datastore`: Path to the datastore.
+            - `networks`: Network names used by VMs.
+            - `resourcePool`: Path to the resource pool.
+            - `folder`: Path to the VM folder.
+        - `zone`: Zone name.
+    - `vcenters`: List of vCenters.
+        - `datacenters`: List of datacenters managed by this vCenter.
+        - `password`: Password for the vCenter.
+        - `server`: Fully qualified domain name of the vCenter server.
+        - `user`: Username for the vCenter.
+    - `diskType`: Disk type (thin or thick).
+7. **pullSecret**: Base64 encoded pull secret for OpenShift.
+8. **sshKey**: SSH public key for accessing nodes.
+9. **additionalTrustBundle**: Any additional trust bundle certificates.
+10. **imageContentSources**: Configuration for image content sources and mirrors.
 
 ## This is for online install (wrong one)
 
