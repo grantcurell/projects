@@ -212,218 +212,105 @@ volumeBindingMode: Immediate
 
 ```
 
+## Set Up S3
 
-## Old Stuff -----------------
+- On PowerScale you'll need to enable S3 service and add a bucket
 
-## Common to All Installs
+![](images/2024-07-01-14-01-12.png)
 
-This is all done on some Linux desktop of your choosing
-
-- First you have to go through [Preparing to install a cluster using user-provisioned infrastructure](https://docs.openshift.com/container-platform/4.15/installing/installing_vsphere/upi/upi-vsphere-preparing-to-install.html#upi-vsphere-preparing-to-install)
-- Pull the installer from [here](https://console.redhat.com/openshift/install/vsphere)
-- Run `tar -xvf openshift-install-linux.tar.gz`
-- Get your pull secret from [here](https://console.redhat.com/openshift/install/pull-secret) and save it somewhere
-- Download the Linux client from [here](https://access.redhat.com/downloads/content/290/ver=4.15/rhel---9/4.15.16/x86_64/product-software)
-  - I just put it in `/usr/local/bin` because it needs to be in path
-- Next you need to generate keys for OpenShift. Run `ssh-keygen -t ed25519 -N '' -f <path>/<file_name>` to do this.
-- You will need to add the key to your SSH agent. You can do this with `eval "$(ssh-agent -s)"` (this starts the SSH agent). Next run `ssh-add <private_key_name>`
-- Before continuing, you will need to set up your DNS server with forward and reverse records for everything in the [User-provisioned DNS Requirements](https://docs.openshift.com/container-platform/4.15/installing/installing_bare_metal/installing-bare-metal-network-customizations.html#installation-dns-user-infra_installing-bare-metal-network-customizations)
-
-I used the following configs.
-
-**dnsmasq config**
+- Install s3cmd with `pip install s3cmd`
+- Run `s3cmd --configure`
 
 ```bash
-# Configuration file for dnsmasq.
+Enter new values or accept defaults in brackets with Enter.
+Refer to user manual for detailed description of all options.
 
-# Never forward plain names (without a dot or domain part)
-domain-needed
+Access key and Secret key are your identifiers for Amazon S3. Leave them empty for using the env variables.
+Access Key [1_admin_accid]:
+Secret Key [Yt5Y7_32htTN2tw-AEP9mZS2KZ9j]:
+Default Region [US]: ""
 
-# Never forward addresses in the non-routed address spaces.
-bogus-priv
+Use "s3.amazonaws.com" for S3 Endpoint and not modify it to the target Amazon S3.
+S3 Endpoint [http://10.10.25.80:9020]: 10.10.25.80:9020
 
-# Specify the domain for dnsmasq
-local=/lan/
-local=/openshift.lan/
+Use "%(bucket)s.s3.amazonaws.com" to the target Amazon S3. "%(bucket)s" and "%(location)s" vars can be used
+if the target S3 system supports dns based buckets.
+DNS-style bucket+hostname:port template for accessing a bucket [""]: ''
 
-# Add local DNS records from this file
-addn-hosts=/etc/dnsmasq.hosts
+Encryption password is used to protect your files from reading
+by unauthorized persons while in transfer to S3
+Encryption password:
+Path to GPG program [/usr/bin/gpg]:
 
-# Add wildcard DNS entry for *.apps.openshift.lan
-address=/apps.openshift.lan/10.10.25.158
+When using secure HTTPS protocol all communication with Amazon S3
+servers is protected from 3rd party eavesdropping. This method is
+slower than plain HTTP, and can only be proxied with Python 2.7 or newer
+Use HTTPS protocol [No]:
 
-# Specify interfaces to listen on
-interface=lo
-interface=ens192
+On some networks all internet access must go through a HTTP proxy.
+Try setting it here if you can't connect to S3 directly
+HTTP Proxy server name:
 
-# Bind only to the interfaces it is listening on
-bind-interfaces
+New settings:
+  Access Key: 1_admin_accid
+  Secret Key: Yt5Y7_32htTN2tw-AEP9mZS2KZ9j
+  Default Region: ""
+  S3 Endpoint: 10.10.25.80:9020
+  DNS-style bucket+hostname:port template for accessing a bucket: ''
+  Encryption password:
+  Path to GPG program: /usr/bin/gpg
+  Use HTTPS protocol: False
+  HTTP Proxy server name:
+  HTTP Proxy server port: 0
 
-# Set the domain for dnsmasq
-domain=openshift.lan
-domain=lan
+Test access with supplied credentials? [Y/n] y
+Please wait, attempting to list all buckets...
+Success. Your access key and secret key worked fine :-)
 
-# Include all the files in a directory except those ending in .bak
-conf-dir=/etc/dnsmasq.d,.rpmnew,.rpmsave,.rpmorig
+Now verifying that encryption works...
+Not configured. Never mind.
 ```
 
-**/etc/hosts**
+- Add a data connecton on OpenShift AI
+  - **WARNING: Screenshot is wrong. For the endpoint YOU MUST PUT HTTP://** This is the opposite of the s3cmd command line where it *won't* work if you add `http://`
+  - If you need to troubleshoot pipelines, run `oc get pods -n redhat-ods-applications` to get the name of all your application pods. Then you can ran `oc describe pod openshift-pipelines-operator-69dd8bdfc4-cqxpr -n openshift-operators` (update with your index) to get the pipeline pod logs.
+
+![](images/2024-07-01-14-12-05.png)
+
+- Setting up a workbench
+
+![](images/2024-07-01-15-48-05.png)
+
+- `git clone`
+
+![](images/2024-07-01-15-50-55.png)
+
+## Accessing the System
 
 ```bash
-10.10.25.156 api.openshift.lan
-10.10.25.157 api-int.openshift.lan
-10.10.25.159 bootstrap.openshift.lan
-10.10.25.160 controlplane1.openshift.lan
-10.10.25.161 compute1.openshift.lan
-10.10.25.162 compute2.openshift.lan
-10.10.25.163 compute3.openshift.lan
-10.10.25.164 quay-server.openshift.lan
+[rosa@bastion ~]$ oc login --username cluster-admin --password VEQnI-EBKuH-PHxpY-IPIPE https://api.rosa-mqzmw.r0s7.p3.openshiftapps.com:443
+Login successful.
+
+You have access to 78 projects, the list has been suppressed. You can list all projects with 'oc projects'
+
+Using project "default".
+Welcome! See 'oc help' to get started.
+[rosa@bastion ~]$ oc whoami
+cluster-admin
+[rosa@bastion ~]$ oc whoami --show-console
+https://console-openshift-console.apps.rosa.rosa-mqzmw.r0s7.p3.openshiftapps.com
+[rosa@bastion ~]$ 
 ```
 
-Then run a quick test against all your DNS entries:
+### Identity Providers
+
+- The first time you login you use a temporary admin and then you can add an identity provider:
+
+![](images/2024-06-24-09-50-19.png)
+
+- I just wanted to do a username/password so I did the below and uploaded the file for htpasswd.
 
 ```bash
-[grant@rockydesktop openshift_keys]$ dig +noall +answer @10.10.25.120 api.openshift.lan
-api.openshift.lan.      0       IN      A       10.10.25.156
-[grant@rockydesktop openshift_keys]$ dig +noall +answer @10.10.25.120 api-int.openshift.lan
-api-int.openshift.lan.  0       IN      A       10.10.25.157
-[grant@rockydesktop openshift_keys]$ dig +noall +answer @10.10.25.120 random.apps.openshift.lan
-random.apps.openshift.lan. 0    IN      A       10.10.25.158
-[grant@rockydesktop openshift_keys]$ dig +noall +answer @10.10.25.120 bootstrap.openshift.lan
-bootstrap.openshift.lan. 0      IN      A       10.10.25.159
-[grant@rockydesktop openshift_keys]$ dig +noall +answer @10.10.25.120 -x 10.10.25.156
-156.25.10.10.in-addr.arpa. 0    IN      PTR     api.openshift.lan.
+sudo dnf install -y httpd-tools 
+htpasswd -c /home/grant/password grant
 ```
-
-### Build a Container Registry - Quay
-
-To run OpenShift you also need an offline repo of all your container images. Since everything else I'm running is RHEL, I went with Quay.
-
-First you need to create a config file that corresponds to the DNS entry that you set up earlier for Quay.
-
-```bash
-BUILDLOGS_REDIS:
-    host: quay-server.openshift.lan
-    password: strongpassword
-    port: 6379
-CREATE_NAMESPACE_ON_PUSH: true
-DATABASE_SECRET_KEY: a8c2744b-7004-4af2-bcee-e417e7bdd235
-DB_URI: postgresql://quayuser:quaypass@quay-server.openshift.lan:5432/quay
-DISTRIBUTED_STORAGE_CONFIG:
-    default:
-        - LocalStorage
-        - storage_path: /datastorage/registry
-DISTRIBUTED_STORAGE_DEFAULT_LOCATIONS: []
-DISTRIBUTED_STORAGE_PREFERENCE:
-    - default
-FEATURE_MAILING: false
-SECRET_KEY: e9bd34f4-900c-436a-979e-7530e5d74ac8
-SERVER_HOSTNAME: quay-server.openshift.lan
-SETUP_COMPLETE: true
-USER_EVENTS_REDIS:
-    host: quay-server.openshift.lan
-    password: strongpassword
-    port: 6379
-```
-
-- Create some Quay directory and put the config file in `$QUAY/config/config.yaml`
-  - **IT MUST HAVE THE YAML** suffix. It cannot be yml.
-- Make the directory `$QUAY/storage`
-- Run `setfacl -m u:1001:-wx $QUAY/storage`
-- Set up the firewall with:
-
-```bash
-firewall-cmd --permanent --add-port=80/tcp \
-&& firewall-cmd --permanent --add-port=443/tcp \
-&& firewall-cmd --permanent --add-port=5432/tcp \
-&& firewall-cmd --permanent --add-port=5433/tcp \
-&& firewall-cmd --permanent --add-port=6379/tcp \
-&& firewall-cmd --reload
-```
-
-- Next we need to set up the postgresql database Quay is going to use. Your pull secret is the one you [got from RedHat](https://console.redhat.com/openshift/install/pull-secret)
-
-```bash
-mkdir -p $QUAY/postgres-quay
-setfacl -m u:26:-wx $QUAY/postgres-quay
-sudo podman run -d --authfile ~/pull_secret --rm --name postgresql-quay \
--e POSTGRESQL_USER=quayuser \
--e POSTGRESQL_PASSWORD=quaypass \
--e POSTGRESQL_DATABASE=quay \
--e POSTGRESQL_ADMIN_PASSWORD=adminpass \
--p 5432:5432 \
--v $QUAY/postgres-quay:/var/lib/pgsql/data:Z \
-registry.redhat.io/rhel8/postgresql-13:1-109
-```
-
-- You can make sure it is running with `sudo podman exec -it postgresql-quay /bin/bash -c 'echo "CREATE EXTENSION IF NOT EXISTS pg_trgm" | psql -d quay -U postgres'`
-- Next start reddis with:
-
-```bash
-sudo podman run --authfile ~/pull_secret -d --rm --name redis -p 6379:6379 -e REDIS_PASSWORD=strongpassword registry.redhat.io/rhel8/redis-6:1-110
-```
-
-- Take the pull secret you [got from RedHat](https://console.redhat.com/openshift/install/pull-secret) and use it in the command:
-
-```bash
-sudo podman run --authfile ~/pull_secret -d --rm -p 80:8080 -p 443:8443  \
-   --name=quay \
-   -v $QUAY/config:/conf/stack:Z \
-   -v $QUAY/storage:/datastorage:Z \
-   registry.redhat.io/quay/quay-rhel8:v3.11.1
-```
-
-### Mirror the Images
-
-- This is done on the box with Quay on it
-- Next we have to mirror the images themselves. This is detailed in [these instructions](https://docs.openshift.com/container-platform/4.15/installing/disconnected_install/installing-mirroring-disconnected.html)
-
-## Offline Install on VMWare
-
-The first thing you have to do is fill out the install-config.yml:
-
-1. **baseDomain**: The base domain for your OpenShift cluster.
-2. **compute**: Configuration for your worker nodes.
-    - `name`: A label for your worker nodes.
-    - `replicas`: Number of worker node replicas (usually more than 0 for production).
-3. **controlPlane**: Configuration for your control plane nodes.
-    - `name`: A label for your control plane nodes.
-    - `replicas`: Number of control plane replicas (usually 3).
-4. **metadata**: General metadata for your cluster.
-    - `name`: The name of your cluster.
-5. **networking**: Add any specific networking configuration here.
-6. **vsphere**: Configuration specific to your vSphere environment.
-    - `failureDomains`: Define failure domains.
-        - `name`: Name of the failure domain.
-        - `region`: Region name.
-        - `server`: Fully qualified domain name of your vSphere server.
-        - `topology`: Details of your vSphere topology.
-            - `computeCluster`: Path to the compute cluster.
-            - `datacenter`: Name of the datacenter.
-            - `datastore`: Path to the datastore.
-            - `networks`: Network names used by VMs.
-            - `resourcePool`: Path to the resource pool.
-            - `folder`: Path to the VM folder.
-        - `zone`: Zone name.
-    - `vcenters`: List of vCenters.
-        - `datacenters`: List of datacenters managed by this vCenter.
-        - `password`: Password for the vCenter.
-        - `server`: Fully qualified domain name of the vCenter server.
-        - `user`: Username for the vCenter.
-    - `diskType`: Disk type (thin or thick).
-7. **pullSecret**: Base64 encoded pull secret for OpenShift.
-8. **sshKey**: SSH public key for accessing nodes.
-9. **additionalTrustBundle**: Any additional trust bundle certificates.
-10. **imageContentSources**: Configuration for image content sources and mirrors.
-
-## This is for online install (wrong one)
-
-- I went with the VMWare installer since that's what I had to test on
-
-![](images/2024-06-10-11-15-43.png)
-
-![](images/2024-06-10-11-18-53.png)
-
-![](images/2024-06-10-11-25-07.png)
-
-- Question - I'm doing this in a webgui. How does this work offline?
