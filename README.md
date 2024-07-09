@@ -1,6 +1,6 @@
-# Grant Curell's Dell Projects
+# Grant Curell's Projects
 
-Every time Dell asks me to figure something out, I write it down. Mostly because more often than not someone asks me about it a year later and I have to remember what I did.
+Every time I have to figure something out, I write it down. Mostly because more often than not someone asks me about it a year later and I have to remember what I did.
 
 ## Questions
 
@@ -12,8 +12,9 @@ Most of the files I use in the projects are linked from the markdown documentati
 
 ## Disclaimer
 
-These are just my personal notes for the random things I test. I'm generally thorough,
-but there is no guarentee on completeness :-D
+This material is made available for educational purposes, personal research, and informational use only. We believe this constitutes a "fair use" of any copyrighted material as provided for in section 107 of the US Copyright Law. In accordance with Title 17 U.S.C. Section 107, the material on this site is distributed without profit to those who have expressed a prior interest in receiving the included information for research and educational purposes.
+
+If you wish to use any copyrighted material from this site for purposes of your own that go beyond "fair use," you must obtain permission from the copyright owner. These are just notes I have written while learning various things.
 
 ## How to Configure ONIE
 
