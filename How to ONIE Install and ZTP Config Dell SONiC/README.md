@@ -79,7 +79,7 @@ This first section discusses operating system installation. If you manually inst
 1. On a separate host, set up an HTTP server to host your operating system files
    1. You could also use TFTP but for demonstration here I am using HTTP
 2. On a separate host, set up a DHCP server to feed the ZTD/ZTP options
-3. Force OS10 to reboot in ONIE uninstall mode and then allow it to boot in ONIE install mode
+3. Force OS10 to reboot in ONIE uninstall mode and then allow it to boot in ONIE install mode (see [reload command](https://dl.dell.com/content/manual35024495-dell-smartfabric-os10-user-guide-release-10-5-4.pdf?language=en-us#page=67))
 4. Install SONiC
 
 Dell switches are often shipped with OS10 by default (many times to meet TAA compliance requirements). In this scenario you may have just purchased several switches and you want to fully automate their out-of-the-box installation by replacing OS10 with SONiC. By default, OS10 will boot for the first time in Zero Touch Deployment (ZTD) mode. Entering configuration mode or rebooting the switch disables it. You can re-enable it with `reload ztd`. **WARNING** This will delete your startup configuration. You can check ztd status with `show ztd-status`. At time of writing [this](https://dl.dell.com/content/manual43922122-dell-smartfabric-os10-user-guide-release-10-5-4.pdf?language=en-us&ps=true) is the current OS10 manual. See page 93 for information on ZTD.
