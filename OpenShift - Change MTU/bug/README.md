@@ -92,6 +92,21 @@ F0719 01:46:01.927062   37437 ovnkube.go:136] failed to run ovnkube: failed to s
 
 My hardware MTU is 9000 so I, as the directions specified, set my cluster MTU 100 below to 8900. I don't know why the overlay is looking for 8958 or where that number is coming from. This looks like a bug to me unless I went wrong somewhere along the line.
 
+- To ensure I wasn't facing [this bug](https://access.redhat.com/solutions/5736191) I checked the MTU's on the host:
+
+```bash
+[grant@rockydesktop testing]$ oc debug node/00-50-56-8a-fb-ea -- chroot /host ip a sh | grep mtu
+Starting pod/00-50-56-8a-fb-ea-debug ...
+To use host binaries, run `chroot /host`
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+2: ens192: <BROADCAST,MULTICAST,ALLMULTI,UP,LOWER_UP> mtu 8900 qdisc mq master ovs-system state UP group default qlen 1000
+3: ovs-system: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+5: genev_sys_6081: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 65000 qdisc noqueue master ovs-system state UNKNOWN group default qlen 1000
+6: ovn-k8s-mp0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8900 qdisc noqueue state UNKNOWN group default qlen 1000
+7: br-int: <BROADCAST,MULTICAST> mtu 8900 qdisc noop state DOWN group default qlen 1000
+8: br-ex: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8900 qdisc noqueue state UNKNOWN group default qlen 1000
+```
+
 ## Files
 
 Note: I had to make the version 4.15.0 because 4.16.0 was not supported by butane.
