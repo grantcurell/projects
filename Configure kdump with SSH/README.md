@@ -1,5 +1,12 @@
 # Configure kdump with SSH
 
+- [Configure kdump with SSH](#configure-kdump-with-ssh)
+  - [Test System](#test-system)
+  - [Setup for SSH](#setup-for-ssh)
+    - [On the Crashing System](#on-the-crashing-system)
+  - [Test kdump](#test-kdump)
+  - [Interpreting the Files](#interpreting-the-files)
+
 ## Test System
 
 ```bash
@@ -79,3 +86,13 @@ I triggered a kernel dump with `echo c > /proc/sysrq-trigger`
 
 ## Interpreting the Files
 
+- Install `crash` with `dnf install -y crash`
+- The dumps show up on the remote host:
+
+```
+[root@patches 172.16.192.129-2024-07-23-15:13:11]# ls
+download.sh  kernel-debuginfo-5.14.0-427.24.1.el9_4.x86_64.rpm  kexec-dmesg.log  vmcore-dmesg.txt  vmcore.flat
+```
+
+- What did suck a bit is that Rocky appears to have a bug in their build system where `kernel-debuginfo-common` is missing from their build platform so I haven't had the chance to go through the dumps. See [this bug](https://forums.rockylinux.org/t/rocky-9-1-blue-onyx-missing-kernel-debuginfo-common-x86-64/8132). 
+  - Also unfortunately, the fix the dev in that post mentioned, doesn't work; [I tried it](https://forums.rockylinux.org/t/rocky-9-4-still-missing-kernel-debuginfo-common/15169). Even manually [searching the repository](https://download.rockylinux.org/pub/rocky/9.4/BaseOS/x86_64/debug/tree/Packages/k/) I couldn't find the right package so I'll need to test on RHEL or something.
