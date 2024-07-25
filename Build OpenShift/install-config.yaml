@@ -1,0 +1,187 @@
+apiVersion: v1
+baseDomain: openshift.lan
+compute:
+- name: worker
+  replicas: 3
+controlPlane:
+  name: master
+  replicas: 3
+metadata:
+  name: vmware-cluster
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  networkType: OVNKubernetes
+  serviceNetwork:
+  - 172.30.0.0/16
+  machineNetwork:
+  - cidr: 10.10.25.0/24
+platform:
+  baremetal:
+    apiVIPs:
+    - 10.10.25.179
+    ingressVIPs:
+    - 10.10.25.178
+    externalBridge: baremetal
+    provisioningBridge: provisioning
+    hosts:
+    - name: master-1
+      role: master
+      bootMACAddress: 00:50:56:8a:39:a0
+      networkConfig:
+        interfaces:
+          - name: eno1
+            type: ethernet
+            state: up
+            mac-address: 00:50:56:8a:39:a0
+            ipv4:
+              enabled: true
+              address:
+                - ip: 10.10.25.170
+                  prefix-length: 24
+              dhcp: false
+            mtu: 9000
+        dns-resolver:
+          config:
+            server:
+              - 10.10.25.120
+        routes:
+          config:
+            - destination: 0.0.0.0/0
+              next-hop-address: 10.10.25.1
+              next-hop-interface: eno1
+              table-id: 254
+    - name: master-2
+      role: master
+      bootMACAddress: 00:50:56:8a:f2:5d
+      networkConfig:
+        interfaces:
+          - name: eno1
+            type: ethernet
+            state: up
+            mac-address: 00:50:56:8a:f2:5d
+            ipv4:
+              enabled: true
+              address:
+                - ip: 10.10.25.171
+                  prefix-length: 24
+              dhcp: false
+            mtu: 9000
+        dns-resolver:
+          config:
+            server:
+              - 10.10.25.120
+        routes:
+          config:
+            - destination: 0.0.0.0/0
+              next-hop-address: 10.10.25.1
+              next-hop-interface: eno1
+              table-id: 254
+    - name: master-3
+      role: master
+      bootMACAddress: 00:50:56:8a:5c:ec
+      networkConfig:
+        interfaces:
+          - name: eno1
+            type: ethernet
+            state: up
+            mac-address: 00:50:56:8a:5c:ec
+            ipv4:
+              enabled: true
+              address:
+                - ip: 10.10.25.172
+                  prefix-length: 24
+              dhcp: false
+            mtu: 9000
+        dns-resolver:
+          config:
+            server:
+              - 10.10.25.120
+        routes:
+          config:
+            - destination: 0.0.0.0/0
+              next-hop-address: 10.10.25.1
+              next-hop-interface: eno1
+              table-id: 254
+    - name: worker-1
+      role: worker
+      bootMACAddress: 00:50:56:8a:e1:e7
+      networkConfig:
+        interfaces:
+          - name: eno1
+            type: ethernet
+            state: up
+            mac-address: 00:50:56:8a:e1:e7
+            ipv4:
+              enabled: true
+              address:
+                - ip: 10.10.25.173
+                  prefix-length: 24
+              dhcp: false
+            mtu: 9000
+        dns-resolver:
+          config:
+            server:
+              - 10.10.25.120
+        routes:
+          config:
+            - destination: 0.0.0.0/0
+              next-hop-address: 10.10.25.1
+              next-hop-interface: eno1
+              table-id: 254
+    - name: worker-2
+      role: worker
+      bootMACAddress: 00:50:56:8a:44:52
+      networkConfig:
+        interfaces:
+          - name: eno1
+            type: ethernet
+            state: up
+            mac-address: 00:50:56:8a:44:52
+            ipv4:
+              enabled: true
+              address:
+                - ip: 10.10.25.174
+                  prefix-length: 24
+              dhcp: false
+            mtu: 9000
+        dns-resolver:
+          config:
+            server:
+              - 10.10.25.120
+        routes:
+          config:
+            - destination: 0.0.0.0/0
+              next-hop-address: 10.10.25.1
+              next-hop-interface: eno1
+              table-id: 254
+    - name: worker-3
+      role: worker
+      bootMACAddress: 00:50:56:8a:fb:ea
+      networkConfig:
+        interfaces:
+          - name: eno1
+            type: ethernet
+            state: up
+            mac-address: 00:50:56:8a:fb:ea
+            ipv4:
+              enabled: true
+              address:
+                - ip: 10.10.25.175
+                  prefix-length: 24
+              dhcp: false
+            mtu: 9000
+        dns-resolver:
+          config:
+            server:
+              - 10.10.25.120
+        routes:
+          config:
+            - destination: 0.0.0.0/0
+              next-hop-address: 10.10.25.1
+              next-hop-interface: eno1
+              table-id: 254
+fips: false
+pullSecret: 'YOUR_SECRET'
+sshKey: 'YOUR_KEY'

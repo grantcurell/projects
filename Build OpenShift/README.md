@@ -1,7 +1,153 @@
+# Build OpenShift
 
-## Helpful Links
+## Install
 
-- [Offline Install for VMWare](https://docs.openshift.com/container-platform/4.15/installing/installing_vsphere/upi/installing-restricted-networks-vsphere.html#installing-restricted-networks-vsphere)
+### Set Up Your Local Mirror
+
+- run 
+
+```bash
+sudo firewall-cmd --add-service=dns --permanent && sudo firewall-cmd --add-port=8443/tcp --permanent && sudo firewall-cmd --add-service=dhcp --permanent && sudo firewall-cmd --reload && sudo firewall-cmd --list-all
+wget https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/mirror-registry/latest/mirror-registry.tar.gz
+mkdir -p mirror mirror-registry && tar -xzvf mirror-registry.tar.gz -C ./mirror-registry
+cd mirror-registry
+
+# Create the vars file
+cat <<EOF > vars
+quayHostname="grant-staging.openshift.lan"
+quayRoot="/home/grant/mirror/ocp4"
+quayStorage="/home/grant/mirror/ocp4"
+pgStorage="/home/grant/mirror/ocp4"
+initPassword="I.am.ghost.47"
+EOF
+
+# Export the necessary variables
+export quayHostname="grant-staging.openshift.lan"
+export quayRoot="/home/grant/mirror/ocp4"
+export quayStorage="/home/grant/mirror/ocp4"
+export pgStorage="/home/grant/mirror/ocp4"
+export initPassword="I.am.ghost.47"
+
+# Install the repo
+sudo ./mirror-registry install --quayHostname $quayHostname --quayRoot $quayRoot --quayStorage $quayStorage --pgStorage $pgStorage --initPassword $initPassword
+
+# Copy the newly created root CA to the trusted certificate directory
+sudo cp $quayRoot/quay-rootCA/rootCA.pem /etc/pki/ca-trust/source/anchors/quayCA.pem
+
+# Update the CA trust
+sudo update-ca-trust extract
+
+# Test mirror availability via CLI
+podman login -u init -p $initPassword $quayHostname:8443
+```
+- If everything has gone well up until now you should have a working quay repo:
+
+![](images/2024-07-25-13-34-05.png)
+
+- Next we have to actually mirror the images
+
+```bash
+# Export variables
+export quayHostname="grant-staging.openshift.lan"
+export initPassword="your_init_password"
+export email="you@example.com"
+export redhatAuth="your_redhat_password"
+
+# Change to home directory
+cd ~
+
+# Convert pull-secret.txt to .json
+cat ./pull-secret.txt | jq . > ./pull-secret.json
+
+# Create ~/.docker directory if it doesn't exist
+mkdir -p ~/.docker
+
+# Generate base64-encoded username and password for mirror registry
+AUTH=$(echo -n "init:${initPassword}" | base64 -w0)
+REDAUTH=$(echo -n "${email}:${redhatAuth}" | base64 -w0)
+
+# Create or overwrite ~/.docker/config.json with required entries
+cat <<EOF > ~/.docker/config.json
+{
+  "auths": {
+    "$quayHostname:8443": {
+      "auth": "$AUTH"
+    },
+    "cloud.openshift.com": {
+      "auth": "b3BlbnNo...",
+      "email": "$email"
+    },
+    "quay.io": {
+      "auth": "b3BlbnNo...",
+      "email": "$email"
+    },
+    "registry.connect.redhat.com": {
+      "auth": "NTE3Njg5Nj...",
+      "email": "$email"
+    },
+    "registry.redhat.io": {
+      "auth": "NTE3Njg5Nj...",
+      "email": "$email"
+    }
+  }
+}
+EOF
+
+# Create installation-files directory
+mkdir -p ~/installation-files
+
+echo "Docker config.json has been created/updated."
+```
+
+- Next you need to get oc mirror and run it. First you need to log in to RedHat's repo with the below. Make sure you use your redhat username **NOT** your e-mail.
+
+```bash
+podman login registry.redhat.io
+```
+
+- Next we set up `oc-mirror` itself.
+
+```bash
+wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/oc-mirror.tar.gz
+tar xzf oc-mirror.tar.gz
+chmod +x oc-mirror
+
+```
+
+### Using Local Agent
+
+- Installation instructions are located [here](https://docs.openshift.com/container-platform/4.16/installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.html)
+- Before you start make sure you get your pull secret and drop it in whatever directory you are using for installation. You can get it from [here](https://console.redhat.com/openshift/install/metal/agent-based)
+
+![](images/2024-07-25-09-27-38.png)
+
+- On the VMWare version you also need the VMWare root certs which you can download from the vCenter home page
+
+![](images/2024-07-25-10-16-45.png)
+
+
+
+```bash
+# For VMWare Version - import certs
+sudo cp certs/lin/* /etc/pki/ca-trust/source/anchors
+sudo update-ca-trust extract
+
+# Make openshift install directory (if you haven't already)
+mkdir ~/openshift-install
+
+# Download the Linux installer and unzip
+wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-install-linux.tar.gz && tar xzf openshift-install-linux.tar.gz
+
+# Make executable
+chmod +x ./openshift-install
+
+# Install nmstatectl
+sudo dnf install /usr/bin/nmstatectl -y
+```
+
+- When using `openshift-install create manifests` I had to put everything in a single file so this was my combined `install-config.yaml` and `agent-config.yaml`. My configuration is available at [install-config.yaml](./install-config.yaml)
+
+
 
 ## Deploy Dell CSI Operator on OpenShift
 
@@ -314,3 +460,377 @@ https://console-openshift-console.apps.rosa.rosa-mqzmw.r0s7.p3.openshiftapps.com
 sudo dnf install -y httpd-tools 
 htpasswd -c /home/grant/password grant
 ```
+
+## Understand OpenShift Networking
+
+From [the docs](https://ovn-kubernetes.io/design/topology/#ovn-kubernetes-network-topology-default-mode) we know there are the following components:
+
+![](images/2024-07-18-11-56-49.png)
+
+- node-local-switch: all the logical switch ports for the pods created on a node are bound to this switch and it also hosts load balancers that take care of DNAT-ing the service traffic
+- distributed-ovn-cluster-router: it's responsible for tunnelling overlay traffic between the nodes and also routing traffic between the node switches and gateway router's
+- distributed-join-switch: connects the ovn-cluster-router to the gateway routers
+- node-local-gateway-router: it's responsible for north-south traffic routing and connects the join switch to the external switch and it also hosts load balancers that take care of DNAT-ing the service traffic
+- node-local-external-switch: connects the gateway router to the external bridge
+
+To this end, I went and pulled the OVS config off of my cluster:
+
+```bash
+sudo ovs-vsctl show
+b162d944-c8a3-4318-9ebe-b3b1fe2ebc45
+    Bridge br-int
+        fail_mode: secure
+        datapath_type: system
+        Port "9d67534f628003c"
+            Interface "9d67534f628003c"
+        Port "220bd9d34b05ff4"
+            Interface "220bd9d34b05ff4"
+        Port ccc10faab05e0c3
+            Interface ccc10faab05e0c3
+        Port "101964cf2513870"
+            Interface "101964cf2513870"
+        Port "3025424a700befa"
+            Interface "3025424a700befa"
+        Port fc6b0ac46ee67d0
+            Interface fc6b0ac46ee67d0
+        Port c682ae728630785
+            Interface c682ae728630785
+        Port "09e426369137882"
+            Interface "09e426369137882"
+        Port "42f6eb06e94a8d3"
+            Interface "42f6eb06e94a8d3"
+        Port "34687c6eadaf73d"
+            Interface "34687c6eadaf73d"
+        Port "199c158819efdd2"
+            Interface "199c158819efdd2"
+        Port "325cd19c4cdf788"
+            Interface "325cd19c4cdf788"
+        Port d32dfbe0d75fd4a
+            Interface d32dfbe0d75fd4a
+        Port "8c3ea39a75498a7"
+            Interface "8c3ea39a75498a7"
+        Port br-int
+            Interface br-int
+                type: internal
+        Port "0c7e54c2091f93f"
+            Interface "0c7e54c2091f93f"
+        Port "4e390191e79cf41"
+            Interface "4e390191e79cf41"
+        Port "2626d19ab0fee56"
+            Interface "2626d19ab0fee56"
+        Port d98e9af9aebbf32
+            Interface d98e9af9aebbf32
+        Port "1b8837f5863d75d"
+            Interface "1b8837f5863d75d"
+        Port "1b6e5b90ed4e46c"
+            Interface "1b6e5b90ed4e46c"
+        Port "888b9e7da0e790b"
+            Interface "888b9e7da0e790b"
+        Port "1fe2b4d9057916c"
+            Interface "1fe2b4d9057916c"
+        Port c02c20ee9a537fe
+            Interface c02c20ee9a537fe
+        Port ce68d0e70b72754
+            Interface ce68d0e70b72754
+        Port c115949c8127c7d
+            Interface c115949c8127c7d
+        Port "88618dc5d56f9f0"
+            Interface "88618dc5d56f9f0"
+        Port "51d2137e7b5df4a"
+            Interface "51d2137e7b5df4a"
+        Port "037619c1e496730"
+            Interface "037619c1e496730"
+        Port "31e970eaac7dcc7"
+            Interface "31e970eaac7dcc7"
+        Port "19762a507da7747"
+            Interface "19762a507da7747"
+        Port "87ffd780e84e11b"
+            Interface "87ffd780e84e11b"
+        Port "61cba8ea4cf80de"
+            Interface "61cba8ea4cf80de"
+        Port d1657c3485ebca6
+            Interface d1657c3485ebca6
+        Port "1b510d8b97b1e72"
+            Interface "1b510d8b97b1e72"
+        Port "53f53eb9134accf"
+            Interface "53f53eb9134accf"
+        Port bccb70feea9ed77
+            Interface bccb70feea9ed77
+        Port "065924fb2665da2"
+            Interface "065924fb2665da2"
+        Port "90396ed0cecbc13"
+            Interface "90396ed0cecbc13"
+        Port "5a04215eee12652"
+            Interface "5a04215eee12652"
+        Port b114337f2e9eb97
+            Interface b114337f2e9eb97
+        Port "2b01f07c5012e10"
+            Interface "2b01f07c5012e10"
+        Port "0722cbca14bf74d"
+            Interface "0722cbca14bf74d"
+        Port "5de0d8d897ed833"
+            Interface "5de0d8d897ed833"
+        Port fc2033d1a0cf5dc
+            Interface fc2033d1a0cf5dc
+        Port cc7fb3b50d3f9c1
+            Interface cc7fb3b50d3f9c1
+        Port "8b9c96d9b27cf6e"
+            Interface "8b9c96d9b27cf6e"
+        Port "269037e39f92171"
+            Interface "269037e39f92171"
+        Port "1a3a9538b5d4247"
+            Interface "1a3a9538b5d4247"
+        Port "433ecc639cdb6b1"
+            Interface "433ecc639cdb6b1"
+        Port c27ffaecbecde0b
+            Interface c27ffaecbecde0b
+        Port "845850c4e6cf71b"
+            Interface "845850c4e6cf71b"
+        Port "7ddb555a4da2886"
+            Interface "7ddb555a4da2886"
+        Port "733ce64ff827e3b"
+            Interface "733ce64ff827e3b"
+        Port "2b1b6f84adc9551"
+            Interface "2b1b6f84adc9551"
+        Port "92dc1017fdf9828"
+            Interface "92dc1017fdf9828"
+        Port "286aa6ee245a88e"
+            Interface "286aa6ee245a88e"
+        Port e38c98f5cbc0b80
+            Interface e38c98f5cbc0b80
+        Port "7ec6321089ae248"
+            Interface "7ec6321089ae248"
+        Port "07d7a1d8fb17e56"
+            Interface "07d7a1d8fb17e56"
+        Port "398ea561b912799"
+            Interface "398ea561b912799"
+        Port "88a6e1c5dfadb3e"
+            Interface "88a6e1c5dfadb3e"
+        Port "4434f56df4a51d2"
+            Interface "4434f56df4a51d2"
+        Port ecb6691f061911f
+            Interface ecb6691f061911f
+        Port "47da0f8eb7c88b4"
+            Interface "47da0f8eb7c88b4"
+        Port "4c71b7b45b46049"
+            Interface "4c71b7b45b46049"
+        Port e579198df3b793a
+            Interface e579198df3b793a
+        Port f5b3469ce8f694e
+            Interface f5b3469ce8f694e
+        Port bee315fab0230ab
+            Interface bee315fab0230ab
+        Port de74da61a067ccf
+            Interface de74da61a067ccf
+        Port "1a696a6b3111d14"
+            Interface "1a696a6b3111d14"
+        Port abf2eff21ef3887
+            Interface abf2eff21ef3887
+        Port ovn-k8s-mp0
+            Interface ovn-k8s-mp0
+                type: internal
+        Port "95eb158784dc33b"
+            Interface "95eb158784dc33b"
+        Port e91b9e2d8740c2f
+            Interface e91b9e2d8740c2f
+        Port "044e9eb98b6be5c"
+            Interface "044e9eb98b6be5c"
+        Port f1873deeb7e47aa
+            Interface f1873deeb7e47aa
+        Port a96b99f80050bcd
+            Interface a96b99f80050bcd
+        Port ece1db9d37f63c1
+            Interface ece1db9d37f63c1
+        Port aab86e122f66f97
+            Interface aab86e122f66f97
+        Port a7f97709f3848a4
+            Interface a7f97709f3848a4
+        Port "9cfa26213bbcdf6"
+            Interface "9cfa26213bbcdf6"
+        Port "66b0d1ec2c20052"
+            Interface "66b0d1ec2c20052"
+        Port "799eb9f534905d9"
+            Interface "799eb9f534905d9"
+        Port ad3f481a08151c9
+            Interface ad3f481a08151c9
+        Port "404141d7ef876c5"
+            Interface "404141d7ef876c5"
+        Port a74eb07b47dc0a7
+            Interface a74eb07b47dc0a7
+        Port cfa76b640e19418
+            Interface cfa76b640e19418
+        Port "395b9b684212974"
+            Interface "395b9b684212974"
+        Port "940c2cf56f9a5f2"
+            Interface "940c2cf56f9a5f2"
+        Port c8225e494ec809e
+            Interface c8225e494ec809e
+        Port "7cf4e47fbdcabda"
+            Interface "7cf4e47fbdcabda"
+        Port "46f6edc707accf3"
+            Interface "46f6edc707accf3"
+        Port "44bdf69e9f3ef04"
+            Interface "44bdf69e9f3ef04"
+        Port "42767ccc80b9fc8"
+            Interface "42767ccc80b9fc8"
+        Port a6f4be438325900
+            Interface a6f4be438325900
+        Port "2ce5f5875d03c92"
+            Interface "2ce5f5875d03c92"
+        Port "45648275f0c78d4"
+            Interface "45648275f0c78d4"
+        Port "2912ae8c3b5c59d"
+            Interface "2912ae8c3b5c59d"
+        Port "7014d5029019978"
+            Interface "7014d5029019978"
+        Port "0901bccf4058021"
+            Interface "0901bccf4058021"
+        Port "0bff3a877f7b5ca"
+            Interface "0bff3a877f7b5ca"
+        Port d9de58b5f99c22b
+            Interface d9de58b5f99c22b
+        Port c50854cfe5ac6bc
+            Interface c50854cfe5ac6bc
+        Port "3bd4ce9ea335726"
+            Interface "3bd4ce9ea335726"
+        Port "389f7d86664ba25"
+            Interface "389f7d86664ba25"
+        Port "109dce3614fe9dd"
+            Interface "109dce3614fe9dd"
+        Port "9563654e13c12d2"
+            Interface "9563654e13c12d2"
+        Port cf184b7c4426201
+            Interface cf184b7c4426201
+        Port "3fafaa74deb4b12"
+            Interface "3fafaa74deb4b12"
+        Port "91e1b1af8d508d7"
+            Interface "91e1b1af8d508d7"
+        Port da508703ed9e601
+            Interface da508703ed9e601
+        Port c2460ea21748561
+            Interface c2460ea21748561
+        Port "53f9225d9e9ef54"
+            Interface "53f9225d9e9ef54"
+        Port "5f7fe81f1fdfdba"
+            Interface "5f7fe81f1fdfdba"
+        Port "81e618a95fd3069"
+            Interface "81e618a95fd3069"
+        Port "670ba81a4b72a8b"
+            Interface "670ba81a4b72a8b"
+        Port "5f432a944112075"
+            Interface "5f432a944112075"
+        Port "6ad9dc62b69ee02"
+            Interface "6ad9dc62b69ee02"
+        Port ddcf3d63a6060c9
+            Interface ddcf3d63a6060c9
+        Port "04bf81f8d2124d2"
+            Interface "04bf81f8d2124d2"
+        Port "103c51e6ad82fc0"
+            Interface "103c51e6ad82fc0"
+        Port bcc59c45a69db0b
+            Interface bcc59c45a69db0b
+        Port "15c87d27ea1b633"
+            Interface "15c87d27ea1b633"
+        Port "3da344b00d9e267"
+            Interface "3da344b00d9e267"
+        Port cdcfaaefeb72b93
+            Interface cdcfaaefeb72b93
+        Port "063f129ed22d382"
+            Interface "063f129ed22d382"
+        Port "3edee70301e5d44"
+            Interface "3edee70301e5d44"
+        Port "44bd2f0bb04e7f6"
+            Interface "44bd2f0bb04e7f6"
+        Port "96c391a9bcf76d7"
+            Interface "96c391a9bcf76d7"
+        Port "8e91e05c75a93f9"
+            Interface "8e91e05c75a93f9"
+        Port "8217fc100d4c064"
+            Interface "8217fc100d4c064"
+        Port "8d41d82ae32d362"
+            Interface "8d41d82ae32d362"
+        Port "64e652f8ea80d13"
+            Interface "64e652f8ea80d13"
+        Port "5b88ebf6f5686f1"
+            Interface "5b88ebf6f5686f1"
+        Port "4e92fe5b30ce8c1"
+            Interface "4e92fe5b30ce8c1"
+        Port "64935419185b671"
+            Interface "64935419185b671"
+        Port "21903391bbc9632"
+            Interface "21903391bbc9632"
+        Port ba74ec6c39317f1
+            Interface ba74ec6c39317f1
+        Port "7dcd99ac11fd00e"
+            Interface "7dcd99ac11fd00e"
+        Port "1f4d6ccb9e915b3"
+            Interface "1f4d6ccb9e915b3"
+        Port "6a807c99d851d79"
+            Interface "6a807c99d851d79"
+        Port "7b30cce2e0239d8"
+            Interface "7b30cce2e0239d8"
+        Port patch-br-int-to-br-ex_b0-7b-25-e9-b2-a4
+            Interface patch-br-int-to-br-ex_b0-7b-25-e9-b2-a4
+                type: patch
+                options: {peer=patch-br-ex_b0-7b-25-e9-b2-a4-to-br-int}
+        Port d44a55818594920
+            Interface d44a55818594920
+        Port "8410c871cfe580c"
+            Interface "8410c871cfe580c"
+        Port "851c6fbc9ca6c64"
+            Interface "851c6fbc9ca6c64"
+        Port "0eb976b089880b1"
+            Interface "0eb976b089880b1"
+        Port "26aa2e08684a6ad"
+            Interface "26aa2e08684a6ad"
+        Port "2080447b809e4de"
+            Interface "2080447b809e4de"
+        Port "5ffb83c2457f3a6"
+            Interface "5ffb83c2457f3a6"
+        Port "79886aca46ee2f8"
+            Interface "79886aca46ee2f8"
+        Port "6984f72105f858c"
+            Interface "6984f72105f858c"
+    Bridge br-ex
+        Port br-ex
+            Interface br-ex
+                type: internal
+        Port patch-br-ex_b0-7b-25-e9-b2-a4-to-br-int
+            Interface patch-br-ex_b0-7b-25-e9-b2-a4-to-br-int
+                type: patch
+                options: {peer=patch-br-int-to-br-ex_b0-7b-25-e9-b2-a4}
+        Port eno1.125
+            Interface eno1.125
+                type: system
+    ovs_version: "3.3.1"
+```
+
+Let's relate the components from your `ovs-vsctl show` output to the descriptions in the OVN Kubernetes documentation:
+
+1. **node-local-switch**:
+    - **Description**: All the logical switch ports for the pods created on a node are bound to this switch and it also hosts load balancers that take care of DNAT-ing the service traffic.
+    - **In my setup**: This corresponds to **`br-int`**. It connects all pod interfaces and manages the internal pod network.
+2. **distributed-ovn-cluster-router**:
+    - **Description**: Responsible for tunneling overlay traffic between the nodes and also routing traffic between the node switches and gateway routers.
+    - **In my setup**: This is represented by **`ovn-k8s-mp0`**. It handles overlay networking and ensures communication between nodes in the cluster via tunnels.
+3. **distributed-join-switch** - I don't have this because I did a single node physical build.
+4. **node-local-gateway-router**:
+    - **Description**: It's responsible for north-south traffic routing and connects the join switch to the external switch and it also hosts load balancers that take care of DNAT-ing the service traffic.
+    - **In your setup**: This is likely part of the configuration that connects **`br-int`** to **`br-ex`** through the patch ports. It handles routing traffic from the internal network to the external network.
+
+5. **node-local-external-switch**:
+    - **Description**: Connects the gateway router to the external bridge.
+    - **In your setup**: This corresponds to **`br-ex`**. It connects to the external network through the physical interface `eno1.125` and facilitates communication between the node and the external network.
+
+### Summary of the Mapping
+
+- **`br-int`**: Functions as the **node-local-switch**, managing internal pod network and connecting various logical interfaces for pods.
+- **`ovn-k8s-mp0`**: Acts as part of the **distributed-ovn-cluster-router**, handling overlay traffic between nodes.
+- **`br-ex`**: Acts as the **node-local-external-switch**, facilitating external connectivity through `eno1.125`.
+- **Patch Ports (`patch-br-int-to-br-ex` and `patch-br-ex-to-br-int`)**: These ports connect `br-int` and `br-ex`, supporting the role of **node-local-gateway-router** in managing north-south traffic routing and connectivity between internal and external networks.
+
+By examining this configuration, you can see how each component of your OVS setup corresponds to the elements described in the OVN Kubernetes documentation, enabling effective network management and traffic routing within your OpenShift cluster.
+
+## Helpful Links
+
+- [Offline Install for VMWare](https://docs.openshift.com/container-platform/4.15/installing/installing_vsphere/upi/installing-restricted-networks-vsphere.html#installing-restricted-networks-vsphere)
