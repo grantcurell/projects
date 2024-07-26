@@ -107,9 +107,34 @@ wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/oc-
 tar -xzf "$install_dir/oc-mirror.tar.gz" -C "$install_dir"
 chmod +x "$install_dir/oc-mirror"
 cd ~/installation-files
-./oc-mirror init --registry $quayHostname:8443 > imageset-config.yaml
-
-# TODO - need to finish mirroring here but this is the correct way to get imageset
+mkdir -p mirror-registry
+cd mirror-registry
+cat <<EOF > imageset-config.yaml
+kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+mirror:
+  platform:
+    channels:
+      - name: stable-4.16
+        minVersion: 4.16.0
+        maxVersion: 4.17.0
+  operators:
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.16
+      packages:
+        - name: kubernetes-nmstate-operator
+        - name: kubevirt-hyperconverged
+        - name: serverless-operator
+          channels:
+          - name: stable
+        - name: local-storage-operator
+        - name: odf-operator
+        - name: sriov-network-operator
+  additionalImages:
+    - name: registry.redhat.io/rhel8/support-tools:latest
+    - name: registry.redhat.io/ubi8/ubi:latest
+  helm: {}
+EOF
+oc mirror --config=./imageset-config.yaml docker://$quayHostname:8443
 ```
 
 ### Using Local Agent
