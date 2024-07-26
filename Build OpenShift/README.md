@@ -1,5 +1,18 @@
 # Build OpenShift
 
+- [Build OpenShift](#build-openshift)
+  - [Install](#install)
+    - [Set Up Your Local Mirror](#set-up-your-local-mirror)
+    - [Using Local Agent](#using-local-agent)
+  - [Deploy Dell CSI Operator on OpenShift](#deploy-dell-csi-operator-on-openshift)
+  - [Set Up S3](#set-up-s3)
+  - [Accessing the System](#accessing-the-system)
+    - [Identity Providers](#identity-providers)
+  - [Understand OpenShift Networking](#understand-openshift-networking)
+    - [Summary of the Mapping](#summary-of-the-mapping)
+  - [Helpful Links](#helpful-links)
+
+
 ## Install
 
 ### Set Up Your Local Mirror
@@ -11,15 +24,6 @@ sudo firewall-cmd --add-service=dns --permanent && sudo firewall-cmd --add-port=
 wget https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/mirror-registry/latest/mirror-registry.tar.gz
 mkdir -p mirror mirror-registry && tar -xzvf mirror-registry.tar.gz -C ./mirror-registry
 cd mirror-registry
-
-# Create the vars file
-cat <<EOF > vars
-quayHostname="grant-staging.openshift.lan"
-quayRoot="/home/grant/mirror/ocp4"
-quayStorage="/home/grant/mirror/ocp4"
-pgStorage="/home/grant/mirror/ocp4"
-initPassword="I.am.ghost.47"
-EOF
 
 # Export the necessary variables
 export quayHostname="grant-staging.openshift.lan"
@@ -44,59 +48,43 @@ podman login -u init -p $initPassword $quayHostname:8443
 
 ![](images/2024-07-25-13-34-05.png)
 
-- Next we have to actually mirror the images
+- Next we have to actually mirror the images. To do this you'll first need to get your pull secret. Download it from [https://console.redhat.com/openshift/install/pull-secret](https://console.redhat.com/openshift/install/pull-secret) to a file at `~/pull-secret.txt`
 
 ```bash
 # Export variables
-export quayHostname="grant-staging.openshift.lan"
-export initPassword="your_init_password"
-export email="you@example.com"
-export redhatAuth="your_redhat_password"
+export quayHostname="your-quay-host.domain"
+export initPassword="your-password"
 
 # Change to home directory
 cd ~
-
-# Convert pull-secret.txt to .json
-cat ./pull-secret.txt | jq . > ./pull-secret.json
 
 # Create ~/.docker directory if it doesn't exist
 mkdir -p ~/.docker
 
 # Generate base64-encoded username and password for mirror registry
 AUTH=$(echo -n "init:${initPassword}" | base64 -w0)
-REDAUTH=$(echo -n "${email}:${redhatAuth}" | base64 -w0)
 
-# Create or overwrite ~/.docker/config.json with required entries
-cat <<EOF > ~/.docker/config.json
-{
-  "auths": {
-    "$quayHostname:8443": {
-      "auth": "$AUTH"
-    },
-    "cloud.openshift.com": {
-      "auth": "b3BlbnNo...",
-      "email": "$email"
-    },
-    "quay.io": {
-      "auth": "b3BlbnNo...",
-      "email": "$email"
-    },
-    "registry.connect.redhat.com": {
-      "auth": "NTE3Njg5Nj...",
-      "email": "$email"
-    },
-    "registry.redhat.io": {
-      "auth": "NTE3Njg5Nj...",
-      "email": "$email"
-    }
-  }
+# Read the original JSON from pull-secret.txt
+original_json=$(cat pull-secret.txt)
+
+# Construct the new field to be added
+new_field=$(cat <<EOF
+"$quayHostname:8443": {
+  "auth": "$AUTH"
 }
 EOF
+)
 
-# Create installation-files directory
-mkdir -p ~/installation-files
+# Modify the JSON to include the new field
+modified_json=$(jq --argjson newField "{$new_field}" '.auths += $newField' <<< "$original_json")
 
-echo "Docker config.json has been created/updated."
+# Create the target directory if it does not exist
+mkdir -p ~/.docker
+
+# Write the modified JSON to ~/.docker/config.json
+echo "$modified_json" > ~/.docker/config.json
+
+echo "The modified JSON has been saved to ~/.docker/config.json"
 ```
 
 - Next you need to get oc mirror and run it. First you need to log in to RedHat's repo with the below. Make sure you use your redhat username **NOT** your e-mail.
@@ -108,10 +96,20 @@ podman login registry.redhat.io
 - Next we set up `oc-mirror` itself.
 
 ```bash
-wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/oc-mirror.tar.gz
-tar xzf oc-mirror.tar.gz
-chmod +x oc-mirror
+# Directory for installation files
+install_dir=~/installation-files
 
+# Create the directory if it does not exist
+mkdir -p "$install_dir"
+
+# Download and extract oc-mirror
+wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/oc-mirror.tar.gz -P "$install_dir"
+tar -xzf "$install_dir/oc-mirror.tar.gz" -C "$install_dir"
+chmod +x "$install_dir/oc-mirror"
+cd ~/installation-files
+./oc-mirror init --registry $quayHostname:8443 > imageset-config.yaml
+
+# TODO - need to finish mirroring here but this is the correct way to get imageset
 ```
 
 ### Using Local Agent
