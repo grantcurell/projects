@@ -18,7 +18,7 @@
 
 ### Set Up Your Local Mirror
 
-- run 
+- Replace the below script with your values and then run it.
 
 ```bash
 sudo firewall-cmd --add-service=dns --permanent && sudo firewall-cmd --add-port=8443/tcp --permanent && sudo firewall-cmd --add-service=dhcp --permanent && sudo firewall-cmd --reload && sudo firewall-cmd --list-all
