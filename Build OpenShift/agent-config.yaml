@@ -1,0 +1,174 @@
+apiVersion: v1alpha1
+kind: AgentConfig
+metadata:
+  name: agent-config 
+rendezvousIP: 192.168.1.80  # For a SNO cluster this is the same IP as the server. For a non-SNO install, pick an IP of one of the control plane servers
+hosts:
+  - hostname: master-0
+    interfaces:
+      - name: eno1  # This doesn't need to be the actual interface name, it has to match the names below
+        macAddress: 00:ef:44:21:e6:a6
+    networkConfig:
+      interfaces:
+        - name: eno1 # Match the name here
+          type: ethernet
+          state: up
+          mac-address: 00:ef:44:21:e6:a6
+          ipv4:
+            enabled: true
+            address:
+              - ip: 192.168.1.80
+                prefix-length: 23
+            dhcp: false
+          mtu: 9000
+      dns-resolver:
+        config:
+          server:
+            - 192.168.1.1
+      routes:
+        config:
+          - destination: 0.0.0.0/0
+            next-hop-address: 192.168.1.1
+            next-hop-interface: eno1 # Match the name here
+            table-id: 254
+#####
+  - hostname: master-1
+    interfaces:
+      - name: eno1  # This doesn't need to be the actual interface name, it has to match the names below
+        macAddress: 00:ef:44:21:e6:a5
+    networkConfig:
+      interfaces:
+        - name: eno1 # Match the name here
+          type: ethernet
+          state: up
+          mac-address: 00:ef:44:21:e6:a5
+          ipv4:
+            enabled: true
+            address:
+              - ip: 192.168.1.81
+                prefix-length: 23
+            dhcp: false
+          mtu: 9000
+      dns-resolver:
+        config:
+          server:
+            - 192.168.1.1
+      routes:
+        config:
+          - destination: 0.0.0.0/0
+            next-hop-address: 192.168.1.1
+            next-hop-interface: eno1 # Match the name here
+            table-id: 254
+#####
+  - hostname: master-2
+    interfaces:
+      - name: eno1  # This doesn't need to be the actual interface name, it has to match the names below
+        macAddress: 00:ef:44:21:e6:a7
+    networkConfig:
+      interfaces:
+        - name: eno1 # Match the name here
+          type: ethernet
+          state: up
+          mac-address: 00:ef:44:21:e6:a7
+          ipv4:
+            enabled: true
+            address:
+              - ip: 192.168.1.82
+                prefix-length: 23
+            dhcp: false
+          mtu: 9000
+      dns-resolver:
+        config:
+          server:
+            - 192.168.1.1
+      routes:
+        config:
+          - destination: 0.0.0.0/0
+            next-hop-address: 192.168.1.1
+            next-hop-interface: eno1 # Match the name here
+            table-id: 254
+#####
+  - hostname: worker-0
+    interfaces:
+      - name: eno1  # This doesn't need to be the actual interface name, it has to match the names below
+        macAddress: 00:ef:44:21:e6:a8
+    networkConfig:
+      interfaces:
+        - name: eno1 # Match the name here
+          type: ethernet
+          state: up
+          mac-address: 00:ef:44:21:e6:a8
+          ipv4:
+            enabled: true
+            address:
+              - ip: 192.168.1.83
+                prefix-length: 23
+            dhcp: false
+          mtu: 9000
+      dns-resolver:
+        config:
+          server:
+            - 192.168.1.1
+      routes:
+        config:
+          - destination: 0.0.0.0/0
+            next-hop-address: 192.168.1.1
+            next-hop-interface: eno1 # Match the name here
+            table-id: 254
+#####
+  - hostname: worker-1
+    interfaces:
+      - name: eno1  # This doesn't need to be the actual interface name, it has to match the names below
+        macAddress: 00:ef:44:21:e1:a5
+    networkConfig:
+      interfaces:
+        - name: eno1 # Match the name here
+          type: ethernet
+          state: up
+          mac-address: 00:ef:44:21:e1:a5
+          ipv4:
+            enabled: true
+            address:
+              - ip: 192.168.1.84
+                prefix-length: 23
+            dhcp: false
+          mtu: 9000
+      dns-resolver:
+        config:
+          server:
+            - 192.168.1.1
+      routes:
+        config:
+          - destination: 0.0.0.0/0
+            next-hop-address: 192.168.1.1
+            next-hop-interface: eno1 # Match the name here
+            table-id: 254
+#####
+  - hostname: worker-2
+    interfaces:
+      - name: eno1  # This doesn't need to be the actual interface name, it has to match the names below
+        macAddress: 00:ef:44:21:e2:a5
+    networkConfig:
+      interfaces:
+        - name: eno1 # Match the name here
+          type: ethernet
+          state: up
+          mac-address: 00:ef:44:21:e2:a5
+          ipv4:
+            enabled: true
+            address:
+              - ip: 192.168.1.85
+                prefix-length: 23
+            dhcp: false
+          mtu: 9000
+      dns-resolver:
+        config:
+          server:
+            - 192.168.1.1
+      routes:
+        config:
+          - destination: 0.0.0.0/0
+            next-hop-address: 192.168.1.1
+            next-hop-interface: eno1 # Match the name here
+            table-id: 254
+

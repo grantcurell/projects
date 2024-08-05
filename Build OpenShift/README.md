@@ -11,6 +11,7 @@
   - [Understand OpenShift Networking](#understand-openshift-networking)
     - [Summary of the Mapping](#summary-of-the-mapping)
   - [Helpful Links](#helpful-links)
+  - [Dan Notes](#dan-notes)
 
 
 ## Install
@@ -94,6 +95,26 @@ podman login registry.redhat.io
 ```
 
 - Next we set up `oc-mirror` itself.
+- **WARNING**: I had to disable IPv6 on my interface to get this to work. I got this error because it was trying to use IPv6 to talk to RedHat's repos. I have no idea why, but disabling IPv6 got around this.
+
+```bash
+[grant@rockydesktop mirror-registry]$ ../oc-mirror --config=./imageset-config.yaml docker://$quayHostname
+Checking push permissions for grant-staging.openshift.lan:8443
+Creating directory: oc-mirror-workspace/src/publish
+Creating directory: oc-mirror-workspace/src/v2
+Creating directory: oc-mirror-workspace/src/charts
+Creating directory: oc-mirror-workspace/src/release-signatures
+backend is not configured in ./imageset-config.yaml, using stateless mode
+backend is not configured in ./imageset-config.yaml, using stateless mode
+No metadata detected, creating new workspace
+error: error retrieving mapping information for quay.io/openshift-release-dev/ocp-release@sha256:633d1d36e834a70baf666994ef375b9d1702bd1c54ab46f96c41223af9c2d150: unable to retrieve release image info: unable to read image quay.io/openshift-release-dev/ocp-release@sha256:633d1d36e834a70baf666994ef375b9d1702bd1c54ab46f96c41223af9c2d150: Get "https://quay.io/v2/": dial tcp [2600:1f18:483:cf00:69a3:473d:d206:190a]:443: connect: network is unreachable
+```
+
+- **WARNING 2:** When I first ran the mirror command it hung here for a long time and I wasn't sure if it had bugged out. I just let it sit and it did end up continuing after several minutes.
+
+![](images/2024-08-05-10-44-01.png)
+
+- Run the following script.
 
 ```bash
 # Directory for installation files
@@ -134,8 +155,10 @@ mirror:
     - name: registry.redhat.io/ubi8/ubi:latest
   helm: {}
 EOF
-oc mirror --config=./imageset-config.yaml docker://$quayHostname:8443
+./oc-mirror --config=./imageset-config.yaml docker://$quayHostname:8443
 ```
+
+- **IMPORTANT**: Notice that the `oc-mirror` tool creates a folder called `oc-mirror-workspace` and in that folder is a `results-XXXXX` folder. Within the results folder you will need the file `imageContentSourcePolicy.yaml` for later. 
 
 ### Using Local Agent
 
@@ -144,7 +167,7 @@ oc mirror --config=./imageset-config.yaml docker://$quayHostname:8443
 
 ![](images/2024-07-25-09-27-38.png)
 
-- On the VMWare version you also need the VMWare root certs which you can download from the vCenter home page
+- On the VMWare version you also need the VMWare root certs which you can download from the vCenter home page. Ignore this if you aren't installing on VMWare OR if you are not using VMWare for storage. That is to say, you can install against VMs without doing the VMWare setup. If you do this you should be following the instructions for bare metal **NOT** VMWare.
 
 ![](images/2024-07-25-10-16-45.png)
 
@@ -168,8 +191,40 @@ chmod +x ./openshift-install
 sudo dnf install /usr/bin/nmstatectl -y
 ```
 
-- When using `openshift-install create manifests` I had to put everything in a single file so this was my combined `install-config.yaml` and `agent-config.yaml`. My configuration is available at [install-config.yaml](./install-config.yaml)
+- Next we need to create `agent-config.yaml` and `install-config.yaml`. We'llr start with `install-config.yaml`
+- My configuration is available at [install-config.yaml](./install-config.yaml). You will need to replace it with your values. For your pull secret, you can use the same information you had in `~/.docker/config.json`. You can run `jq -c . ~/.docker/config.json` to get your pull secret in a single line string.
+- Your SSH key you can retrieve from `cat ~/.ssh/id_rsa.pub`
+- For `imageContentSources` you may remember earlier that I mentioned the folder results created from `oc-mirror` Go to your results folder and extract the part underneath `repositoryDigestMirrors`. It should look something like the below. That is what needs to go under imageContentSources
 
+```
+  - mirrors:
+    - grant-staging.openshift.lan:8443/migration-toolkit-virtualization
+    source: registry.redhat.io/migration-toolkit-virtualization
+  - mirrors:
+    - grant-staging.openshift.lan:8443/rhel9
+    source: registry.redhat.io/rhel9
+  - mirrors:
+    - grant-staging.openshift.lan:8443/openshift4
+    source: registry.redhat.io/openshift4
+  - mirrors:
+    - grant-staging.openshift.lan:8443/openshift-serverless-1
+    source: registry.redhat.io/openshift-serverless-1
+  - mirrors:
+    - grant-staging.openshift.lan:8443/container-native-virtualization
+    source: registry.redhat.io/container-native-virtualization
+***SNIP - there will be more***
+```
+
+- For the trust bundle values, you can use the `openssl` tool to extract the certs. You can use the following to get them.
+  - **WARNING**: Make sure the certs are all indented correctly in the YAML file.
+
+```bash
+openssl s_client -connect <YOUR_QUAY_HOST - EX: grant-staging.openshift.lan>:8443 -showcerts </dev/null 2>/dev/null | \
+awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/ {print $0}' > combined-cert-chain.pem
+```
+
+- TODO fill in the agent config
+- 
 
 
 ## Deploy Dell CSI Operator on OpenShift
@@ -857,3 +912,15 @@ By examining this configuration, you can see how each component of your OVS setu
 ## Helpful Links
 
 - [Offline Install for VMWare](https://docs.openshift.com/container-platform/4.15/installing/installing_vsphere/upi/installing-restricted-networks-vsphere.html#installing-restricted-networks-vsphere)
+
+## Dan Notes
+
+- There's openshift-installer and there's openshift-installer agent
+- The agent installer gets rid of the bootstrap and the loadbalancer
+- What the agent-based installer is, is that they containerized everything. In the agent installer you have a rendeveuz node and that's one of your host
+- You can put whatever you want for the NIC names. They are completely irrelevant. They're just for matching up in that YAML file. You might need the name in the bond.
+- You don't have to have quay.io
+- The `openshift-install agent create manifests`
+- oc-mirror will write YAML files with the ImageContentSourcePolicy
+- You must add your additionaltrustbundlepolicy - you have to change it from proxy only. You need to set this to always
+- You have to set AdditionalTrustBundlePolicy
