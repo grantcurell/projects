@@ -27,11 +27,11 @@ mkdir -p mirror mirror-registry && tar -xzvf mirror-registry.tar.gz -C ./mirror-
 cd mirror-registry
 
 # Export the necessary variables
-export quayHostname="grant-staging.openshift.lan"
-export quayRoot="/home/grant/mirror/ocp4"
-export quayStorage="/home/grant/mirror/ocp4"
-export pgStorage="/home/grant/mirror/ocp4"
-export initPassword="I.am.ghost.47"
+export quayHostname="grant-staging.openshift.lan" # Update me
+export quayRoot="/home/grant/mirror/ocp4" # Update me
+export quayStorage="/home/grant/mirror/ocp4" # Update me
+export pgStorage="/home/grant/mirror/ocp4" # Update me
+export initPassword="password" # Update me
 
 # Install the repo
 sudo ./mirror-registry install --quayHostname $quayHostname --quayRoot $quayRoot --quayStorage $quayStorage --pgStorage $pgStorage --initPassword $initPassword
