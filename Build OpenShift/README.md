@@ -163,15 +163,12 @@ EOF
 ### Using Local Agent
 
 - Installation instructions are located [here](https://docs.openshift.com/container-platform/4.16/installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.html)
-- Before you start make sure you get your pull secret and drop it in whatever directory you are using for installation. You can get it from [here](https://console.redhat.com/openshift/install/metal/agent-based)
-
-![](images/2024-07-25-09-27-38.png)
 
 - On the VMWare version you also need the VMWare root certs which you can download from the vCenter home page. Ignore this if you aren't installing on VMWare OR if you are not using VMWare for storage. That is to say, you can install against VMs without doing the VMWare setup. If you do this you should be following the instructions for bare metal **NOT** VMWare.
 
 ![](images/2024-07-25-10-16-45.png)
 
-
+- Pulling the VMWare certs (don't need to do if not using VMWare or not using VMWare for CSI)
 
 ```bash
 # For VMWare Version - import certs
@@ -191,7 +188,7 @@ chmod +x ./openshift-install
 sudo dnf install /usr/bin/nmstatectl -y
 ```
 
-- Next we need to create `agent-config.yaml` and `install-config.yaml`. We'llr start with `install-config.yaml`
+- Next we need to create `agent-config.yaml` and `install-config.yaml`. We'll start with `install-config.yaml`
 - My configuration is available at [install-config.yaml](./install-config.yaml). You will need to replace it with your values. For your pull secret, you can use the same information you had in `~/.docker/config.json`. You can run `jq -c . ~/.docker/config.json` to get your pull secret in a single line string.
 - Your SSH key you can retrieve from `cat ~/.ssh/id_rsa.pub`
 - For `imageContentSources` you may remember earlier that I mentioned the folder results created from `oc-mirror` Go to your results folder and extract the part underneath `repositoryDigestMirrors`. It should look something like the below. That is what needs to go under imageContentSources
@@ -223,9 +220,20 @@ openssl s_client -connect <YOUR_QUAY_HOST - EX: grant-staging.openshift.lan>:844
 awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/ {print $0}' > combined-cert-chain.pem
 ```
 
-- TODO fill in the agent config
-- 
+- The agent configuration is available [here](./agent-config.yaml). There's no real trick to the agent config, fill it in with your values.
+- Once you have filled everything out create a tmp directory to work from and then create the installation files:
 
+
+```bash
+mkdir /tmp/cluster
+cd /tmp/cluster/
+mv ./agent-config.yaml /tmp/cluster
+mv ./install-config.yaml /tmp/cluster
+openshift-install agent create cluster-manifests --dir=/tmp/cluster
+openshift-install agent create image --dir ./
+```
+
+- Now you've generated the ISO, boot your servers with that ISO and enjoy the install.
 
 ## Deploy Dell CSI Operator on OpenShift
 
