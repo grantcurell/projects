@@ -11,7 +11,6 @@
   - [Understand OpenShift Networking](#understand-openshift-networking)
     - [Summary of the Mapping](#summary-of-the-mapping)
   - [Helpful Links](#helpful-links)
-  - [Dan Notes](#dan-notes)
 
 
 ## Install
@@ -279,6 +278,10 @@ openshift-install agent create image --dir ./
 
 - Now you've generated the ISO, boot your servers with that ISO and enjoy the install.
 - On VMWare, I got very annoyed having to swap out all the ISOs so I wrote [this script](./change_iso.py) which will go through and change all the ISOs and BIOS settings for the VMs automatically.
+- You can track the status of the build with `openshift-install --dir ./ agent wait-for bootstrap-complete --log-level=debug`
+- If you want to be able to use the `oc` command, you can get your `KUBECONFIG` from the directory in which you built the iso. The installation process consumes both `install-config.yaml` and `agent-config.yaml` (no, I don't know why but they definitely should get rid of that), but it should leave behind a directory called `auth`. In the auth directory should be your `kubeconfig` file. Run `export KUBECONFIG=<ABSOLUTE_PATH_TO_KUBECONFIG>` to set it up for `oc`. You can use commands like `oc get nodes` to check the node status. You can run `oc get co` to see the container status. Expect the console container to be the last container to come up so patience is key. console relies on auth which relies on ingress in that order.
+- If you need to debug, you can ssh into the boxes with `ssh -i ~/.ssh/id_rsa <your_rendezvous_host_ip>` and then run `journalctl -u assisted-service.service` to get a full dump of the install status
+- After the build completes, you can run `oc whoami --show-console` to get the address for the web console
 
 ## Deploy Dell CSI Operator on OpenShift
 
@@ -965,15 +968,3 @@ By examining this configuration, you can see how each component of your OVS setu
 ## Helpful Links
 
 - [Offline Install for VMWare](https://docs.openshift.com/container-platform/4.15/installing/installing_vsphere/upi/installing-restricted-networks-vsphere.html#installing-restricted-networks-vsphere)
-
-## Dan Notes
-
-- There's openshift-installer and there's openshift-installer agent
-- The agent installer gets rid of the bootstrap and the loadbalancer
-- What the agent-based installer is, is that they containerized everything. In the agent installer you have a rendeveuz node and that's one of your host
-- You can put whatever you want for the NIC names. They are completely irrelevant. They're just for matching up in that YAML file. You might need the name in the bond.
-- You don't have to have quay.io
-- The `openshift-install agent create manifests`
-- oc-mirror will write YAML files with the ImageContentSourcePolicy
-- You must add your additionaltrustbundlepolicy - you have to change it from proxy only. You need to set this to always
-- You have to set AdditionalTrustBundlePolicy
