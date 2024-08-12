@@ -194,6 +194,8 @@ sudo dnf install /usr/bin/nmstatectl -y
 - For `imageContentSources` you may remember earlier that I mentioned the folder results created from `oc-mirror` Go to your results folder and extract the part underneath `repositoryDigestMirrors`. It should look something like the below. That is what needs to go under imageContentSources
 
 ```
+spec:
+  repositoryDigestMirrors:
   - mirrors:
     - grant-staging.openshift.lan:8443/migration-toolkit-virtualization
     source: registry.redhat.io/migration-toolkit-virtualization
@@ -209,8 +211,49 @@ sudo dnf install /usr/bin/nmstatectl -y
   - mirrors:
     - grant-staging.openshift.lan:8443/container-native-virtualization
     source: registry.redhat.io/container-native-virtualization
-***SNIP - there will be more***
+  - mirrors:
+    - grant-staging.openshift.lan:8443/ubi8
+    source: registry.redhat.io/ubi8
+  - mirrors:
+    - grant-staging.openshift.lan:8443/source-to-image
+    source: registry.redhat.io/source-to-image
+  - mirrors:
+    - grant-staging.openshift.lan:8443/rhel8
+    source: registry.redhat.io/rhel8
+  - mirrors:
+    - grant-staging.openshift.lan:8443/openshift-serverless-1-tech-preview
+    source: registry.redhat.io/openshift-serverless-1-tech-preview
+  - mirrors:
+    - grant-staging.openshift.lan:8443/odf4
+    source: registry.redhat.io/odf4
+  - mirrors:
+    - grant-staging.openshift.lan:8443/openshift-service-mesh
+    source: registry.redhat.io/openshift-service-mesh
+  - mirrors:
+    - grant-staging.openshift.lan:8443/rhceph
+    source: registry.redhat.io/rhceph
+---
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: release-0
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - grant-staging.openshift.lan:8443/openshift/release
+    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+  - mirrors:
+    - grant-staging.openshift.lan:8443/openshift/release-images
+    source: quay.io/openshift-release-dev/ocp-release
 ```
+
+**BIG WARNING**
+**BIG WARNING**
+**BIG WARNING**
+Notice that there are multiple sections. **YOU MUST GET ALL THE SECTIONS**. If you do not, the install will fail. You will know something is wrong if during the install you login via SSH to the bootstrap mode and `sudo podman images` returns nothing. It means nothing is being pulled.
+**BIG WARNING**
+**BIG WARNING**
+**BIG WARNING**
 
 - For the trust bundle values, you can use the `openssl` tool to extract the certs. You can use the following to get them.
   - **WARNING**: Make sure the certs are all indented correctly in the YAML file.
@@ -222,6 +265,7 @@ awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/ {print $0}' > combined-cert-chain.pem
 
 - The agent configuration is available [here](./agent-config.yaml). There's no real trick to the agent config, fill it in with your values.
 - Once you have filled everything out create a tmp directory to work from and then create the installation files:
+  - **FATAL WARNING**: Do not do this in a dirty directory. There are multiple files generated during the install to include multiple hidden files. If they are still present it will fail.
 
 
 ```bash
@@ -234,6 +278,7 @@ openshift-install agent create image --dir ./
 ```
 
 - Now you've generated the ISO, boot your servers with that ISO and enjoy the install.
+- On VMWare, I got very annoyed having to swap out all the ISOs so I wrote [this script](./change_iso.py) which will go through and change all the ISOs and BIOS settings for the VMs automatically.
 
 ## Deploy Dell CSI Operator on OpenShift
 
