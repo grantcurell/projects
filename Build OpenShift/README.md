@@ -252,6 +252,14 @@ spec:
 
 Notice that there are multiple sections. **YOU MUST GET ALL THE SECTIONS**. If you do not, the install will fail. You will know something is wrong if during the install you login via SSH to the bootstrap mode and `sudo podman images` returns nothing. It means nothing is being pulled.
 
+You only need this part of things:
+
+```bash
+- mirrors:
+- grant-staging.openshift.lan:8443/openshift/release
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+```
+
 **BIG WARNING**<br>
 **BIG WARNING**<br>
 **BIG WARNING**<br>
@@ -265,11 +273,11 @@ awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/ {print $0}' > combined-cert-chain.pem
 ```
 
 - The agent configuration is available [here](./agent-config.yaml). There's no real trick to the agent config, fill it in with your values.
+  - **WARNING**: The NIC names are completely irrelevant, another confusing surprise. Those NIC names just have to be consistent and are used in the YAML itself to link values between the list of interfaces and the networkConfig. You could name it bananas for all it matters.
+  - **WARNING 2** The agent installer started in 4.12, but it 4.12 can only do a single node install rendering it effectively useless until 4.13. If you are running 4.12 or prior, you have to do a user provisioned install (UPI).
 - Once you have filled everything out create a tmp directory to work from and then create the installation files:
   - **WARNING**: Do not do this in a dirty directory. There are multiple files generated during the install to include multiple hidden files. If they are still present it will fail.
   - **WARNING 2**: Notice we are using `openshift-install agent`. I did not see this clearly differentiated in the documentation - `openshift-install` and `openshift-install agent` are two completely separate things built into one binary. The RedHad docs will freely mix the two. Do not confuse them. The difference is the agent install eliminates the need to use a bootstrapper or load balancer and replaces it with a rendezvous host.
-  - **WARNING 3**: The NIC names are completely irrelevant, another confusing surprise. Those NIC names just have to be consistent and are used in the YAML itself to link values between the list of interfaces and the networkConfig. You could name it bananas for all it matters.
-  - **WARNING 4** (yes, there are really that many) The agent installer started in 4.12, but it 4.12 can only do a single node install rendering it effectively useless until 4.13. If you are running 4.12 or prior, you have to do a user provisioned install (UPI).
 
 
 ```bash
