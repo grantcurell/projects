@@ -2,6 +2,9 @@
 
 - [Build OpenShift](#build-openshift)
   - [Install](#install)
+    - [Pull Required Binaries](#pull-required-binaries)
+      - [Specifying a Version](#specifying-a-version)
+    - [DNS Entries](#dns-entries)
     - [Set Up Your Local Mirror](#set-up-your-local-mirror)
     - [Using Local Agent](#using-local-agent)
   - [Deploy Dell CSI Operator on OpenShift](#deploy-dell-csi-operator-on-openshift)
@@ -15,14 +18,91 @@
 
 ## Install
 
+### Pull Required Binaries
+
+- Pull the installer and binaries from [here](https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/). You will need to pull both the client, installer, and oc-mirror separately.
+  - Extract them, run `chmod +x oc kubectl openshift-install oc-mirror` and then `sudo mv oc kubectl openshift-install oc-mirror /usr/local/bin`
+- Get your pull secret from [here](https://console.redhat.com/openshift/install/pull-secret) and save it somewhere
+
+#### Specifying a Version
+
+If you need to install a specific version, make sure you grab the binaries specifically associated with that version.
+
+- You can get a specific version by going to this URL: [https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/](https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/)
+
+### DNS Entries
+
+- I used dnsmasq for my DNS server with the following config. I had multiple clusters set up. The main one I use in this tutorial is vmware-cluster. Notice that the apps IP is going to be the same as your API IP.
+
+```bash
+# Configuration file for dnsmasq.
+
+# Never forward plain names (without a dot or domain part)
+domain-needed
+
+# Never forward addresses in the non-routed address spaces.
+bogus-priv
+
+# Specify the local domains for dnsmasq to resolve
+local=/lan/
+local=/openshift.lan/
+local=/test.openshift.lan/
+local=/vmware-cluster.openshift.lan/
+
+# Add local DNS records from this file
+addn-hosts=/etc/dnsmasq.hosts
+
+# Add wildcard DNS entry for *.apps domains
+address=/apps.test.openshift.lan/10.10.25.189
+address=/apps.vmware-cluster.openshift.lan/10.10.25.178
+
+# Specify interfaces to listen on
+interface=lo
+interface=ens192
+
+# Bind only to the interfaces it is listening on
+bind-interfaces
+
+# Set the primary domain for dnsmasq
+domain=openshift.lan
+domain=test.openshift.lan
+domain=vmware-cluster.openshift.lan
+domain=lan
+
+# Include all the files in a directory except those ending in .bak
+conf-dir=/etc/dnsmasq.d,.rpmnew,.rpmsave,.rpmorig
+```
+
+- I had the following additional entries setup for everything else in my `/etc/hosts` file. Notice that the one labeled quay is going to be our mirror server - that should be a separate machine outside of your OpenShift cluster, but that all the cluster machines can reach.
+
+```bash
+# Quay
+10.10.25.131 grant-staging.openshift.lan
+
+# OpenShift VMWare Cluster
+10.10.25.179 api.vmware-cluster.openshift.lan
+10.10.25.178 oauth-openshift.apps.vmware-cluster.openshift.lan
+10.10.25.178 console-openshift-console.apps.vmware-cluster.openshift.lan
+10.10.25.178 grafana-openshift-monitoring.apps.vmware-cluster.openshift.lan
+10.10.25.178 thanos-querier-openshift-monitoring.apps.vmware-cluster.openshift.lan
+10.10.25.178 prometheus-k8s-openshift-monitoring.apps.vmware-cluster.openshift.lan
+10.10.25.178 alertmanager-main-openshift-monitoring.apps.vmware-cluster.openshift.lan
+
+# Bootstrap host (THIS IS ONLY FOR THE USER PROVISIONED INFRASTRUCTURE INSTALL)
+# For the UPI install you have to have a separate bootstrap host just for the install. If you aren't doing UPI,
+# you can safely ignore this. You also don't need a bootstrap host after OpenShift 4.13=<
+10.10.25.169 bootstrap.openshift.lan
+```
+
 ### Set Up Your Local Mirror
 
+- Do the following on the host you plan to use as your mirror. You'll need a machine with a few hundred gigs of space. I went with 300GB.
 - Replace the below script with your values and then run it.
 
 ```bash
 sudo firewall-cmd --add-service=dns --permanent && sudo firewall-cmd --add-port=8443/tcp --permanent && sudo firewall-cmd --add-service=dhcp --permanent && sudo firewall-cmd --reload && sudo firewall-cmd --list-all
 wget https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/mirror-registry/latest/mirror-registry.tar.gz
-mkdir -p mirror mirror-registry && tar -xzvf mirror-registry.tar.gz -C ./mirror-registry
+mkdir -p mirror-registry && tar -xzvf mirror-registry.tar.gz -C ./mirror-registry
 cd mirror-registry
 
 # Export the necessary variables
@@ -97,7 +177,7 @@ podman login registry.redhat.io
 - **WARNING**: I had to disable IPv6 on my interface to get this to work. I got this error because it was trying to use IPv6 to talk to RedHat's repos. I have no idea why, but disabling IPv6 got around this.
 
 ```bash
-[grant@rockydesktop mirror-registry]$ ../oc-mirror --config=./imageset-config.yaml docker://$quayHostname
+[grant@rockydesktop mirror-registry]$ oc-mirror --config=./imageset-config.yaml docker://$quayHostname
 Checking push permissions for grant-staging.openshift.lan:8443
 Creating directory: oc-mirror-workspace/src/publish
 Creating directory: oc-mirror-workspace/src/v2
@@ -109,26 +189,10 @@ No metadata detected, creating new workspace
 error: error retrieving mapping information for quay.io/openshift-release-dev/ocp-release@sha256:633d1d36e834a70baf666994ef375b9d1702bd1c54ab46f96c41223af9c2d150: unable to retrieve release image info: unable to read image quay.io/openshift-release-dev/ocp-release@sha256:633d1d36e834a70baf666994ef375b9d1702bd1c54ab46f96c41223af9c2d150: Get "https://quay.io/v2/": dial tcp [2600:1f18:483:cf00:69a3:473d:d206:190a]:443: connect: network is unreachable
 ```
 
-- **WARNING 2:** When I first ran the mirror command it hung here for a long time and I wasn't sure if it had bugged out. I just let it sit and it did end up continuing after several minutes.
-
-![](images/2024-08-05-10-44-01.png)
-
-- Run the following script.
+- Run the following script. **Make sure you update the versions with what you need**
+  - This assumes you still have `quayHostname` defined in your environment from earlier.
 
 ```bash
-# Directory for installation files
-install_dir=~/installation-files
-
-# Create the directory if it does not exist
-mkdir -p "$install_dir"
-
-# Download and extract oc-mirror
-wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/oc-mirror.tar.gz -P "$install_dir"
-tar -xzf "$install_dir/oc-mirror.tar.gz" -C "$install_dir"
-chmod +x "$install_dir/oc-mirror"
-cd ~/installation-files
-mkdir -p mirror-registry
-cd mirror-registry
 cat <<EOF > imageset-config.yaml
 kind: ImageSetConfiguration
 apiVersion: mirror.openshift.io/v1alpha2
@@ -136,10 +200,10 @@ mirror:
   platform:
     channels:
       - name: stable-4.16
-        minVersion: 4.16.0
-        maxVersion: 4.17.0
+        minVersion: 4.12.9
+        maxVersion: 4.12.9
   operators:
-    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.16
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.12
       packages:
         - name: kubernetes-nmstate-operator
         - name: kubevirt-hyperconverged
@@ -154,8 +218,12 @@ mirror:
     - name: registry.redhat.io/ubi8/ubi:latest
   helm: {}
 EOF
-./oc-mirror --config=./imageset-config.yaml docker://$quayHostname:8443
+oc-mirror --config=./imageset-config.yaml docker://$quayHostname:8443
 ```
+
+- **WARNING:** When I first ran the mirror command it hung here for a long time and I wasn't sure if it had bugged out. I just let it sit and it did end up continuing after several minutes.
+
+![](images/2024-08-05-10-44-01.png)
 
 - **IMPORTANT**: Notice that the `oc-mirror` tool creates a folder called `oc-mirror-workspace` and in that folder is a `results-XXXXX` folder. Within the results folder you will need the file `imageContentSourcePolicy.yaml` for later. 
 
