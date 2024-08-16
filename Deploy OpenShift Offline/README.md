@@ -106,11 +106,11 @@ mkdir -p mirror-registry && tar -xzvf mirror-registry.tar.gz -C ./mirror-registr
 cd mirror-registry
 
 # Export the necessary variables
-export quayHostname="grant-staging.openshift.lan" # Update me
+export quayHostname="mfdt-staging.openshift.lan" # Update me
 export quayRoot="/home/grant/mirror/ocp4" # Update me
 export quayStorage="/home/grant/mirror/ocp4" # Update me
 export pgStorage="/home/grant/mirror/ocp4" # Update me
-export initPassword="password" # Update me
+export initPassword="I.am.ghost.47" # Update me
 
 # Install the repo
 sudo ./mirror-registry install --quayHostname $quayHostname --quayRoot $quayRoot --quayStorage $quayStorage --pgStorage $pgStorage --initPassword $initPassword
@@ -199,7 +199,7 @@ apiVersion: mirror.openshift.io/v1alpha2
 mirror:
   platform:
     channels:
-      - name: stable-4.16
+      - name: stable-4.12
         minVersion: 4.12.9
         maxVersion: 4.12.9
   operators:
