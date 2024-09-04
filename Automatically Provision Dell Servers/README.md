@@ -42,18 +42,12 @@ There are two predominant workflows for automatically deploying and provisioning
 
 ### When to Use OpenManage Enterprise (OME) and When Not
 
-**Warning**: Honesty based on personal experience ahead. Forthright commentary serves to save others from mistakes I have personally made or watched others make.
-
 Unless there is a compelling reason not to use OME, it makes life significantly easier and is probably the better solution. 
 
 Potential good reasons to not do **automated deployment** with OME (I bolded the automated deployment bit because for reasons I explain below, you're still going to end up using OME):
 
- 1. You are using Bare Metal Orchestrator (BMO) and have a workflow built there. If this is the case you are probably a TELCO or something of equivalent size and aren't reading this article
+ 1. You are using Bare Metal Orchestrator (BMO) and have a workflow built there
  2. You have a significant investment in a multi-vendor deployment solution and already have the in-house personnel and talent up, running, and using this solution
-
-**The worst reason to not do this with OME:**
-
-1. You are me at 27 years old and think building everything open source is better because you haven't yet had to handle or pay for manpower in the maintenance phase of code you have written. (Ok, so I actually never made this mistake with OME, but I did with other things.)
 
 **Benefits of doing this with OME:**
 
@@ -127,8 +121,6 @@ If you don't use server initiated discovery you will need to build a custom harn
   - OpenManage's API is [here](https://developer.dell.com/apis/5898/versions/4.0.0/docs/Introduction.md)
 
 ## Entirely Custom Workflow
-
-You're on your own here. I vehemently recommend against this route. Some places to begin the process:
 
 - [Discovery with Ansible](https://docs.ansible.com/ansible/latest/collections/dellemc/openmanage/ome_discovery_module.html#ansible-collections-dellemc-openmanage-ome-discovery-module)
 - [OME API Discovery with Python/PowerShell](https://github.com/dell/OpenManage-Enterprise/blob/main/docs/API.md#invoke-discover-device)
