@@ -41,6 +41,8 @@
     - [Row Partial Pivoting](#row-partial-pivoting)
   - [Some Related Binary Reverse Engineering](#some-related-binary-reverse-engineering)
     - [Usage in `do_spawn`](#usage-in-do_spawn)
+  - [Installing Offline](#installing-offline)
+  - [Optimizing](#optimizing)
 
 
 ## Understanding Intel's MKL LINPACK Process Flow
@@ -1160,3 +1162,23 @@ mov     [rsp+68h+max_node_count], r13
 ```
 
 - so we can see ppn being placed on the stack at the location of the `num_procs` variable.
+
+## Installing Offline
+
+- Get installers from these locations:
+  - https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html?operatingsystem=linux&linux-install-type=offline
+  - https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html?operatingsystem=linux&linux-install-type=offline
+  - https://downloadmirror.intel.com/825890/l_onemklbench_p_2024.2.0_527.tgz
+
+```bash
+wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/e6ff8e9c-ee28-47fb-abd7-5c524c983e1c/l_BaseKit_p_2024.2.1.100_offline.sh
+sudo sh ./l_BaseKit_p_2024.2.1.100_offline.sh -a --silent --cli --eula accept
+wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/d461a695-6481-426f-a22f-b5644cd1fa8b/l_HPCKit_p_2024.2.1.79_offline.sh
+sudo sh ./l_HPCKit_p_2024.2.1.79_offline.sh -a --silent --cli --eula accept
+source /opt/intel/oneapi/setvars.sh
+
+```
+
+## Optimizing
+
+See [Optimizing](./optimizing.ipynb)
