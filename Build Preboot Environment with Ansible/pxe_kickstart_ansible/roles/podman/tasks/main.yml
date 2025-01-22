@@ -1,0 +1,17 @@
+---
+- name: Install Podman
+  dnf:
+    name: podman
+    state: present
+  tags: podman
+
+- name: Verify Podman Installation
+  command: podman --version
+  register: podman_version_output
+  changed_when: false
+  tags: podman
+
+- name: Display Podman Version
+  debug:
+    msg: "Podman version installed: {{ podman_version_output.stdout }}"
+  tags: podman

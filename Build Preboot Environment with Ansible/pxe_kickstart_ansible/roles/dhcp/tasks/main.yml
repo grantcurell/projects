@@ -1,0 +1,109 @@
+---
+# Main tasks for setting up the DHCP server for PXE booting
+
+- name: Load target host variables
+  include_vars: ../group_vars/target_hosts.yml
+  tags: dhcp
+
+- name: Install DHCP server
+  dnf:
+    name: dhcp-server
+    state: present
+  tags: dhcp
+
+- name: Create interface detection script from template
+  template:
+    src: find_pxe_interface.sh.j2
+    dest: /tmp/find_pxe_interface.sh
+    mode: '0755'
+  tags:
+    - dhcp
+    - tftp
+
+- name: Run the interface detection script
+  command: /tmp/find_pxe_interface.sh
+  register: pxe_interface_output
+  ignore_errors: yes
+  tags:
+    - dhcp
+    - tftp
+
+- name: Set PXE interface fact
+  set_fact:
+    pxe_interface: "{{ pxe_interface_output.stdout }}"
+  when: pxe_interface_output.rc == 0
+  tags:
+    - dhcp
+    - tftp
+
+- name: Debug selected network interface
+  debug:
+    msg: "Selected PXE Interface: {{ pxe_interface }}"
+  when: pxe_interface is defined and pxe_interface != ""
+  tags:
+    - dhcp
+    - tftp
+
+- name: Fail if no network interface was found for the subnet
+  fail:
+    msg: "No network interface found for the specified subnet {{ dhcp_subnet }}/{{ dhcp_netmask }}"
+  when: pxe_interface_output.rc != 0
+  tags:
+    - dhcp
+    - tftp
+
+- name: Get the IP address of the selected PXE interface
+  shell: "ip -o -4 addr show dev {{ pxe_interface }} | awk '{print $4}' | cut -d/ -f1"
+  register: pxe_interface_ip_output
+  when: pxe_interface is defined and pxe_interface != ""
+  tags:
+    - dhcp
+    - tftp
+
+- name: Set PXE server IP fact
+  set_fact:
+    pxe_server_ip: "{{ pxe_interface_ip_output.stdout }}"
+  when: pxe_interface_ip_output is defined
+  tags:
+    - dhcp
+    - tftp
+
+- name: Debug PXE server IP
+  debug:
+    msg: "PXE Server IP: {{ pxe_server_ip }}"
+  tags:
+    - dhcp
+    - tftp
+
+- name: Update DHCP service to bind to the dynamically determined interface
+  lineinfile:
+    path: /etc/sysconfig/dhcpd
+    regexp: '^DHCPDARGS='
+    line: 'DHCPDARGS="{{ pxe_interface }}"'
+    create: yes
+  notify: restart_dhcp
+  when: pxe_interface is defined and pxe_interface != ""
+  tags: dhcp
+
+- name: Copy DHCP server configuration for all target hosts
+  template:
+    src: templates/dhcpd.conf.j2
+    dest: /etc/dhcp/dhcpd.conf
+    mode: '0644'
+  notify: restart_dhcp
+  tags: dhcp
+
+- name: Ensure firewall allows DHCP traffic
+  firewalld:
+    service: dhcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+  tags: dhcp
+
+- name: Ensure DHCP server is enabled and started
+  service:
+    name: dhcpd
+    state: started
+    enabled: yes
+  tags: dhcp

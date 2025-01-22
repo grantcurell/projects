@@ -1,0 +1,54 @@
+---
+# Main tasks for setting up the HTTP server using Podman
+
+- name: Load target host variables
+  include_vars: ../group_vars/target_hosts.yml
+  tags: http
+
+- name: Ensure Podman container image for HTTP server is present
+  dnf:
+    name: httpd
+    state: present
+  tags: http
+
+- name: Pull the HTTP server image (Apache)
+  command: podman pull docker.io/library/httpd:latest
+  tags: http
+
+- name: Create a directory for HTTP server files
+  file:
+    path: /var/www/html
+    state: directory
+    mode: '0755'
+  tags: http
+
+- name: Deploy Kickstart configuration for each target host
+  template:
+    src: ks.cfg.j2
+    dest: "/var/www/html/ks-{{ inv_hostname }}.cfg"
+  with_items: "{{ groups['target_hosts'] }}"
+  loop_control:
+    loop_var: inv_hostname
+  vars:
+    ip_address: "{{ hostvars[inv_hostname].ansible_host }}"
+    mac_address: "{{ hostvars[inv_hostname].mac_address }}"
+  tags: http
+
+- name: Copy the test HTML page to the HTTP server directory
+  template:
+    src: templates/test_page.html.j2
+    dest: /var/www/html/index.html
+    mode: '0644'
+  tags: http
+
+- name: Run the HTTP server container with Podman
+  containers.podman.podman_container:
+    name: httpd_server
+    image: docker.io/library/httpd:latest
+    state: started
+    ports:
+      - "{{ http_port }}:80"
+    volumes:
+      - /var/www/html:/usr/local/apache2/htdocs:Z
+    restart_policy: unless-stopped
+  tags: http

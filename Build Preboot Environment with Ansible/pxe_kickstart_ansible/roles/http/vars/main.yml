@@ -1,0 +1,4 @@
+---
+# Variables specific to the HTTP server setup
+
+http_port: 80  # Default port for the HTTP server. Change this if you want a different external port.

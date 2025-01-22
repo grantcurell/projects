@@ -131,6 +131,7 @@ status: {}
 
 - Move everything in your config directory to the webserver directory at `/var/www/html/ocp4`
 - Run `openshift-install coreos print-stream-json | grep '\.iso[^.]'` to get the URL link to the version of RHCOS you need then get it with `wget`.
+  - If you are running on VMWare you can pull an OVA from [here](https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.12/latest/)
 - Run the following to fix the permissions in the directory
 
 ```bash
@@ -146,4 +147,6 @@ sudo chmod 755 /var/www/html/ocp4
 sudo coreos-installer install /dev/sda -u http://192.168.22.1:8080/ocp4/rhcos -I http://192.168.22.1:8080/ocp4/bootstrap.ign --insecure --insecure-ignition
 
 
+# Or if you waited for it boot, use the following command then just reboot after it finishes and make sure you remove the attached .iso
+sudo coreos-installer install /dev/sda -u http://192.168.22.1:8080/ocp4/rhcos -I http://192.168.22.1:8080/ocp4/master.ign --insecure --insecure-ignition
 ```

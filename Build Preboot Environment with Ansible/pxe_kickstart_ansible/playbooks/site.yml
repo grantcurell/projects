@@ -1,0 +1,41 @@
+---
+# Main playbook to configure a PXE/Kickstart server on a Rocky Linux machine
+
+- name: Configure PXE/Kickstart Server
+  hosts: pxe_server     # Specifies that the tasks will be run on the host(s) in the 'pxe_server' group from the inventory file
+  become: yes           # Enables privilege escalation (similar to 'sudo' in Linux) for tasks requiring root access
+  gather_facts: yes     # Collects information about the host(s), such as OS type, IP addresses, etc., before running any tasks
+
+  roles:
+    # Each 'role' below is a group of related tasks that configure specific components of the PXE server
+
+    - role: common       # 'common' role for general system setup, like updating packages and installing prerequisites
+      tags: common       # Allows you to run this role independently using 'ansible-playbook site.yml --tags "common"'
+
+    - role: podman       # 'podman' role to install and configure Podman, which is used for container management on the PXE server
+      tags: podman       # You can run just the Podman setup tasks with 'ansible-playbook site.yml --tags "podman"'
+
+    - role: http         # 'http' role to set up the HTTP server, which will host Kickstart and installation files
+      tags: http         # Allows you to run only the HTTP setup tasks with 'ansible-playbook site.yml --tags "http"'
+      vars:
+        http_port: 80    # Sets the HTTP server to listen on port 80; adjust this if you need a different port
+
+    - role: dhcp         # 'dhcp' role to install and configure the DHCP server, which assigns IP addresses to PXE clients
+      tags: dhcp         # Allows you to run only the DHCP configuration tasks with 'ansible-playbook site.yml --tags "dhcp"'
+      vars:
+        dhcp_range_start: 192.168.1.20   # Start of the DHCP IP address range for PXE clients
+        dhcp_range_end: 192.168.1.100    # End of the DHCP IP address range for PXE clients
+        dhcp_netmask: 255.255.255.0      # Subnet mask for the DHCP range
+
+    - role: tftp         # 'tftp' role to set up the TFTP server, which will serve PXE boot files to client machines
+      tags: tftp         # Run only the TFTP tasks with 'ansible-playbook site.yml --tags "tftp"'
+
+  # Explanation:
+  # - Each role encapsulates a specific part of the PXE server configuration, making the playbook modular and easier to maintain.
+  # - Using tags, you can selectively run parts of the playbook. For example, running 'ansible-playbook site.yml --tags "http,tftp"'
+  #   will execute only the HTTP and TFTP roles, skipping others.
+  # - Variables specific to each role (like 'http_port' for the HTTP role) are defined under 'vars' for that role. This helps keep
+  #   configurations flexible, allowing for easy adjustments without modifying the role itself.
+
+# Overall, this playbook sets up a PXE server on the 'pxe_server' host, enabling it to provide network boot services.
+# It leverages the power of roles to organize tasks into reusable, logical groupings, each handling a different aspect of the setup.

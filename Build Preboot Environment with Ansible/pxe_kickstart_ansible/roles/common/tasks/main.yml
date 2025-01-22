@@ -1,0 +1,15 @@
+---
+- name: Update all packages
+  dnf:
+    name: "*"
+    state: latest
+  tags: common
+
+- name: Install basic tools
+  dnf:
+    name:
+      - vim
+      - wget
+      - curl
+    state: present
+  tags: common

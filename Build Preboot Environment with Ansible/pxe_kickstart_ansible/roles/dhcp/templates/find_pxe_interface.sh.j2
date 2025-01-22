@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Target subnet to search for
+TARGET_SUBNET="{{ dhcp_subnet | regex_replace('\\.0$', '.') }}"
+
+# Get the list of interfaces and their IPs, then iterate over them
+for iface in $(ip -o -4 addr show | awk '{print $2}'); do
+    # Get the IP address of the current interface
+    ip_addr=$(ip -o -4 addr show $iface | awk '{print $4}')
+    
+    # Check if the IP contains the target subnet
+    if echo "$ip_addr" | grep -q "$TARGET_SUBNET"; then
+        echo "$iface"
+        exit 0
+    fi
+done
+
+# If no interface was found in the subnet
+echo "No interface found in the subnet {{ dhcp_subnet }}/{{ dhcp_netmask }}"
+exit 1
