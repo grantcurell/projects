@@ -1,0 +1,26 @@
+# Kickstart file for automated Rocky Linux installation
+# Define installation source and configuration
+
+lang en_US.UTF-8
+keyboard us
+timezone America/New_York --utc
+rootpw {{ root_password }}
+user --name={{ user_name }} --password={{ user_password }}
+
+# Network configuration
+network --bootproto=static --ip={{ ip_address }} --netmask={{ netmask }} --gateway={{ gateway }} --nameserver={{ dns }}
+
+# Partitioning
+clearpart --all --initlabel
+autopart --type=lvm
+
+# Packages to install
+%packages
+@core
+@^minimal install
+%end
+
+# Post-install script
+%post
+echo "Installation complete" > /etc/motd
+%end

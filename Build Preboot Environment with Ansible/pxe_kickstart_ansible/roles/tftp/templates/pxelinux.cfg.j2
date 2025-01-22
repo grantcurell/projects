@@ -1,0 +1,12 @@
+# tftp/templates/pxelinux.cfg.j2
+DEFAULT menu.c32
+PROMPT 0
+TIMEOUT 50
+ONTIMEOUT install
+
+MENU TITLE PXE Boot Menu
+
+LABEL install
+  MENU LABEL Install Rocky Linux
+  KERNEL vmlinuz
+  APPEND initrd=initrd.img inst.ks=http://{{ pxe_server_ip }}/ks-{{ inv_hostname }}.cfg

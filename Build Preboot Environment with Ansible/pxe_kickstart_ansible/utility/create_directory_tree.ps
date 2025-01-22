@@ -1,0 +1,60 @@
+﻿# Define the base directory
+$baseDir = "pxe_kickstart_ansible"
+
+# Define the directory structure
+$structure = @(
+    "$baseDir/inventory",
+    "$baseDir/playbooks",
+    "$baseDir/roles/common/tasks",
+    "$baseDir/roles/common/handlers",
+    "$baseDir/roles/common/templates",
+    "$baseDir/roles/common/files",
+    "$baseDir/roles/common/vars",
+    "$baseDir/roles/dhcp/tasks",
+    "$baseDir/roles/dhcp/templates",
+    "$baseDir/roles/dhcp/vars",
+    "$baseDir/roles/http/tasks",
+    "$baseDir/roles/http/templates",
+    "$baseDir/roles/http/files",
+    "$baseDir/roles/http/vars",
+    "$baseDir/roles/podman/tasks",
+    "$baseDir/roles/podman/vars",
+    "$baseDir/roles/tftp/tasks",
+    "$baseDir/roles/tftp/templates",
+    "$baseDir/roles/tftp/vars"
+)
+
+# Create directories
+foreach ($dir in $structure) {
+    New-Item -Path $dir -ItemType Directory -Force
+}
+
+# Define the files to create
+$files = @(
+    "$baseDir/ansible.cfg",
+    "$baseDir/inventory/inventory.yml",
+    "$baseDir/playbooks/site.yml",
+    "$baseDir/roles/common/tasks/main.yml",
+    "$baseDir/roles/common/handlers/main.yml",
+    "$baseDir/roles/common/vars/main.yml",
+    "$baseDir/roles/dhcp/tasks/main.yml",
+    "$baseDir/roles/dhcp/templates/dhcpd.conf.j2",
+    "$baseDir/roles/dhcp/vars/main.yml",
+    "$baseDir/roles/http/tasks/main.yml",
+    "$baseDir/roles/http/templates/test_page.html.j2",
+    "$baseDir/roles/http/files/ks.cfg",
+    "$baseDir/roles/http/vars/main.yml",
+    "$baseDir/roles/podman/tasks/main.yml",
+    "$baseDir/roles/podman/vars/main.yml",
+    "$baseDir/roles/tftp/tasks/main.yml",
+    "$baseDir/roles/tftp/templates/pxelinux.cfg.j2",
+    "$baseDir/roles/tftp/vars/main.yml",
+    "$baseDir/README.md"
+)
+
+# Create files
+foreach ($file in $files) {
+    New-Item -Path $file -ItemType File -Force
+}
+
+Write-Host "Directory structure and placeholder files created successfully."

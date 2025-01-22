@@ -1,0 +1,18 @@
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+
+  children:
+    pxe_server:
+      hosts:
+        localhost:
+
+    target_hosts:
+      hosts:
+        target1:
+          ansible_host: 192.168.35.50
+          mac_address: "00:0C:29:79:AD:78"
+        target2:
+          ansible_host: 192.168.35.51
+          mac_address: "00:0C:29:22:FB:72"

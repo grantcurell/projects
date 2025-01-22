@@ -1,0 +1,7 @@
+---
+# Handlers for restarting the DHCP server when configuration changes
+
+- name: restart_dhcp
+  service:
+    name: dhcpd
+    state: restarted

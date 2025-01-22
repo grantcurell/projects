@@ -1,0 +1,110 @@
+apiVersion: v1
+baseDomain: ocp.lan
+compute:
+  - hyperthreading: Enabled
+    name: worker
+    replicas: 0 # Must be set to 0 for User Provisioned Installation as worker nodes will be manually deployed.
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: 3
+metadata:
+  name: lab # Cluster name
+networking:
+  clusterNetwork:
+    - cidr: 10.128.0.0/14
+      hostPrefix: 23
+      mtu: 8950
+  networkType: OpenShiftSDN
+  serviceNetwork:
+    - 172.30.0.0/16
+platform:
+  none: {}
+fips: false
+pullSecret: '{"auths":{"cloud.openshift.com":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfMzUzODQ5ZWExYjA0NDg0NGE4ZWNkNjg4MDcxYTQ1OTA6QzhJU1JFRkVDUEY3SDRaVENERUE4QVVTSk5PMDk4WUJQVVo1VkY2S0lWT0NYV1k0M0s3M1VSUk9XWjc5NzhDSg==","email":"grant_curell@dell.com"},"quay.io":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfMzUzODQ5ZWExYjA0NDg0NGE4ZWNkNjg4MDcxYTQ1OTA6QzhJU1JFRkVDUEY3SDRaVENERUE4QVVTSk5PMDk4WUJQVVo1VkY2S0lWT0NYV1k0M0s3M1VSUk9XWjc5NzhDSg==","email":"grant_curell@dell.com"},"registry.connect.redhat.com":{"auth":"fHVoYy1wb29sLTU3M2E4Y2YyLTU2MTItNGY0Yy04ZjdmLTEyMWZhZDNlNGVjMTpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSXpNbVJqTmpVelltRXlZalEwWTJNNFlUQXpNelJoWTJJNU56QXhZalV5T1NKOS5RMUJ3dEU1RTVoeGVoVDhxU2pxSk15ZldlY0VnT0ZrODRBYVd0UE1SZ1E2ZmdVa0hFOENORFF3blZpSk5TRlVUajFMWWNSMDc3UnVtXzFiM3l2YkhHRzAxMmNxWHpwSVJoT3V0VXlBeTZWQ0FuTFZhTTA0cDlXLXZwYjlPeEUwaUZQdXU4T0xwZjlWSmU2VlBGdWQ5QjF1czBPTmFEbzIyelNBd1l1Z0V3ZU9Jb3NwbzBFUmtSWDNDdGFiaWxGTWJLcjlZV1c2NFVXaS1XMU5QWERtaUlQdmktOFVVZkt6RnpyWkEzZFVTX1FZNWtydHF6QWtEaVl6XzZYcDNYOS13NFZuaFd3MnNUU0V3NDlFbTNXXzMzekxRTVNJcDJNcVh5SjBMZ0pSRHBuNGJxS2g1S3otZkNVZW1TeU5RVWtUdk9fbEpJZnN4aXoxSTNyVjJOYllvVU11RFlkb2pKOUd5OXI5aVdrT0d2LTVxOU1Fa004SC1JVXItN3phdTNqaGJEYUZtZk85VlowcW1UWFVpNjV5SWFMS0QyVTZ6dnVNS2VsMDh1WTV0bjJ4anJobnNJdjNSSG9UV3YzRGlSZ0lXYnlzVl9GZXo4SWpyckFNUWtlb2xTbXFET1piRFNSTWRPemFibFZEbG1QZ010SU11NnVHYXZlWk5Wc09ZZVNkeTVuYVZnVlZ4WkZuaE9IcmFnX3hpUDZqa3lSdWJSdHBWWTcwdEFzNFd2RmhRb1dmZnk3eTNITU5OTlVCRzNWVm9meng4QlRNYlJnMUpBcHVUU3VNQ2JSYW1zZ0xkZ1dhZHNJcVA2YnZvUjdXR0RvY3NjWVRxNGdlNkVtUjdOazlwY2doaHpJS3ExdlNzTnpGWlFXc2dwbThvU0gzdXJwbjlIWTlzdEhUVzZadw==","email":"grant_curell@dell.com"},"registry.redhat.io":{"auth":"fHVoYy1wb29sLTU3M2E4Y2YyLTU2MTItNGY0Yy04ZjdmLTEyMWZhZDNlNGVjMTpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSXpNbVJqTmpVelltRXlZalEwWTJNNFlUQXpNelJoWTJJNU56QXhZalV5T1NKOS5RMUJ3dEU1RTVoeGVoVDhxU2pxSk15ZldlY0VnT0ZrODRBYVd0UE1SZ1E2ZmdVa0hFOENORFF3blZpSk5TRlVUajFMWWNSMDc3UnVtXzFiM3l2YkhHRzAxMmNxWHpwSVJoT3V0VXlBeTZWQ0FuTFZhTTA0cDlXLXZwYjlPeEUwaUZQdXU4T0xwZjlWSmU2VlBGdWQ5QjF1czBPTmFEbzIyelNBd1l1Z0V3ZU9Jb3NwbzBFUmtSWDNDdGFiaWxGTWJLcjlZV1c2NFVXaS1XMU5QWERtaUlQdmktOFVVZkt6RnpyWkEzZFVTX1FZNWtydHF6QWtEaVl6XzZYcDNYOS13NFZuaFd3MnNUU0V3NDlFbTNXXzMzekxRTVNJcDJNcVh5SjBMZ0pSRHBuNGJxS2g1S3otZkNVZW1TeU5RVWtUdk9fbEpJZnN4aXoxSTNyVjJOYllvVU11RFlkb2pKOUd5OXI5aVdrT0d2LTVxOU1Fa004SC1JVXItN3phdTNqaGJEYUZtZk85VlowcW1UWFVpNjV5SWFMS0QyVTZ6dnVNS2VsMDh1WTV0bjJ4anJobnNJdjNSSG9UV3YzRGlSZ0lXYnlzVl9GZXo4SWpyckFNUWtlb2xTbXFET1piRFNSTWRPemFibFZEbG1QZ010SU11NnVHYXZlWk5Wc09ZZVNkeTVuYVZnVlZ4WkZuaE9IcmFnX3hpUDZqa3lSdWJSdHBWWTcwdEFzNFd2RmhRb1dmZnk3eTNITU5OTlVCRzNWVm9meng4QlRNYlJnMUpBcHVUU3VNQ2JSYW1zZ0xkZ1dhZHNJcVA2YnZvUjdXR0RvY3NjWVRxNGdlNkVtUjdOazlwY2doaHpJS3ExdlNzTnpGWlFXc2dwbThvU0gzdXJwbjlIWTlzdEhUVzZadw==","email":"grant_curell@dell.com"},"grant-staging.openshift.lan:8443":{"auth":"aW5pdDpJLmFtLmdob3N0LjQ3"}}}'
+sshKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCrB8utQj1Tt1AyACTxF1ifm3aiUgv2kXJjYmxmP1lU8C0MFx8jdd+OiDf+fSfvKOIxxvSzyvO3RScUwbyk77hXzU+f7xgkD2fGUJlPFAsdkMgputQnVCxJgZEp80vE1OT7bJlrXTUWzuX9EMRZcUtWkdpNUv+dVlcjGk5ZgvV2eZkT2kgwD1r58Yi1pImbRdpia9HCTmnrUitkmN19dWNzlYP07pvT12r+LQXv+Wz+aKsrRbseRk+a/LcZo31wXtFYrnnsNw7m75CWvQuD9eLyIo/w1lxZeFrZduKJxDXE8CuEJOMD5aq+Mty76MQIKHo6Q6nL756o/qhuvP2YUEXeUzGh4GTC3jXFBGMGhHFQVCFw+JQeB6p984aA6rg4DoAiy8SomQPjY5zQQB6FNMtCwbU0pzeE8tD1sU5NoPdwVF1lb183iuTrqP1M2Qia+r1PK5VX8jx+0SsMCHIs1FMuY6a8Pe0H/Rjn4Qc42OYUXPsxHwO+/sBRQKYlT9q3YI8= grant@helper.lan'
+additionalTrustBundlePolicy: Always
+additionalTrustBundle: |
+  -----BEGIN CERTIFICATE-----
+  MIIDqTCCApGgAwIBAgIUVqGO9XijVZf0TCgzANeeMcxC/84wDQYJKoZIhvcNAQEL
+  BQAwdDELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAlZBMREwDwYDVQQHDAhOZXcgWW9y
+  azENMAsGA1UECgwEUXVheTERMA8GA1UECwwIRGl2aXNpb24xIzAhBgNVBAMMGm1m
+  ZHQtc3RhZ2luZy5vcGVuc2hpZnQubGFuMB4XDTI0MDgxNDE5MDI0MVoXDTI1MDgw
+  NTE5MDI0MVowGjEYMBYGA1UEAwwPcXVheS1lbnRlcnByaXNlMIIBIjANBgkqhkiG
+  9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt9rEirvcSOUNWD2eRcKCvbn812WclM8PAq59
+  4tXcxOGf+yEKGDv0VI3dHB15krWXmnk6lFd7BThHHtteAbFpzzicerqXK8M/H2Sw
+  DjVpgnF/MjRC3T8pUSpd+ZHcRKiFPalHrn/5cKr3AFJ/IXk0ISDfW5b1ek6HCMrv
+  JfnhyLIIrICHfOrTAnkhBN3HNtTdSoOGpdjT9THo4naKGF7J7KyWSzQxSTYyPORn
+  dwv9s4OuSOw9/Z8wg9bmPfy6O1AObIGDs+1NzQBkoIxTPgjBM882rgny50wgUbdd
+  pO8N/nCSFF3jAPoLrdqHN7+ayQrCe4QQTpqXcLHSbUNj/fwDVQIDAQABo4GMMIGJ
+  MAsGA1UdDwQEAwIC5DATBgNVHSUEDDAKBggrBgEFBQcDATAlBgNVHREEHjAcghpt
+  ZmR0LXN0YWdpbmcub3BlbnNoaWZ0LmxhbjAdBgNVHQ4EFgQUSXrtUlWKRQLUC0bA
+  XnRRxs4V3/wwHwYDVR0jBBgwFoAUXRgMCavJ9iBWl4TYjKRUIgbLdPgwDQYJKoZI
+  hvcNAQELBQADggEBACVj+9vUOP/2jQUwik1amVBE76XioKwIHLqKZPGMMTMltZ83
+  yb0E/Vx5hVvpvthaNpKzAO4EZ1Afv864OkWdk0oG+CtRD5iDDXGBt4x+JqDlQfKs
+  zoq/T5SCd++VU0v4Of0ndFLGnXaB5qKgmNVJG6hEWxQnOjLP5Q/WNUuO6oaE82tN
+  BTh2RXcq5Zb02cKbBIE0qR1cCPiecIOiHNLby3iqUZsOq/jL2KE1qN/hw6rrMxmw
+  TKjJ5oT7RW7HuqQlimpVXhNTl6mQg5SYq998xFO6jlsA18YSR2Z7nnYTCQ7gyx3f
+  XLWkORm8Ms3gJYPNH0lPuAhyeTDZpfnKbZK3v1w=
+  -----END CERTIFICATE-----
+  -----BEGIN CERTIFICATE-----
+  MIID9DCCAtygAwIBAgIUaldJ/MZRJt5yLtDRR9sdu7M28t0wDQYJKoZIhvcNAQEL
+  BQAwdDELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAlZBMREwDwYDVQQHDAhOZXcgWW9y
+  azENMAsGA1UECgwEUXVheTERMA8GA1UECwwIRGl2aXNpb24xIzAhBgNVBAMMGm1m
+  ZHQtc3RhZ2luZy5vcGVuc2hpZnQubGFuMB4XDTI0MDgxNDE5MDIzOVoXDTI3MDYw
+  NDE5MDIzOVowdDELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAlZBMREwDwYDVQQHDAhO
+  ZXcgWW9yazENMAsGA1UECgwEUXVheTERMA8GA1UECwwIRGl2aXNpb24xIzAhBgNV
+  BAMMGm1mZHQtc3RhZ2luZy5vcGVuc2hpZnQubGFuMIIBIjANBgkqhkiG9w0BAQEF
+  AAOCAQ8AMIIBCgKCAQEAun3vMSjo1SIJMQk2WfhR8rBOLxd7Y0mh20oJjOCoFjII
+  rZK1wjpZ5PNmG9c5BB5Qac0hlCEmdy5hdOSlMHhnjL7FGteEoHqRXCsv7KLeUeMw
+  HBp8SMgyI5waUup/7LmSmtjgcW0CMX+fi+NmlZltfraDf7eMil2Ev/pfl5aBoVza
+  tQ+Mb6uta3M8w+yViu3wWjgEkmEczsul/MuHQtq6hfxlj1v2xf0iEbGvsuDmsdhn
+  2fPMoISDxWPtHcEhzyoVwK1BTWdwiK5557DDfoEYvN3K3oXgtzvr9oDlQcUEgb8i
+  VdYqsoCYSWwMCpxmOVlOly6Ml0sTulk3IRVG63XyUwIDAQABo34wfDALBgNVHQ8E
+  BAMCAuQwEwYDVR0lBAwwCgYIKwYBBQUHAwEwJQYDVR0RBB4wHIIabWZkdC1zdGFn
+  aW5nLm9wZW5zaGlmdC5sYW4wEgYDVR0TAQH/BAgwBgEB/wIBATAdBgNVHQ4EFgQU
+  XRgMCavJ9iBWl4TYjKRUIgbLdPgwDQYJKoZIhvcNAQELBQADggEBAJOvhP9Fgw1/
+  cgQlX1lTPDCrDEB8ir1a6Me2IQ9lr0fF6eRq2TaUAdScuDwO5MLpNU60Lq1+H1dX
+  6tjiBmPN1W3W3oVolLbHiRBd8n8lHh6BmvNhaFwhwjHPSIRzKaLkespTWJHPwV3+
+  4h8kPR1n1eM5mkenAQTU8XspIFACplCbzl7icBzZGAZ7OHJM+F++5V/cC0F09nKR
+  V+X3w0JLMu/VUFgeFXNDryHD2CsdPFdq1fVKOCLhQDkX7rLk76UKbb8DUeg9ecpt
+  USox+sehtjW9HzgrtkJG1ZH0B9cqPlhO0ORTl6sCYWzXhJDxbOJEoaDZqfUPrVCD
+  6dHN1R/aC1g=
+  -----END CERTIFICATE-----
+imageContentSources:
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/odf4
+  source: registry.redhat.io/odf4
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/openshift-service-mesh
+  source: registry.redhat.io/openshift-service-mesh
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/ubi8
+  source: registry.redhat.io/ubi8
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/source-to-image
+  source: registry.redhat.io/source-to-image
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/container-native-virtualization
+  source: registry.redhat.io/container-native-virtualization
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/openshift4
+  source: registry.redhat.io/openshift4
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/openshift-serverless-1
+  source: registry.redhat.io/openshift-serverless-1
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/openshift-serverless-1-tech-preview
+  source: registry.redhat.io/openshift-serverless-1-tech-preview
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/rhel8
+  source: registry.redhat.io/rhel8
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/rhceph
+  source: registry.redhat.io/rhceph
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/openshift/release
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+- mirrors:
+  - mfdt-staging.openshift.lan:8443/openshift/release-images
+  source: quay.io/openshift-release-dev/ocp-release

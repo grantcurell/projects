@@ -1,0 +1,20 @@
+# DHCP server configuration for PXE booting
+default-lease-time 600;
+max-lease-time 7200;
+authoritative;
+
+subnet {{ dhcp_subnet }} netmask {{ dhcp_netmask }} {
+  range {{ dhcp_range_start }} {{ dhcp_range_end }};
+  option routers {{ gateway }};
+  option domain-name-servers {{ dns }};
+
+  # Client-specific reservations
+  {% for host in groups['target_hosts'] %}
+  host {{ host }} {
+    hardware ethernet {{ hostvars[host]['mac_address'] }};
+    fixed-address {{ hostvars[host]['ansible_host'] }};
+    next-server {{ pxe_server_ip }};
+    filename "pxelinux.0";  # Boot file for PXE clients
+  }
+  {% endfor %}
+}

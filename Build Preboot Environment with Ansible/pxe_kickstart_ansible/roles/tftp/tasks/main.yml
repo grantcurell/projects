@@ -1,0 +1,106 @@
+# Main tasks for setting up the TFTP server for PXE booting
+---
+
+- name: Install TFTP server
+  dnf:
+    name: tftp-server
+    state: present
+  tags: tftp
+
+- name: Install syslinux for PXE boot files
+  dnf:
+    name: syslinux
+    state: present
+  tags: tftp
+
+- name: Ensure TFTP server is enabled and started
+  service:
+    name: tftp
+    state: started
+    enabled: yes
+  tags: tftp
+
+- name: Create mount directory for Rocky Linux ISO
+  file:
+    path: /mnt/rocky_iso
+    state: directory
+  tags: tftp
+
+- name: Mount the Rocky Linux ISO
+  mount:
+    src: /opt/rhel-9.4-x86_64-dvd.iso  # Update with the specific ISO file name
+    path: /mnt/rocky_iso
+    fstype: iso9660
+    state: mounted
+  tags: tftp
+
+- name: Copy required PXE boot files to TFTP directory
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: '/mnt/rocky_iso/images/pxeboot/vmlinuz', dest: '/var/lib/tftpboot/vmlinuz' }
+    - { src: '/mnt/rocky_iso/images/pxeboot/initrd.img', dest: '/var/lib/tftpboot/initrd.img' }
+    - { src: '/usr/share/syslinux/pxelinux.0', dest: '/var/lib/tftpboot/pxelinux.0' }
+    - { src: '/usr/share/syslinux/ldlinux.c32', dest: '/var/lib/tftpboot/ldlinux.c32' }
+    - { src: '/usr/share/syslinux/libcom32.c32', dest: '/var/lib/tftpboot/libcom32.c32' }
+    - { src: '/usr/share/syslinux/libutil.c32', dest: '/var/lib/tftpboot/libutil.c32' }
+    - { src: '/usr/share/syslinux/menu.c32', dest: '/var/lib/tftpboot/menu.c32' }
+  tags: tftp
+
+- name: Ensure proper permissions on TFTP files
+  file:
+    path: "{{ item }}"
+    owner: nobody
+    group: nobody
+    mode: '0644'
+  with_items:
+    - /var/lib/tftpboot/vmlinuz
+    - /var/lib/tftpboot/initrd.img
+    - /var/lib/tftpboot/pxelinux.0
+    - /var/lib/tftpboot/ldlinux.c32
+    - /var/lib/tftpboot/libcom32.c32
+    - /var/lib/tftpboot/libutil.c32
+    - /var/lib/tftpboot/menu.c32
+  tags: tftp
+
+# Ensure correct permissions for pxelinux.cfg directory
+- name: Create configuration directory for PXE boot files
+  file:
+    path: /var/lib/tftpboot/pxelinux.cfg
+    state: directory
+    mode: '0755'
+  tags: tftp
+
+- name: Deploy PXE boot configuration for each target host (Uppercase)
+  template:
+    src: templates/pxelinux.cfg.j2
+    dest: "/var/lib/tftpboot/pxelinux.cfg/01-{{ hostvars[inv_hostname].mac_address | replace(':', '-') }}"
+    mode: '0644'
+  with_items: "{{ groups['target_hosts'] }}"
+  loop_control:
+    loop_var: inv_hostname
+  vars:
+    pxe_server_ip: "{{ ansible_host }}"
+  tags: tftp
+
+- name: Deploy PXE boot configuration for each target host (Lowercase)
+  template:
+    src: templates/pxelinux.cfg.j2
+    dest: "/var/lib/tftpboot/pxelinux.cfg/01-{{ hostvars[inv_hostname].mac_address | replace(':', '-') | lower }}"
+    mode: '0644'
+  with_items: "{{ groups['target_hosts'] }}"
+  loop_control:
+    loop_var: inv_hostname
+  vars:
+    pxe_server_ip: "{{ ansible_host }}"
+  tags: tftp
+
+- name: Open TFTP port in the firewall
+  firewalld:
+    service: tftp
+    permanent: yes
+    state: enabled
+    immediate: yes
+  tags: tftp

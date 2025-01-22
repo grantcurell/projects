@@ -1,0 +1,6 @@
+---
+dhcp_subnet: 192.168.35.0          # Corrected subnet for the DHCP server
+dhcp_netmask: 255.255.255.0        # Netmask for the subnet
+dhcp_broadcast: 192.168.35.255     # Broadcast address for the subnet
+dhcp_range_start: 192.168.35.20    # Starting IP range for DHCP leases
+dhcp_range_end: 192.168.35.100     # Ending IP range for DHCP leases
