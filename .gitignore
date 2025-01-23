@@ -40,3 +40,7 @@ Troubleshooting 5G Connection/notes_for_troubleshooting.md
 .vscode/
 
 Aircraft Detection/data_set/
+
+*.keras
+
+Aircraft Detection/aircraft_classifier.h5

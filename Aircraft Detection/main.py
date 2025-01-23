@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import regularizers
 from sklearn.model_selection import train_test_split
+import json
 
 # Function to prepare a DataFrame from the 'crop' directory
 def prepare_data(crop_dir):
@@ -68,12 +70,22 @@ def train_model(model, train_gen, val_gen, epochs, callbacks):
 
 # Main script
 if __name__ == "__main__":
+    # Check for GPU availability
+    gpus = tf.config.list_physical_devices('GPU')
+    if not gpus:
+        print("No GPU found. Exiting.")
+        sys.exit(1)
+    else:
+        print(f"Using GPU: {gpus[0].name}")
+        tf.config.set_visible_devices(gpus[0], 'GPU')
+
     # Argument parsing
     parser = argparse.ArgumentParser(description="Train a military aircraft classifier using EfficientNetB3.")
     parser.add_argument("--dataset", required=True, help="Path to the 'crop' folder of the dataset.")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training (default: 32).")
     parser.add_argument("--epochs", type=int, default=20, help="Number of training epochs (default: 20).")
-    parser.add_argument("--output", type=str, default="aircraft_classifier.h5", help="Output model filename (default: 'aircraft_classifier.h5').")
+    parser.add_argument("--output", type=str, default="aircraft_classifier.keras", help="Output model filename (default: 'aircraft_classifier.keras').")
+    parser.add_argument("--class_indices_output", type=str, default="class_indices.json", help="Filename to save class indices (default: 'class_indices.json').")
     args = parser.parse_args()
 
     # Prepare dataset
@@ -87,6 +99,12 @@ if __name__ == "__main__":
     # Create data generators
     print("Creating data generators...")
     train_gen, val_gen, test_gen = create_generators(train_df, val_df, test_df, args.batch_size)
+
+    # Save class indices
+    print("Saving class indices...")
+    with open(args.class_indices_output, 'w') as f:
+        json.dump(train_gen.class_indices, f)
+    print(f"Class indices saved to {args.class_indices_output}.")
 
     # Build model
     print("Building model...")

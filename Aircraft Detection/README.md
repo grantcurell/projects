@@ -52,6 +52,90 @@
       - [Example](#example)
       - [Impact of Global Max Pooling](#impact-of-global-max-pooling)
 
+## Code
+
+- Training program is [main.py](./main.py)
+- To test a trained model I used [f16_test_model.py](./f16_test_model.py)
+
+## Test Results Against F16s
+
+This isn't the most robust of tests, but I pulled a few dozen F16 images and ran a test against them using [f16_test_model.py](./f16_test_model.py). These images varied pretty widely and I picked the F16 on purpose because the conformal fuel tanks make it a bit harder to recognize. The pictures were all different sizes, different angles, different weather, etc so I made it pretty difficult. The model still did ok in that despite a lot of noise it got 3/4 correct. Here is what I noticed tripped it up:
+
+1. Multiple different aircraft in the same picture (this one makes sense and would be hard to train out without using a different model)
+2. Shock condensation was present
+3. The color scheme was significantly different. Ex: some of the images had a desert paint scheme and it missed all of those
+
+| Image Name                                             | Predicted | Confidence | Correct |
+|--------------------------------------------------------|-----------|------------|---------|
+| -1x-1.webp                                             | F16       | 0.99       | Yes     |
+| 05frontirusukr2903202405-696x374.png                   | F16       | 1.00       | Yes     |
+| 0x0 (1).webp                                           | F16       | 1.00       | Yes     |
+| 0x0 (2).webp                                           | F16       | 1.00       | Yes     |
+| 0x0 (3).webp                                           | F16       | 0.97       | Yes     |
+| 0x0.webp                                               | B1        | 0.56       | No      |
+| 1000w_q95 (1).webp                                     | F16       | 0.83       | Yes     |
+| 1000w_q95.webp                                         | Su34      | 0.93       | No      |
+| 1200x675_336905.webp                                   | F16       | 1.00       | Yes     |
+| 63d560d4c00db.jpeg                                     | F16       | 1.00       | Yes     |
+| 646752a44e3fe1148c5cacea.webp                          | F16       | 1.00       | Yes     |
+| 64c7a25a4e3fe0112c582728.webp                          | F16       | 1.00       | Yes     |
+| 6762-01.webp                                           | F16       | 1.00       | Yes     |
+| 160824-F-QJ658-404-scaled.webp                         | F16       | 0.84       | Yes     |
+| 1685548869503.jpeg                                     | Tornado   | 0.43       | No      |
+| 1720619878283.webp                                     | Y20       | 0.54       | No      |
+| 9eea165897293b9d3cff2d36736d.webp                      | F16       | 0.96       | Yes     |
+| 2376e84a-b65c-4bb4-8884-59f70b84c4f1_16x9_1200x676.webp| F35       | 1.00       | No      |
+| 240709-F-XO977-1093-900x600.jpeg                       | F16       | 0.97       | Yes     |
+| 5633.webp                                              | F16       | 1.00       | Yes     |
+| 6e588e65af644a5933ab301f075f2cdc.webp                  | F16       | 0.36       | Yes     |
+| belgian-air-force-f-16b.webp                           | F16       | 1.00       | Yes     |
+| do-you-think-that-the-f-16-will-still-be-in-service-past-v0-8rwx3k9176jc1.webp | F16 | 1.00 | Yes |
+| F-16-AIM-missile.webp                                  | F16       | 1.00       | Yes     |
+| f16-preparing-for-flight.webp                          | U2        | 0.78       | No      |
+| f16s-turkey-1.webp                                     | U2        | 0.81       | No      |
+| GUJWOKLWkAAnCOn.jpeg                                   | Tu160     | 0.98       | No      |
+| IMG_7849web.webp                                       | F16       | 1.00       | Yes     |
+| TopAces_F16_5.webp                                     | F16       | 1.00       | Yes     |
+| 400_0_1651495143-4194.webp                             | F16       | 1.00       | Yes     |
+| 41_2024-638559731785460659-546.jpeg                    | JAS39     | 1.00       | No      |
+| 240709-F-XO977-1124-1024x681.jpeg                      | F16       | 1.00       | Yes     |
+| 29771645698247cc1ae4fefc4c538b6f.webp                  | F16       | 1.00       | Yes     |
+| airshow-aircraft-fighter-f-16-public-domain.webp       | F15       | 0.47       | No      |
+| AP-F16.webp                                            | JAS39     | 0.92       | No      |
+| article_5c8845dd9872a9_06637956.png                   | F16       | 1.00       | Yes     |
+| dd2e8f1ae29ccfc4df715e884489aefc.webp                  | F16       | 0.97       | Yes     |
+| F-16 Fighting Falcon_0 (1).webp                        | F16       | 0.56       | Yes     |
+| F-16 Fighting Falcon_0 (2).webp                        | F16       | 0.56       | Yes     |
+| F-16 Fighting Falcon_0 (3).webp                        | F16       | 0.56       | Yes     |
+| F-16 Fighting Falcon_0.webp                            | F16       | 0.56       | Yes     |
+| F-16-5-4119155481.webp                                 | F16       | 1.00       | Yes     |
+| f16-1.webp                                             | F16       | 1.00       | Yes     |
+| f16-fighting-falcon-fighter-jet-260nw-2460648719.webp  | F16       | 0.51       | Yes     |
+| f-16-credit-hellenic-air-force.webp                    | F16       | 1.00       | Yes     |
+| f-16-deal-with-pakistan-will-affect-aspects-of-indo-us-ties-pacific-command.webp | F16 | 1.00 | Yes |
+| F-16-Viper-at-NAS-Fallon.webp                          | F16       | 0.98       | Yes     |
+| F16-Ukraine-1.webp                                     | Tu95      | 0.97       | No      |
+| f16.png                                                | F16       | 1.00       | Yes     |
+| F16.webp                                               | F16       | 0.38       | Yes     |
+| F16_drawing.png                                        | F16       | 1.00       | Yes     |
+| final_airtoairloadout_steveotte_lowreswithchute.webp   | F16       | 1.00       | Yes     |
+| fully-loaded-f16-fighting-falcon-at-the-us-air-force-v0-gjl2nx950hjb1.webp | F16 | 1.00 | Yes |
+| FVccLyeWUAADiXk-1024x620.jpeg.webp                     | JH7       | 0.40       | No      |
+| iraqi-f-16s-ukraine-war-fall-out (1).webp              | F16       | 1.00       | Yes     |
+| iraqi-f-16s-ukraine-war-fall-out.webp                  | F16       | 1.00       | Yes     |
+| mitsubishi-f2-pack-sc-designs-f16-413107-1705487401-AdC1c.webp | F16 | 0.54 | Yes |
+| PAF-F-16-2.png                                         | F16       | 0.70       | Yes     |
+| Spandahlem_F-16_Poland-01.jpeg                         | F16       | 1.00       | Yes     |
+| TopAces_F16_6.webp                                     | F35       | 0.95       | No      |
+| TopAces_F16_7.webp                                     | B1        | 0.49       | No      |
+| TOPGUN-F-16-Navy.webp                                  | Su34      | 0.97       | No      |
+| ukrainian-f-16-ew-system-reprogramming.webp            | F16       | 1.00       | Yes     |
+| US-Air-Force-formation-F-16-Fighting-Falcons.webp      | F16       | 0.65       | Yes     |
+| why-do-f16s-carry-aim-120s-at-the-wingtips-and-aim-9s-under-v0-mg56by8jttnb1.png | F16 | 1.00 | Yes |
+| will-the-f16s-be-able-to-challenge-russian-fighters-v0-qjh36rynqvvb1.webp | F16 | 1.00 | Yes |
+
+
+Total Images: 66, Correctly Identified F-16s: 50, Accuracy: 75.76%
 
 ## How the Code Works
 
