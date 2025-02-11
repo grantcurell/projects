@@ -44,3 +44,6 @@ Aircraft Detection/data_set/
 *.keras
 
 Aircraft Detection/aircraft_classifier.h5
+
+Reverse Engineering OpenShmem/SOS-main
+Reverse Engineering OpenSHMEM/libfabric-main/
