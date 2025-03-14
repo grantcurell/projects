@@ -10,7 +10,7 @@ import json
 import base64
 
 # iDRAC Credentials and Information
-IDRAC_IP = "192.168.5.58"  # Change this to your iDRAC IP
+IDRAC_IP = "YOUR_IP"  # Change this to your iDRAC IP
 USERNAME = "root"
 PASSWORD = "calvin"
 
@@ -96,6 +96,16 @@ try:
 except requests.exceptions.RequestException as e:
     print(f"\n❌ Error updating iDRAC SSH ciphers: {e}")
 
+```
+
+Example output:
+
+```bash
+python.exe "update_cipher_suite.py"
+
+✅ Successfully updated iDRAC SSH ciphers.
+
+Process finished with exit code 0
 ```
 
 Here it is in PowerShell:

@@ -27,6 +27,8 @@
 
 ## Instructions
 
+For more detailed instructions for DRM you can also look at [Using Dell Repository Manager to Create Bootable ISO](../Using%20Dell%20Repository%20Manager%20to%20Create%20Bootable%20ISO/README.md). The process is the same except here you will create a share, not a bootable ISO.
+
 1. Download [Dell Repository Manager](https://www.dell.com/support/driver/us/en/19/DriversDetails?driverid=v8ym0)
 2. Run it with `/opt/dell/dellemcrepositorymanager/drm.sh`
       1. NOTE: Running it with root does not work! You will get an error: GUI interface is not supported by this operating system.
