@@ -335,8 +335,8 @@ The biggest problem that can occur is if somewhere along the way your mapping fa
 You go to your Rocky box and do something like:
 
 ```bash
-sudo groupadd -g 59999 somerandomuser
-sudo useradd -u 59999 -g 10001 -d /home/somerandomuser -s /bin/bash somerandomuser
+sudo groupadd -g 10002 somerandomuser
+sudo useradd -u 10002 -g 10002 -d /home/somerandomuser -s /bin/bash somerandomuser
 [root@rocky nfs_test]# sudo -u somerandomuser touch /mnt/nfs_test/random.txt
 touch: cannot touch '/mnt/nfs_test/random.txt': Permission denied
 ```
@@ -376,7 +376,23 @@ User      2147483650  secmap      Wed Mar 26 20:42:56 2025   GRANTLAB\\somerando
 User      2147483649  secmap      Tue Mar 25 19:09:32 2025   GRANTLAB\\Administrator            S-1-5-15-c68e4ef2-864be32f-a76ce7d9-1f4
 ```
 
-You can see the origin is secmap and it has a randomly generated UID. The problem with this is, now if you update your `uidNumber` and `gidNumber` in active directory this mapping **will not** update. You need to go in and delete the old entry.
+You can see the origin is secmap and it has a randomly generated UID. This is reflected when you login and create files as that user:
+
+```bash
+[root@rocky nfs_test]# ls -al
+total 56
+drwxr-xr-x. 5 root        root        8192 Mar 26 17:00 .
+drwxr-xr-x. 5 root        root          52 Mar 24 09:33 ..
+dr-xr-xr-x. 2 root        bin          152 Mar 25 13:58 .etc
+-rw-r--r--. 1 gcurell_adm gcurell_adm    6 Mar 26 10:55 file_created_on_smb.txt
+drwxr-xr-x. 2 root        root        8192 Mar 25 13:58 lost+found
+-rw-r--r--. 1  2147483650  2147483650    5 Mar 26 17:02 somefile.txt
+-rw-r--r--. 1 gcurell_adm gcurell_adm   18 Mar 26 16:59 some_smb_file.txt
+-rw-r--r--. 1 gcurell_adm gcurell_adm    9 Mar 26 16:59 test2.txt
+-rw-r--r--. 1 gcurell_adm gcurell_adm   43 Mar 26 16:57 test.txt
+```
+
+You can see `somefile.txt` has a random `UID`. You need to go in, make sure `uidNumber` and `gidNumber` are set in your user's AD attributes, and then clear any old secmap mappings as shown below:
 
 ```bash
 [SVC:service@AAAAAA-A user]$ svc_nas_cifssupport --server "Grant Demo NAS Server" --args="-secmap -delete -name somerandomuser -domain GRANTLAB"
@@ -397,6 +413,23 @@ User      10002       ldap        Wed Mar 26 21:21:46 2025   GRANTLAB\\somerando
 User      2147483649  secmap      Tue Mar 25 19:09:32 2025   GRANTLAB\\Administrator            S-1-5-15-c68e4ef2-864be32f-a76ce7d9-1f4
 ```
 
+You can once again test and you see that a file created with `somerandomuser` correctly maps to that user:
+
+```bash
+[root@rocky nfs_test]# sudo -u somerandomuser touch /mnt/nfs_test/somerandomuser_file
+[root@rocky nfs_test]# ls -al
+total 56
+drwxr-xr-x. 5 root           root           8192 Mar 26 17:54 .
+drwxr-xr-x. 5 root           root             52 Mar 24 09:33 ..
+dr-xr-xr-x. 2 root           bin             152 Mar 25 13:58 .etc
+-rw-r--r--. 1 gcurell_adm    gcurell_adm       6 Mar 26 10:55 file_created_on_smb.txt
+drwxr-xr-x. 2 root           root           8192 Mar 25 13:58 lost+found
+-rw-r--r--. 1     2147483650     2147483650    5 Mar 26 17:02 somefile.txt
+-rw-r--r--. 1 somerandomuser somerandomuser    0 Mar 26 17:54 somerandomuser_file
+-rw-r--r--. 1 gcurell_adm    gcurell_adm      18 Mar 26 16:59 some_smb_file.txt
+-rw-r--r--. 1 gcurell_adm    gcurell_adm       9 Mar 26 16:59 test2.txt
+-rw-r--r--. 1 gcurell_adm    gcurell_adm      43 Mar 26 16:57 test.txt
+```
 
 ### How to Check a User
 
