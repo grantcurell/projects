@@ -9,6 +9,11 @@
   - [Configure Your Filesystem](#configure-your-filesystem)
   - [Update the LDAP Schema](#update-the-ldap-schema)
   - [Mount the Share and NFS Export](#mount-the-share-and-nfs-export)
+  - [Finishing Touches - gidNumbers for Other Groups](#finishing-touches---gidnumbers-for-other-groups)
+  - [Troubleshooting](#troubleshooting)
+    - [Problems with secmap](#problems-with-secmap)
+    - [How to Check a User](#how-to-check-a-user)
+    - [Check Domain Health](#check-domain-health)
 
 ## Overview
 
@@ -252,4 +257,216 @@ drwxr-xr-x. 2 root        root        8192 Mar 25 13:58 lost+found
 Now you can see that I'm able to write to the share with my active directory user. Moreover, we see that the active directory user correctly owns the files. You can then open that share on SMB and edit or create new files:
 
 ![](images/2025-03-25-14-31-58.png)
+
+## Finishing Touches - gidNumbers for Other Groups
+
+If you drop to the command line and run `svc_nas_cifssupport --server 'Grant Demo NAS Server' --args="-checkup -full` you may see some of the below warnings. This occurs when your user is part of groups that do not have `gidNumber` set.
+
+```bash
+svc_nas_cifssupport --server 'Grant Demo NAS Server' --args="-checkup -full"
+Grant Demo NAS Server :
+
+------------------------------------Checks--------------------------------------
+
+
+Component SMB :
+
+ACL       : Checking the number of ACLs per file system. ........................ Pass
+Connection: Checking the load of SMB TCP connections. ........................... Pass
+Credential: Checking the validity of credentials. ............................... FAILURE
+DC        : Checking the connectivity and configuration of Domain Controllers. .. Pass
+DFS       : DFS check in svc_nas service script is deprecated. .................. Pass
+DNS       : Checking the DNS configuration and connectivity to DNS servers. ..... FAILURE
+EventLog  : Checking the configuration of Windows Event Logs. ................... FAILURE
+GPO       : Checking the GPO configuration. ..................................... Pass
+HomeDir   : Checking the configuration of home directory shares. ................ Pass
+I18N      : Checking the I18N mode and the Unicode/UTF8 translation tables. ..... Pass
+Kerberos  : Checking password updates and AES for Kerberos. ..................... Pass
+LDAP      : Checking the LDAP configuration. .................................... Pass
+LocalGrp  : Checking the database configuration of local groups. ................ Pass
+NIS       : Checking the connectivity to the NIS servers. ....................... Pass
+Ntxmap    : Checking the ntxmap configuration file. ............................. Pass
+Secmap    : Checking the SECMAP database. ....................................... Pass
+Security  : Checking the SMB security settings. ................................. Pass
+Server    : Checking the SMB file servers configuration. ........................ Pass
+Share     : Checking the network shares database. ............................... Pass
+SmbList   : Checking the range availability of SMB IDs. ......................... FAILURE
+Threads   : Checking for SMB blocked threads. ................................... Pass
+UnsupOS   : Checking for unsupported client network operating systems. .......... Pass
+UnsupProto: Checking for unsupported client network protocols. .................. Pass
+VC        : Checking the configuration of Virus Checker servers. ................ Pass
+VDM       : Checking the NAS server configuration. .............................. Pass
+WINS      : Checking the connectivity to WINS servers. .......................... Pass
+--------------------------------------------------------------------------------
+
+----------------------------SMB : Credential Warnings---------------------------
+
+Warning 17456169011: Grant Demo NAS Server :  The user 'GRANTLAB\\\\\\\\gcurell_adm' has some unmapped SIDs, indicating that the NAS server has not found a Unix user/group associated with the SID for this user credential. This might cause permission issues in an environment that is not purely SMB.
+--> Check the mapping of the users/groups. You can set up the mapping by using a local passwd/group file, NIS, or Active Directory, depending on the mapping model you choose. Use the 'svc_nas_cifssupport -cred' command to check the credential.
+
+-------------------------------SMB : DNS Warnings-------------------------------
+
+Warning 17456037931: Grant Demo NAS Server :  The DNS domain 'GRANTLAB.local' is defined with only one DNS server. High availability is compromised.
+--> Add another DNS server using the REST API dnsService object. The recommendation is to configure DNS with DNS servers accessible from different subnets.
+
+-----------------------------SMB : EventLog Warnings----------------------------
+
+Warning 17456169068: Grant Demo NAS Server :  A new value for the maximum size of the 'application' event log of the NAS server has been defined. This value is not yet effective.
+--> On the Windows host, start the Microsoft event viewer. Connect to a SMB server of this NAS server and clear the corresponding event logs.
+
+-----------------------------SMB : SmbList Warnings-----------------------------
+
+Warning 17456169011: Grant Demo NAS Server :  The user 'GRANTLAB\\\\\\\\gcurell_adm' has some unmapped SIDs, indicating that the NAS server has not found a Unix user/group associated with the SID for this user credential. This might cause permission issues in an environment that is not purely SMB.
+--> Check the mapping of the users/groups. You can set up the mapping by using a local passwd/group file, NIS, or Active Directory, depending on the mapping model you choose. Use the 'svc_nas_cifssupport -cred' command to check the credential.
+```
+
+In my case I was part of the following groups:
+
+![](images/2025-03-26-14-55-34.png)
+
+Since those groups don't have gidNumbers you see this warning. If you want to clear those warnings, each group will need to have a `gidNumber` defined.
+
+## Troubleshooting
+
+### Problems with secmap
+
+The biggest problem that can occur is if somewhere along the way your mapping fails and dynamic mapping kicks in. Here's what that looks like:
+
+You go to your Rocky box and do something like:
+
+```bash
+sudo groupadd -g 59999 somerandomuser
+sudo useradd -u 59999 -g 10001 -d /home/somerandomuser -s /bin/bash somerandomuser
+[root@rocky nfs_test]# sudo -u somerandomuser touch /mnt/nfs_test/random.txt
+touch: cannot touch '/mnt/nfs_test/random.txt': Permission denied
+```
+
+So there are two problems that are going to occur with this:
+
+1. This user doesn't exist in active directory so there is no mapping
+2. Even if we did create the user, if we don't give it a UID/GID it is going to get a dynamic mapping.
+
+Here is what our current secmap looks ilke:
+
+```bash
+[SVC:service@AAAAAA-A user]$ svc_nas_cifssupport --server "Grant Demo NAS Server" --args="-secmap -list"
+Grant Demo NAS Server :done
+
+SECMAP MAPPING TABLE
+
+Type      UID         Origin      Date of creation           Name                            SID
+User      10001       ldap        Tue Mar 25 18:24:05 2025   GRANTLAB\\gcurell_adm              S-1-5-15-c68e4ef2-864be32f-a76ce7d9-87a
+```
+
+So first I create that user in active directory:
+
+![](images/2025-03-25-14-46-51.png)
+
+I went ahead and logged in to my SMB share.
+
+```bash
+[SVC:service@AAAAAA-A user]$ svc_nas_cifssupport --server "Grant Demo NAS Server" --args="-secmap -list"
+Grant Demo NAS Server :done
+
+SECMAP MAPPING TABLE
+
+Type      UID         Origin      Date of creation           Name                            SID
+User      10001       ldap        Tue Mar 25 18:24:05 2025   GRANTLAB\\gcurell_adm              S-1-5-15-c68e4ef2-864be32f-a76ce7d9-87a
+User      2147483650  secmap      Wed Mar 26 20:42:56 2025   GRANTLAB\\somerandomuser           S-1-5-15-c68e4ef2-864be32f-a76ce7d9-87c
+User      2147483649  secmap      Tue Mar 25 19:09:32 2025   GRANTLAB\\Administrator            S-1-5-15-c68e4ef2-864be32f-a76ce7d9-1f4
+```
+
+You can see the origin is secmap and it has a randomly generated UID. The problem with this is, now if you update your `uidNumber` and `gidNumber` in active directory this mapping **will not** update. You need to go in and delete the old entry.
+
+```bash
+[SVC:service@AAAAAA-A user]$ svc_nas_cifssupport --server "Grant Demo NAS Server" --args="-secmap -delete -name somerandomuser -domain GRANTLAB"
+Grant Demo NAS Server :done
+```
+
+You can see secmap updates:
+
+```bash
+[SVC:service@AAAAAA-A user]$ svc_nas_cifssupport --server "Grant Demo NAS Server" --args="-secmap -list"
+Grant Demo NAS Server :done
+
+SECMAP MAPPING TABLE
+
+Type      UID         Origin      Date of creation           Name                            SID
+User      10001       ldap        Wed Mar 26 20:57:50 2025   GRANTLAB\\gcurell_adm              S-1-5-15-c68e4ef2-864be32f-a76ce7d9-87a
+User      10002       ldap        Wed Mar 26 21:21:46 2025   GRANTLAB\\somerandomuser           S-1-5-15-c68e4ef2-864be32f-a76ce7d9-87c
+User      2147483649  secmap      Tue Mar 25 19:09:32 2025   GRANTLAB\\Administrator            S-1-5-15-c68e4ef2-864be32f-a76ce7d9-1f4
+```
+
+
+### How to Check a User
+
+If you need to check that a user is valid and that you can see the `uid` and `gid`, you can run the below.
+
+```bash
+[SVC:service@AAAAAA-A user]$ svc_nas_tools --server "Grant Demo NAS Server" --args="-ldap -lookup -user gcurell_adm"
+
+Grant Demo NAS Server : commands processed: 1
+1742930087: LDAP:10: LdapCache::getUserByName [DC=grantlab,DC=local]: User gcurell_adm, password x, uid 10001, gid 10001 (expired)
+1742930087: LDAP:10: LdapDomainClient::checkDomain: this=0x7f1f04f6c598: LdapDomain  0x7f1e497ff018/0x204
+1742930087: LDAP:10: LdapDomain::initThreadsServicesObjects()
+1742930087: LDAP:10: LdapCache::restampEntry [DC=grantlab,DC=local]: Name "gcurell_adm": Entry restamped
+1742930087: LDAP: 6: user: gcurell_adm, uid: 10001, gid: 10001, homeDir: /home/grant_adm
+```
+
+### Check Domain Health
+
+If you need to check the domain connection health, run the below.
+
+```bash
+[SVC:root@AAAAAA-A user]$ svc_nas_cifssupport --server NAS01 --args="-checkup -full"
+
+NAS01 :
+
+------------------------------------Checks--------------------------------------
+
+
+Component SMB :
+
+ACL       : Checking the number of ACLs per file system. ........................ Pass
+Connection: Checking the load of SMB TCP connections. ........................... Pass
+Credential: Checking the validity of credentials. ............................... Pass
+DC        : Checking the connectivity and configuration of Domain Controllers. .. Pass
+DFS       : DFS check in svc_nas service script is deprecated. .................. Pass
+DNS       : Checking the DNS configuration and connectivity to DNS servers. ..... Pass
+EventLog  : Checking the configuration of Windows Event Logs. ................... FAILURE
+GPO       : Checking the GPO configuration. ..................................... Pass
+HomeDir   : Checking the configuration of home directory shares. ................ Pass
+I18N      : Checking the I18N mode and the Unicode/UTF8 translation tables. ..... Pass
+Kerberos  : Checking password updates and AES for Kerberos. ..................... Pass
+LDAP      : Checking the LDAP configuration. .................................... Pass
+LocalGrp  : Checking the database configuration of local groups. ................ Pass
+NIS       : Checking the connectivity to the NIS servers. ....................... Pass
+Ntxmap    : Checking the ntxmap configuration file. ............................. Pass
+Secmap    : Checking the SECMAP database. ....................................... Pass
+Security  : Checking the SMB security settings. ................................. Pass
+Server    : Checking the SMB file servers configuration. ........................ Pass
+Share     : Checking the network shares database. ............................... Pass
+SmbList   : Checking the range availability of SMB IDs. ......................... Pass
+Threads   : Checking for SMB blocked threads. ................................... Pass
+UnsupOS   : Checking for unsupported client network operating systems. .......... Pass
+UnsupProto: Checking for unsupported client network protocols. .................. Pass
+VC        : Checking the configuration of Virus Checker servers. ................ Pass
+VDM       : Checking the NAS server configuration. .............................. Pass
+WINS      : Checking the connectivity to WINS servers. .......................... FAILURE
+--------------------------------------------------------------------------------
+
+-----------------------------SMB : EventLog Warnings----------------------------
+
+Warning 17456169068: NAS01 :  A new value for the maximum size of the 'application' event log of the NAS server has been defined. This value is not yet effective.
+--> On the Windows host, start the Microsoft event viewer. Connect to a SMB server of this NAS server and clear the corresponding event logs.
+
+-------------------------------SMB : WINS Warnings------------------------------
+
+Warning 17451974758: NAS01 :  The NetBIOS server 'AJPS01' does not have any WINS server in its configuration. The SMB clients might not be able to access the SMB server.
+--> WINS not supported by NAS.
+
+--------------------------------------------------------------------------------
+
+Total :   2 warnings
+```
 
