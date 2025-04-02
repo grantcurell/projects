@@ -11,6 +11,7 @@
   - [Mount the Share and NFS Export](#mount-the-share-and-nfs-export)
   - [Finishing Touches - gidNumbers for Other Groups](#finishing-touches---gidnumbers-for-other-groups)
   - [Troubleshooting](#troubleshooting)
+    - [How to Connect to PowerStore Over SSH](#how-to-connect-to-powerstore-over-ssh)
     - [Problems with secmap](#problems-with-secmap)
     - [How to Check a User](#how-to-check-a-user)
     - [Check Domain Health](#check-domain-health)
@@ -327,6 +328,10 @@ In my case I was part of the following groups:
 Since those groups don't have gidNumbers you see this warning. If you want to clear those warnings, each group will need to have a `gidNumber` defined.
 
 ## Troubleshooting
+
+### How to Connect to PowerStore Over SSH
+
+See [these instructions](https://www.dell.com/support/kbdoc/en-us/000131579/powerstore-how-to-connect-to-service-console-over-ssh) for how to connect to PowerStore over SSH.
 
 ### Problems with secmap
 
