@@ -27,8 +27,6 @@ Deploy OpenShift Offline/agent-config.yaml.mine.yaml
 
 Deploy OpenShift Offline/install-config.yaml.mine.yaml
 
-log_analysis/xml_files/
-
 Deploy OpenShift Offline/old_stuff.md
 
 How Does SIFT Work/U4E00.pdf
