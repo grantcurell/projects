@@ -1,8 +1,6 @@
 # LLMs Explained
-# The Math Behind GPT Models (Rough Draft)
 
 - [LLMs Explained](#llms-explained)
-- [The Math Behind GPT Models (Rough Draft)](#the-math-behind-gpt-models-rough-draft)
   - [Overview](#overview)
   - [How Transformers Work](#how-transformers-work)
     - [1 - Input Sequence to Encoder Embeddings](#1---input-sequence-to-encoder-embeddings)
