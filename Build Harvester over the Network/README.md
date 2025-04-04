@@ -25,6 +25,7 @@
     - [Create `config-join.yaml` (for all JOIN nodes)](#create-config-joinyaml-for-all-join-nodes)
       - [`config-join-harv2.yaml`](#config-join-harv2yaml)
       - [`config-join-harv3.yaml`](#config-join-harv3yaml)
+  - [Build the Machines](#build-the-machines)
   - [Troubleshooting PXE](#troubleshooting-pxe)
     - [Basic Problems](#basic-problems)
     - [Getting Stuck Right After Pulling an IP](#getting-stuck-right-after-pulling-an-ip)
@@ -528,6 +529,14 @@ install:
   skipchecks: true
 EOF
 ```
+
+## Build the Machines
+
+At this point you start by booting whichever machine is going to receive the create file, allow it to install, then you boot the others for join and allow them to install.
+
+This should get you three fully built Harvester machines!
+
+![](images/2025-04-04-15-28-56.png)
 
 ## Troubleshooting PXE
 
