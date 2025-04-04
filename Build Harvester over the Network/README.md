@@ -72,7 +72,7 @@ Rocky Linux release 9.5 (Blue Onyx)
 
 ## Secure Boot
 
-In my setup I was using VMs ipxe.efi isn't signed so for my experiment I didn't run secure boot:
+In my setup I was using VMs. Since ipxe.efi isn't signed so for my experiment I didn't run secure boot:
 
 ![](images/2025-04-03-14-39-28.png)
 
@@ -474,7 +474,7 @@ os:
   hostname: harv2                            # <--- Hostname for this node
   password: PASSWORD
   ssh_authorized_keys:
-    - \$SSH_KEY
+    - $SSH_KEY
   dns_nameservers:
     - 8.8.8.8
 install:
@@ -511,7 +511,7 @@ os:
   hostname: harv3                            # <--- Hostname for this node
   password: PASSWORD
   ssh_authorized_keys:
-    - \$SSH_KEY
+    - $SSH_KEY
   dns_nameservers:
     - 8.8.8.8
 install:
