@@ -4,6 +4,7 @@
   - [Network Setup Assumptions](#network-setup-assumptions)
   - [PXE Host OS](#pxe-host-os)
   - [Secure Boot](#secure-boot)
+  - [VM Resources](#vm-resources)
   - [Generate SSH Key (Required for Harvester Access)](#generate-ssh-key-required-for-harvester-access)
   - [Configure HTTP Server](#configure-http-server)
   - [Download and Place Boot Artifacts](#download-and-place-boot-artifacts)
@@ -22,6 +23,8 @@
   - [Create Configurations](#create-configurations)
     - [Create `config-create.yaml` (for first node)](#create-config-createyaml-for-first-node)
     - [Create `config-join.yaml` (for all JOIN nodes)](#create-config-joinyaml-for-all-join-nodes)
+      - [`config-join-harv2.yaml`](#config-join-harv2yaml)
+      - [`config-join-harv3.yaml`](#config-join-harv3yaml)
   - [Troubleshooting PXE](#troubleshooting-pxe)
     - [Basic Problems](#basic-problems)
     - [Getting Stuck Right After Pulling an IP](#getting-stuck-right-after-pulling-an-ip)
@@ -72,6 +75,10 @@ Rocky Linux release 9.5 (Blue Onyx)
 In my setup I was using VMs ipxe.efi isn't signed so for my experiment I didn't run secure boot:
 
 ![](images/2025-04-03-14-39-28.png)
+
+## VM Resources
+
+I tested with VMs. Even with `skipchecks: true` make sure you put at least 250GiB of space on your hard drive.
 
 ## Generate SSH Key (Required for Harvester Access)
 
@@ -251,51 +258,47 @@ sudo systemctl enable --now dhcpd
 
 ### Configure `/etc/dhcp/dhcpd.conf`
 
-Paste this **entire config**:
-
 ```shell
 # Defines the client architecture type (used to detect UEFI vs BIOS)
 option architecture-type code 93 = unsigned integer 16;
 
-# Define your subnet, gateway, DNS, and a fallback range
+# Define your network subnet and static DHCP pool
 subnet 10.10.25.0 netmask 255.255.255.0 {
-  option routers 10.10.25.200;               # <--- ✅ Set this to your PXE/DHCP/HTTP server's IP
-  option domain-name-servers 8.8.8.8;        # <--- ✅ Optional: your preferred DNS servers
-  range 10.10.25.200 10.10.25.206;           # <--- ✅ Fallback DHCP range (not used with static leases below)
-  deny unknown-clients;                      # <--- ✅ Ensures only MACs listed below get leases
+  option routers 10.10.25.200;               # <--- Set to your DHCP/HTTP/TFTP server
+  option domain-name-servers 8.8.8.8;
+  range 10.10.25.200 10.10.25.206;           # <--- Optional fallback range
+  deny unknown-clients;                      # <--- Only serve defined hosts
 }
 
-# --- CREATE NODE (first node bootstraps the cluster) ---
+# CREATE NODE: harv1
 group {
-  # Boot logic: switch between iPXE and PXE modes
   if exists user-class and option user-class = "iPXE" {
     if option architecture-type = 00:07 {
-      filename "http://10.10.25.200/harvester/ipxe-create-efi";  # <--- ✅ Update with your HTTP server IP
+      filename "http://10.10.25.200/harvester/ipxe-create-efi";
     } else {
-      filename "http://10.10.25.200/harvester/ipxe-create";      # <--- ✅ Update if using non-UEFI iPXE
+      filename "http://10.10.25.200/harvester/ipxe-create";
     }
   } else {
-    # Fallback to legacy PXE boot (TFTP)
     if option architecture-type = 00:07 {
-      filename "ipxe.efi";          # <--- ✅ Served via TFTP for UEFI
+      filename "ipxe.efi";      # UEFI TFTP
     } else {
-      filename "undionly.kpxe";     # <--- ✅ Served via TFTP for BIOS
+      filename "undionly.kpxe"; # BIOS TFTP
     }
   }
 
   host harv1 {
-    hardware ethernet 00:50:56:8a:ce:66;     # <--- ✅ MAC address of your CREATE node (harv1)
-    fixed-address 10.10.25.201;             # <--- ✅ Static IP for harv1
+    hardware ethernet 00:50:56:8a:ce:66;     # <--- MAC of CREATE node
+    fixed-address 10.10.25.201;
   }
 }
 
-# --- JOIN NODE: harv2 ---
+# JOIN NODE: harv2
 group {
   if exists user-class and option user-class = "iPXE" {
     if option architecture-type = 00:07 {
-      filename "http://10.10.25.200/harvester/ipxe-join-efi";    # <--- ✅ Update with your HTTP server IP
+      filename "http://10.10.25.200/harvester/ipxe-join-harv2-efi";
     } else {
-      filename "http://10.10.25.200/harvester/ipxe-join";
+      filename "http://10.10.25.200/harvester/ipxe-join-harv2";
     }
   } else {
     if option architecture-type = 00:07 {
@@ -306,18 +309,18 @@ group {
   }
 
   host harv2 {
-    hardware ethernet 00:50:56:8a:99:71;     # <--- ✅ MAC address of harv2
-    fixed-address 10.10.25.202;             # <--- ✅ Static IP for harv2
+    hardware ethernet 00:50:56:8a:99:71;     # <--- MAC of JOIN node harv2
+    fixed-address 10.10.25.202;
   }
 }
 
-# --- JOIN NODE: harv3 ---
+# JOIN NODE: harv3
 group {
   if exists user-class and option user-class = "iPXE" {
     if option architecture-type = 00:07 {
-      filename "http://10.10.25.200/harvester/ipxe-join-efi";    # <--- ✅ Update with your HTTP server IP
+      filename "http://10.10.25.200/harvester/ipxe-join-harv3-efi";
     } else {
-      filename "http://10.10.25.200/harvester/ipxe-join";
+      filename "http://10.10.25.200/harvester/ipxe-join-harv3";
     }
   } else {
     if option architecture-type = 00:07 {
@@ -328,8 +331,8 @@ group {
   }
 
   host harv3 {
-    hardware ethernet 00:50:56:8a:53:e9;     # <--- ✅ MAC address of harv3
-    fixed-address 10.10.25.203;             # <--- ✅ Static IP for harv3
+    hardware ethernet 00:50:56:8a:53:e9;     # <--- MAC of JOIN node harv3
+    fixed-address 10.10.25.203;
   }
 }
 ```
@@ -349,10 +352,12 @@ journalctl -u dhcpd -xe
 ## Create Required Scripts
 
 ```bash
-HARVESTER_VERSION="v1.4.2"  # <--- Update with your harvester version
+HARVESTER_VERSION="v1.4.2"  # <--- Update with your Harvester version
 HTTP_SERVER="10.10.25.200"
 
 mkdir -p /usr/share/nginx/html/harvester
+
+# --- CREATE NODE ---
 
 cat <<EOF > /usr/share/nginx/html/harvester/ipxe-create
 #!ipxe
@@ -363,14 +368,27 @@ EOF
 
 cp /usr/share/nginx/html/harvester/ipxe-create /usr/share/nginx/html/harvester/ipxe-create-efi
 
-cat <<EOF > /usr/share/nginx/html/harvester/ipxe-join
+# --- JOIN NODE harv2 ---
+
+cat <<EOF > /usr/share/nginx/html/harvester/ipxe-join-harv2
 #!ipxe
-kernel http://$HTTP_SERVER/harvester/harvester-$HARVESTER_VERSION-vmlinuz-amd64 initrd=harvester-$HARVESTER_VERSION-initrd-amd64 ip=dhcp net.ifnames=1 rd.cos.disable rd.noverifyssl console=tty1 root=live:http://$HTTP_SERVER/harvester/harvester-$HARVESTER_VERSION-rootfs-amd64.squashfs harvester.install.automatic=true harvester.install.config_url=http://$HTTP_SERVER/harvester/config-join.yaml
+kernel http://$HTTP_SERVER/harvester/harvester-$HARVESTER_VERSION-vmlinuz-amd64 initrd=harvester-$HARVESTER_VERSION-initrd-amd64 ip=dhcp net.ifnames=1 rd.cos.disable rd.noverifyssl console=tty1 root=live:http://$HTTP_SERVER/harvester/harvester-$HARVESTER_VERSION-rootfs-amd64.squashfs harvester.install.automatic=true harvester.install.config_url=http://$HTTP_SERVER/harvester/config-join-harv2.yaml
 initrd http://$HTTP_SERVER/harvester/harvester-$HARVESTER_VERSION-initrd-amd64
 boot
 EOF
 
-cp /usr/share/nginx/html/harvester/ipxe-join /usr/share/nginx/html/harvester/ipxe-join-efi
+cp /usr/share/nginx/html/harvester/ipxe-join-harv2 /usr/share/nginx/html/harvester/ipxe-join-harv2-efi
+
+# --- JOIN NODE harv3 ---
+
+cat <<EOF > /usr/share/nginx/html/harvester/ipxe-join-harv3
+#!ipxe
+kernel http://$HTTP_SERVER/harvester/harvester-$HARVESTER_VERSION-vmlinuz-amd64 initrd=harvester-$HARVESTER_VERSION-initrd-amd64 ip=dhcp net.ifnames=1 rd.cos.disable rd.noverifyssl console=tty1 root=live:http://$HTTP_SERVER/harvester/harvester-$HARVESTER_VERSION-rootfs-amd64.squashfs harvester.install.automatic=true harvester.install.config_url=http://$HTTP_SERVER/harvester/config-join-harv3.yaml
+initrd http://$HTTP_SERVER/harvester/harvester-$HARVESTER_VERSION-initrd-amd64
+boot
+EOF
+
+cp /usr/share/nginx/html/harvester/ipxe-join-harv3 /usr/share/nginx/html/harvester/ipxe-join-harv3-efi
 ```
 
 ## Create Configurations
@@ -409,8 +427,7 @@ fi
 
 cat <<EOF > /usr/share/nginx/html/harvester/config-create.yaml
 scheme_version: 1
-token: harvester-cluster-token
-
+token: harvester-cluster-token               # <--- Set a consistent token for the entire cluster
 os:
   hostname: harv1
   password: PASSWORD
@@ -419,20 +436,27 @@ os:
   ntp_servers:
     - 0.suse.pool.ntp.org
     - 1.suse.pool.ntp.org
-
 install:
   mode: create
   management_interface:
-    method: dhcp
+    interfaces:
+      - hwAddr: "00:50:56:8a:ce:66"          # <--- MAC address of harv1
     default_route: true
+    method: dhcp
+    bond_options:
+      mode: balance-tlb
+      miimon: 100
   device: /dev/sda
   iso_url: http://10.10.25.200/harvester/harvester-v1.4.2-amd64.iso
   vip: 10.10.25.209
   vip_mode: static
+  skipchecks: true
 EOF
 ```
 
 ### Create `config-join.yaml` (for all JOIN nodes)
+
+#### `config-join-harv2.yaml`
 
 ```yml
 SSH_KEY=$(cat ~/.ssh/id_rsa.pub 2>/dev/null)
@@ -442,25 +466,67 @@ if [ -z "$SSH_KEY" ]; then
   exit 1
 fi
 
-cat <<EOF > /usr/share/nginx/html/harvester/config-join.yaml
+cat <<EOF > /usr/share/nginx/html/harvester/config-join-harv2.yaml
 scheme_version: 1
-token: harvester-cluster-token
-server_url: https://10.10.25.209:443
+token: harvester-cluster-token               # <--- Must match the one in config-create.yaml
+server_url: https://10.10.25.209:443         # <--- Cluster VIP
 os:
-  hostname: harv2
+  hostname: harv2                            # <--- Hostname for this node
   password: PASSWORD
   ssh_authorized_keys:
-    - $SSH_KEY
+    - \$SSH_KEY
   dns_nameservers:
     - 8.8.8.8
 install:
   mode: join
   management_interface:
+    interfaces:
+      - hwAddr: "00:50:56:8a:99:71"          # <--- MAC of harv2
     default_route: true
     method: dhcp
+    bond_options:
+      mode: balance-tlb
+      miimon: 100
   device: /dev/sda
   iso_url: http://10.10.25.200/harvester/harvester-v1.4.2-amd64.iso
-  skip_bonding: true
+  skipchecks: true
+EOF
+```
+
+#### `config-join-harv3.yaml`
+
+```yml
+SSH_KEY=$(cat ~/.ssh/id_rsa.pub 2>/dev/null)
+if [ -z "$SSH_KEY" ]; then
+  echo "❌ SSH key not found at ~/.ssh/id_rsa.pub"
+  echo "👉 Generate one with: ssh-keygen -t rsa"
+  exit 1
+fi
+
+cat <<EOF > /usr/share/nginx/html/harvester/config-join-harv3.yaml
+scheme_version: 1
+token: harvester-cluster-token               # <--- Must match the one in config-create.yaml
+server_url: https://10.10.25.209:443         # <--- Cluster VIP
+os:
+  hostname: harv3                            # <--- Hostname for this node
+  password: PASSWORD
+  ssh_authorized_keys:
+    - \$SSH_KEY
+  dns_nameservers:
+    - 8.8.8.8
+install:
+  mode: join
+  management_interface:
+    interfaces:
+      - hwAddr: "00:50:56:8a:53:e9"          # <--- MAC of harv3
+    default_route: true
+    method: dhcp
+    bond_options:
+      mode: balance-tlb
+      miimon: 100
+  device: /dev/sda
+  iso_url: http://10.10.25.200/harvester/harvester-v1.4.2-amd64.iso
+  skipchecks: true
 EOF
 ```
 
