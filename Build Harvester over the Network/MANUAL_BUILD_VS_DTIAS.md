@@ -3,6 +3,7 @@
 - [Manually Creating a PXE Framework vs DTIAS](#manually-creating-a-pxe-framework-vs-dtias)
   - [Synopsis](#synopsis)
   - [Issues with a Manual Buildout](#issues-with-a-manual-buildout)
+    - [0. Users Need GUIs](#0-users-need-guis)
     - [1. Manual Tracking of MAC-to-Hostname/IP Mappings](#1-manual-tracking-of-mac-to-hostnameip-mappings)
     - [2. Manually Creating `config-*.yaml` Files](#2-manually-creating-config-yaml-files)
     - [3. Manually Writing iPXE Scripts per Node](#3-manually-writing-ipxe-scripts-per-node)
@@ -58,6 +59,15 @@ In the below section [Issues with a Manual Buildout](#issues-with-a-manual-build
 In the last section [How This Will work with DTIAS](#how-this-will-work-with-dtias) I explain how this works with DTIAS.
 
 ## Issues with a Manual Buildout
+
+### 0. Users Need GUIs
+- Manual Buildout
+  - There is no GUI unless you hire / find frontend devs to do it
+  - This also means there is no input validation outside of what you build
+- DTIAS Proposed Harvester Feature
+  - Already has built in input validation in the GUI [as shown below](#how-this-will-work-with-dtias) and we would add input validation for DTIAS
+
+This is potentially the most significant drawback. Unless all users of the system will be system administrators with a high degree of comfort on the Linux command line, a GUI is effectively required. At least in my personal experience, my success rate getting most computer people to use CLI tools is low. It's possible, but usually highly problematic and comes with a lot of phone calls back to me which I was never fond of.
 
 ### 1. Manual Tracking of MAC-to-Hostname/IP Mappings
 - Manual Buildout
