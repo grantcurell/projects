@@ -9,7 +9,7 @@
   - [Download and Place Boot Artifacts](#download-and-place-boot-artifacts)
   - [\[Optional\] Install TFTP Server (Fallback for Legacy PXE Clients)](#optional-install-tftp-server-fallback-for-legacy-pxe-clients)
     - [Install tftp-server](#install-tftp-server)
-    - [🔧 Configure TFTP Service](#-configure-tftp-service)
+    - [Configure TFTP Service](#configure-tftp-service)
     - [Enable and Start the TFTP Service](#enable-and-start-the-tftp-service)
     - [Open Firewall Port](#open-firewall-port)
     - [Test TFTP](#test-tftp)
@@ -151,7 +151,7 @@ sudo chcon -Rt tftpdir_t /var/lib/tftpboot
 sudo systemctl enable --now tftp.socket
 ```
 
-### 🔧 Configure TFTP Service
+### Configure TFTP Service
 
 Create a new systemd socket + service override config:
 
