@@ -10,14 +10,14 @@
   - [\[Optional\] Install TFTP Server (Fallback for Legacy PXE Clients)](#optional-install-tftp-server-fallback-for-legacy-pxe-clients)
     - [Install tftp-server](#install-tftp-server)
     - [🔧 Configure TFTP Service](#-configure-tftp-service)
-    - [✅ Enable and Start the TFTP Service](#-enable-and-start-the-tftp-service)
-    - [🔥 Open Firewall Port](#-open-firewall-port)
-    - [🧪 Test TFTP](#-test-tftp)
+    - [Enable and Start the TFTP Service](#enable-and-start-the-tftp-service)
+    - [Open Firewall Port](#open-firewall-port)
+    - [Test TFTP](#test-tftp)
   - [DHCP Server Configuration (ISC DHCP)](#dhcp-server-configuration-isc-dhcp)
     - [Logic Overview](#logic-overview)
     - [Install ISC DHCP Server on Rocky 9](#install-isc-dhcp-server-on-rocky-9)
     - [Configure `/etc/dhcp/dhcpd.conf`](#configure-etcdhcpdhcpdconf)
-    - [🔥 Step 3: Restart DHCP](#-step-3-restart-dhcp)
+    - [Step 3: Restart DHCP](#step-3-restart-dhcp)
   - [Create Required Scripts](#create-required-scripts)
   - [Create Configurations](#create-configurations)
     - [Create `config-create.yaml` (for first node)](#create-config-createyaml-for-first-node)
@@ -182,7 +182,7 @@ StandardInput=socket
 EOF
 ```
 
-### ✅ Enable and Start the TFTP Service
+### Enable and Start the TFTP Service
 
 ```bash
 sudo systemctl daemon-reexec
@@ -190,14 +190,14 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now tftp.socket
 ```
 
-### 🔥 Open Firewall Port
+### Open Firewall Port
 
 ```bash
 sudo firewall-cmd --add-service=tftp --permanent
 sudo firewall-cmd --reload
 ```
 
-### 🧪 Test TFTP
+### Test TFTP
 
 ```bash
 tftp 10.10.25.200
@@ -334,7 +334,7 @@ group {
 }
 ```
 
-### 🔥 Step 3: Restart DHCP
+### Step 3: Restart DHCP
 
 ```bash
 sudo systemctl restart dhcpd
