@@ -38,7 +38,6 @@
 | Router/Gateway   | `10.10.25.200` (same as HTTP server)  |
 | DNS              | `8.8.8.8`                            |
 | VIP for cluster  | `10.10.25.209`                        |
-| NIC              | `ens5`                               |
 | ISO Version      | `v1.4.2`                             |
 | Boot Directory   | `/usr/share/nginx/html/harvester/`  |
 
