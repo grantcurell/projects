@@ -1,6 +1,7 @@
 # Manually Creating a PXE Framework vs DTIAS
 
 - [Manually Creating a PXE Framework vs DTIAS](#manually-creating-a-pxe-framework-vs-dtias)
+  - [Synopsis](#synopsis)
   - [Issues with a Manual Buildout](#issues-with-a-manual-buildout)
     - [1. Manual Tracking of MAC-to-Hostname/IP Mappings](#1-manual-tracking-of-mac-to-hostnameip-mappings)
     - [2. Manually Creating `config-*.yaml` Files](#2-manually-creating-config-yaml-files)
@@ -14,6 +15,8 @@
     - [10. No API for Integrating with Other Systems](#10-no-api-for-integrating-with-other-systems)
     - [11. Deal with UEFI PXE Boot Oddities](#11-deal-with-uefi-pxe-boot-oddities)
   - [How This Will Work with DTIAS](#how-this-will-work-with-dtias)
+
+## Synopsis
 
 I was asked recently why someone would want to use DTIAS over manually creating a PXE-boot infrastructure. To that end, I first went and [built it out myself](./README.md) to make sure it was in fact what I was expecting. That tutorial gets into the weeds of everything you will have to do to build out Harvester. To abbreviate, here's everything you have to do:
 
