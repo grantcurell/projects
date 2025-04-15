@@ -51,6 +51,7 @@ I was asked recently why someone would want to use DTIAS over manually creating 
 - Verify each node boots and installs Harvester successfully
 - Access the Harvester web UI at the VIP address
 - Troubleshoot PXE failures as needed (DHCP logs, nginx access logs, etc.)
+- Version mismatches. Different parts of your system are updated at different times and become incompatible. Ex: you update DHCP to use newer syntax but the version of UEFI the system's have don't support it.
 
 That's assuming that you're only doing this on a few nodes. For anything at scale you will have to build out a custom automation framework as I [explain below](#1-manual-tracking-of-mac-to-hostnameip-mappings) to really accomplish this. Some of these things are unavoidable. Ex: network planning is something that has to happen either way, but most of those things are automation tasks already built into DTIAS.
 
