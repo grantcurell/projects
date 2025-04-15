@@ -69,6 +69,8 @@ In the last section [How This Will work with DTIAS](#how-this-will-work-with-dti
 
 This is potentially the most significant drawback. Unless all users of the system will be system administrators with a high degree of comfort on the Linux command line, a GUI is effectively required. At least in my personal experience, my success rate getting most computer people to use CLI tools is low. It's possible, but usually highly problematic and comes with a lot of phone calls back to me which I was never fond of.
 
+---
+
 ### 1. Manual Tracking of MAC-to-Hostname/IP Mappings
 - Manual Buildout
   - Maintain a spreadsheet or YAML list of every node’s MAC, IP, hostname, and role
