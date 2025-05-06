@@ -21,6 +21,9 @@
     - [8. Run Grafana via Podman](#8-run-grafana-via-podman)
     - [9. Configure Grafana and Create Dashboards](#9-configure-grafana-and-create-dashboards)
   - [✅ Done!](#-done)
+  - [Controlling Redfish-Enabled Devices](#controlling-redfish-enabled-devices)
+    - [Dell Resources](#dell-resources)
+    - [APC PDUs](#apc-pdus)
 
 ---
 
@@ -280,3 +283,26 @@ You now have:
 * An exporter serving Prometheus-formatted metrics
 * Prometheus scraping the exporter
 * Grafana visualizing hardware telemetry
+
+## Controlling Redfish-Enabled Devices
+
+This project demonstrates a best-practices-compliant method for collecting telemetry using Redfish. However, **controlling** devices via Redfish is far less standardized — nearly every vendor implements control features differently.
+
+### Dell Resources
+
+Dell provides several tools and examples to support Redfish-based control:
+
+* **Redfish Python API Examples**
+  [https://github.com/dell/iDRAC-Redfish-Scripting](https://github.com/dell/iDRAC-Redfish-Scripting)
+
+* **Dell EMC Ansible Modules**
+  *Note: This refers to Ansible modules, not the OpenManage Enterprise product itself.*
+  [https://galaxy.ansible.com/ui/repo/published/dellemc/openmanage/](https://galaxy.ansible.com/ui/repo/published/dellemc/openmanage/)
+
+### APC PDUs
+
+For APC Power Distribution Units (PDUs), Redfish support varies. Jeet has written examples that may help:
+
+* [Connecting to APC PDU with Redfish](https://github.com/grantcurell/projects/tree/main/Connect%20to%20APC%20PDU%20with%20Redfish)
+
+Additionally, APC publishes Redfish documentation and a control manual for supported models.
