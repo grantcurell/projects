@@ -1,0 +1,9 @@
+devices:
+  - name: servername1here
+    ip: 10.10.25.110
+    username: root
+    password: changeme
+  - name: servername2here
+    ip: 10.10.25.109
+    username: root
+    password: changeme

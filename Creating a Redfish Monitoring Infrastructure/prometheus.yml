@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'redfish_exporter'
+    static_configs:
+      - targets: ['exporter:8000']
