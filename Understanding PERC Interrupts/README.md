@@ -22,8 +22,6 @@ I used a Dell R7525 (Rome) for testing.
 
 ## How Affinity Works
 
-Here is the provided text converted to Markdown:
-
 1. Driver loads.
 2. When the driver loads, it checks the affinity flags and gets the current value as seen in proc. 
    1. The value is defined by PCI_IRQ_AFFINITY (see [PCI_IRQ_AFFINITY documentation](https://www.kernel.org/doc/Documentation/PCI/MSI-HOWTO.txt)).
