@@ -1,6 +1,6 @@
-# Setup RDMA on PowerScale
+# Setup RoCE on PowerScale
 
-- [Setup RDMA on PowerScale](#setup-rdma-on-powerscale)
+- [Setup RoCE on PowerScale](#setup-roce-on-powerscale)
   - [Verify Hardware and Software Compatibility](#verify-hardware-and-software-compatibility)
     - [PowerScale Requirements](#powerscale-requirements)
     - [R7625 Client Requirements](#r7625-client-requirements)
@@ -76,21 +76,61 @@ Negotiated Speed: 100Gbps
 
 Check RDMA device availability:
 
-TODO
-
 ```bash
-sudo dnf install -y rdma-core libibverbs-utils
+sudo dnf install rdma-core libibverbs-utils ethtool pciutils -y
 ibv_devinfo
 ```
 
-If no RDMA device is detected, install Mellanox OFED:
+You should see something like this:
 
-```bash
-yum install mlnx-ofed-all
+```
+[grant@aj-objsc-01 ~]$ ibv_devinfo
+hca_id: irdma0
+        transport:                      InfiniBand (0)
+        fw_ver:                         1.72
+        node_guid:                      b683:51ff:fe02:7a30
+        sys_image_guid:                 b683:51ff:fe02:7a30
+        vendor_id:                      0x8086
+        vendor_part_id:                 5531
+        hw_ver:                         0x2
+        phys_port_cnt:                  1
+                port:   1
+                        state:                  PORT_ACTIVE (4)
+                        max_mtu:                4096 (5)
+                        active_mtu:             1024 (3)
+                        sm_lid:                 0
+                        port_lid:               1
+                        port_lmc:               0x00
+                        link_layer:             Ethernet
+
+hca_id: irdma1
+        transport:                      InfiniBand (0)
+        fw_ver:                         1.72
+        node_guid:                      b683:51ff:fe02:7a31
+        sys_image_guid:                 b683:51ff:fe02:7a31
+        vendor_id:                      0x8086
+        vendor_part_id:                 5531
+        hw_ver:                         0x2
+        phys_port_cnt:                  1
+                port:   1
+                        state:                  PORT_ACTIVE (4)
+                        max_mtu:                4096 (5)
+                        active_mtu:             1024 (3)
+                        sm_lid:                 0
+                        port_lid:               1
+                        port_lmc:               0x00
+                        link_layer:             Ethernet
 ```
 
-Or download the latest OFED package from:
-[https://network.nvidia.com/products/infiniband-drivers/linux/mlnx\_ofed/](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/)
+Notice, the transport is Infiniband however, the **link_layer** is Ethernet. Don't be confused by this and tell the lab manager that there are no RDMA-capable Ethernet cards in the box. Not that I would do that. This happens because the original software stack was written for Infiniband and transport is hardcoded as Infiniband.
+
+You can also confirm by running `rdma link show`
+
+```shell
+[grant@aj-objsc-01 ~]$ rdma link show
+link irdma0/1 state ACTIVE physical_state LINK_UP netdev ens6f0
+link irdma1/1 state ACTIVE physical_state LINK_UP netdev ens6f1
+```
 
 ## Configure the PowerScale Cluster
 
