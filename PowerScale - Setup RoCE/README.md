@@ -9,9 +9,12 @@
     - [Set Access Pattern on Target Directories](#set-access-pattern-on-target-directories)
     - [Disabling Deduplication for Performance Testing](#disabling-deduplication-for-performance-testing)
   - [Configure the Network](#configure-the-network)
-    - [3.1. Set Jumbo Frames](#31-set-jumbo-frames)
-    - [3.2. Enable Flow Control on Switch Ports](#32-enable-flow-control-on-switch-ports)
-  - [4. Mount the PowerScale Export Using RDMA](#4-mount-the-powerscale-export-using-rdma)
+    - [Configure MTUs](#configure-mtus)
+    - [Configure IP Addresses](#configure-ip-addresses)
+      - [On the Linux Side:](#on-the-linux-side)
+      - [On the PowerScale Side:](#on-the-powerscale-side)
+  - [Configure the Fileshare](#configure-the-fileshare)
+  - [Mount the PowerScale Export Using RDMA](#mount-the-powerscale-export-using-rdma)
     - [4.1. Show Available NFS Exports](#41-show-available-nfs-exports)
     - [4.2. Create Mount Point](#42-create-mount-point)
     - [4.3. Mount Over RDMA](#43-mount-over-rdma)
@@ -190,7 +193,7 @@ I recommend this with workloads that are:
 
 ## Configure the Network
 
-### 3.1. Set Jumbo Frames
+### Configure MTUs
 
 On all switch ports and server NICs:
 
@@ -210,11 +213,64 @@ Verify:
 ip link show <iface>
 ```
 
-### 3.2. Enable Flow Control on Switch Ports
+### Configure IP Addresses
 
-Refer to switch documentation to ensure flow control (pause frames) are enabled. RoCEv2 requires lossless Ethernet or ECN-capable switches.
+In this section, we create a **dedicated, point-to-point RDMA network link** between the Linux host and the PowerScale node using private IP addresses and a `/30` subnet. In my test scenario I hooked everything together directly to avoid complicating things with the network. Usually, you will need to work with flow control, make sure your switches can handle RDMA, etc.
 
-## 4. Mount the PowerScale Export Using RDMA
+This configuration assumes:
+
+* Linux interface: `ens6f1` (adjust if using a different one)
+* Linux IP: `10.99.99.99`
+* PowerScale node: `node 7`, port `100gige-1`
+* PowerScale IP: `10.99.99.100`
+* MTU: `9000` for jumbo frames
+* Subnet: `10.99.99.96/30`
+* Groupnet: `groupnet0`
+* Subnet name: `grantsrdmasubnet`
+* Pool name: `grantsrdmapool`
+
+Update these values as needed for your environment.
+
+#### On the Linux Side:
+
+```bash
+# Replace 'ens6f1' with your RDMA NIC name if different
+sudo nmcli connection modify ens6f1 ipv4.addresses 10.99.99.99/30
+sudo nmcli connection modify ens6f1 ipv4.method manual
+sudo nmcli connection modify ens6f1 ipv4.gateway ""      # no gateway for direct link
+sudo nmcli connection modify ens6f1 ipv4.dns ""          # no DNS needed
+sudo nmcli connection modify ens6f1 802-3-ethernet.mtu 9000
+
+# Apply changes
+sudo nmcli connection down ens6f1 && sudo nmcli connection up ens6f1
+
+# Verify settings
+ip addr show ens6f1
+```
+
+#### On the PowerScale Side:
+
+```bash
+# 1. Create a dedicated subnet (change 'grantsrdmasubnet')
+isi network subnets create groupnet0.grantsrdmasubnet ipv4 30 --mtu 9000
+
+# 2. Enable NFSv3 over RDMA globally
+isi nfs settings global modify --nfsv3-rdma-enabled true
+
+# 3. Create an RDMA-only pool with static IP (adjust node, interface, and IPs as needed)
+isi network pools create groupnet0.grantsrdmasubnet.grantsrdmapool \
+  --ranges 10.99.99.100-10.99.99.100 \
+  --ifaces 7:100gige-1 \
+  --nfsv3-rroce-only true \
+  --alloc-method static \
+  --description "Grant's dedicated RDMA test link"
+```
+
+## Configure the Fileshare
+
+
+
+## Mount the PowerScale Export Using RDMA
 
 ### 4.1. Show Available NFS Exports
 
