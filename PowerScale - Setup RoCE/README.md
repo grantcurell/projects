@@ -13,23 +13,10 @@
     - [Configure IP Addresses](#configure-ip-addresses)
       - [On the Linux Side:](#on-the-linux-side)
       - [On the PowerScale Side:](#on-the-powerscale-side)
-  - [Configure the Fileshare](#configure-the-fileshare)
+  - [Configure the Fileshare on PowerScale](#configure-the-fileshare-on-powerscale)
   - [Mount the PowerScale Export Using RDMA](#mount-the-powerscale-export-using-rdma)
-    - [4.1. Show Available NFS Exports](#41-show-available-nfs-exports)
-    - [4.2. Create Mount Point](#42-create-mount-point)
-    - [4.3. Mount Over RDMA](#43-mount-over-rdma)
-  - [5. Verify RDMA Functionality](#5-verify-rdma-functionality)
-    - [5.1. Check Protocol Used in Mount](#51-check-protocol-used-in-mount)
-    - [5.2. Observe RDMA Traffic with tcpdump](#52-observe-rdma-traffic-with-tcpdump)
-    - [5.3. Run fio to Generate I/O](#53-run-fio-to-generate-io)
-  - [6. Optional: Real-World Application Verification](#6-optional-real-world-application-verification)
-    - [6.1. Autodesk Flame 2022 Playback Test](#61-autodesk-flame-2022-playback-test)
-    - [6.2. DaVinci Resolve Playback Test](#62-davinci-resolve-playback-test)
-  - [7. Troubleshooting](#7-troubleshooting)
-    - [7.1. No RDMA Device on Client](#71-no-rdma-device-on-client)
-    - [7.2. Mount Fails with `permission denied`](#72-mount-fails-with-permission-denied)
-    - [7.3. Poor Performance Despite RDMA](#73-poor-performance-despite-rdma)
-  - [8. References](#8-references)
+    - [Make sure Correct Kernel Modules are Loaded](#make-sure-correct-kernel-modules-are-loaded)
+    - [Mount](#mount)
 
 
 This tutorial walks through setting up NFS over RDMA between a Dell R7625 running Linux and a PowerScale cluster running OneFS 9.2 or later.
@@ -41,6 +28,14 @@ This tutorial walks through setting up NFS over RDMA between a Dell R7625 runnin
 - Must be running OneFS version 9.2 or higher
 - Must have Mellanox ConnectX-3 Pro or more recent NICs. As of writing in 2025 this should be any ConnectX NIC you buy.
 - RDMA must be supported on the front-end interfaces
+- For this tutorial I recommend a user that has the `SystemAdmin` privilege. You can add this to a user with `isi auth roles modify SystemAdmin --add-user <user>`
+  - If you want to be able to add user mappings for NFS you will need the `ISI_PRIV_AUTH` privilege. You can create a role that has it and then add it to your user with the below (as your default admin user):
+
+      ```shell
+      isi auth roles create CustomAuthRole --description "Grants ISI_PRIV_AUTH for manual ID mapping"
+      isi auth roles modify CustomAuthRole --add-priv ISI_PRIV_AUTH
+      isi auth roles modify CustomAuthRole --add-user <user>
+      ```
 
 Run this on PowerScale CLI:
 ```bash
@@ -56,19 +51,20 @@ Flags: ... SUPPORTS_RDMA_RROCE ...
 Ex:
 
 ```shell
-IP Addresses: 192.168.4.19
-            LNN: 5
-        Name: 100gige-1
-    NIC Name: mce2
-        Owners: groupnet0.subnet0.pool2
-        Status: Up
-        VLAN ID: -
-Default IPv4 Gateway: 192.168.4.254
+        IP Addresses: 10.99.99.98
+                 LNN: 1
+                Name: 25gige-2
+            NIC Name: mce1
+              Owners: groupnet0.grantsrdmasubnet.grantsrdmapool
+              Status: Up
+             VLAN ID: -
+Default IPv4 Gateway: -
 Default IPv6 Gateway: -
-            MTU: 1500
-    Access Zone: System
-        Flags: ACCEPT_ROUTER_ADVERT, SUPPORTS_RDMA_RRoCE
-Negotiated Speed: 100Gbps
+                 MTU: 9000
+         Access Zone: System
+               Flags: ACCEPT_ROUTER_ADVERT, SUPPORTS_RDMA_RRoCE
+    Negotiated Speed: 25Gbps
+
 ```
 
 ### R7625 Client Requirements
@@ -80,7 +76,7 @@ Negotiated Speed: 100Gbps
 Check RDMA device availability:
 
 ```bash
-sudo dnf install rdma-core libibverbs-utils ethtool pciutils -y
+sudo dnf install rdma-core libibverbs-utils ethtool pciutils nfs-utils -y
 ibv_devinfo
 ```
 
@@ -220,9 +216,9 @@ In this section, we create a **dedicated, point-to-point RDMA network link** bet
 This configuration assumes:
 
 * Linux interface: `ens6f1` (adjust if using a different one)
-* Linux IP: `10.99.99.99`
-* PowerScale node: `node 7`, port `100gige-1`
-* PowerScale IP: `10.99.99.100`
+* Linux IP: `10.99.99.97`
+* PowerScale node: `node 1`, port `25gige-2`
+* PowerScale IP: `10.99.99.98`
 * MTU: `9000` for jumbo frames
 * Subnet: `10.99.99.96/30`
 * Groupnet: `groupnet0`
@@ -235,7 +231,7 @@ Update these values as needed for your environment.
 
 ```bash
 # Replace 'ens6f1' with your RDMA NIC name if different
-sudo nmcli connection modify ens6f1 ipv4.addresses 10.99.99.99/30
+sudo nmcli connection modify ens6f1 ipv4.addresses 10.99.99.97/30
 sudo nmcli connection modify ens6f1 ipv4.method manual
 sudo nmcli connection modify ens6f1 ipv4.gateway ""      # no gateway for direct link
 sudo nmcli connection modify ens6f1 ipv4.dns ""          # no DNS needed
@@ -259,130 +255,59 @@ isi nfs settings global modify --nfsv3-rdma-enabled true
 
 # 3. Create an RDMA-only pool with static IP (adjust node, interface, and IPs as needed)
 isi network pools create groupnet0.grantsrdmasubnet.grantsrdmapool \
-  --ranges 10.99.99.100-10.99.99.100 \
-  --ifaces 7:100gige-1 \
+  --ranges 10.99.99.98-10.99.99.98 \
+  --ifaces 1:25gige-2 \
   --nfsv3-rroce-only true \
   --alloc-method static \
   --description "Grant's dedicated RDMA test link"
 ```
 
-## Configure the Fileshare
+## Configure the Fileshare on PowerScale
 
-
+```shell
+mkdir /ifs/rdma-test
+chmod 755 /ifs/rdma-test
+isi nfs exports create /ifs/rdma-test \
+  --description "Export for R7625 RDMA testing" \
+  --clients 10.99.99.97 \
+  --read-write-clients 10.99.99.97 \
+  --root-clients 10.99.99.97 \
+  --all-dirs yes \
+  --zone System
+```
 
 ## Mount the PowerScale Export Using RDMA
 
-### 4.1. Show Available NFS Exports
+### Make sure Correct Kernel Modules are Loaded
 
 ```bash
-showmount -e <powerscale_ip>
+sudo modprobe xprtrdma
+sudo modprobe rdma_ucm
+sudo modprobe ib_ipoib
 ```
 
-### 4.2. Create Mount Point
+### Mount
 
 ```bash
-mkdir -p /mnt/powerscale_rdma
+sudo mount -t nfs -o rdma,proto=rdma,vers=3 10.99.99.98:/ifs/rdma-test /mnt/powerscale_rdma
 ```
 
-### 4.3. Mount Over RDMA
+**WARNING** You aren't going to be able to write anything unless the UIDs match for NFS. So whatever your UID is for your PowerScale user, that needs to match up on the Linux side. You can create a synthetic ID on Linux with:
 
 ```bash
-mount -o rdma,proto=rdma <powerscale_ip>:/ifs/<export-path> /mnt/powerscale_rdma
+sudo useradd -u 2010 grantcurell-mapped
+sudo mkdir -p /mnt/powerscale_rdma_test
+sudo mount -t nfs -o rdma,proto=rdma,vers=3 10.99.99.98:/ifs/rdma-test /mnt/powerscale_rdma_test
+sudo -u grantcurell-mapped touch /mnt/powerscale_rdma_test/hello
 ```
 
-Verify mount:
+This will create a user with UID 2010, mount the share, and then create a file with it. You can check your PowerScale user's ID with `isi auth users view grantcurell --zone=System`. Change the `zone` and user accordingly.
+
+We can test if the mount is working with `sudo -u grantcurell-mapped dd if=/dev/zero of=/mnt/powerscale_rdma/testfile bs=1M count=10 oflag=direct`
 
 ```bash
-mount | grep /mnt/powerscale_rdma
+[grant@aj-objsc-01 ~]$ sudo -u grantcurell-mapped dd if=/dev/zero of=/mnt/powerscale_rdma/testfile bs=1G count=100 oflag=direct
+100+0 records in
+100+0 records out
+107374182400 bytes (107 GB, 100 GiB) copied, 96.965 s, 1.1 GB/s
 ```
-
-## 5. Verify RDMA Functionality
-
-### 5.1. Check Protocol Used in Mount
-
-```bash
-nfsstat -m
-```
-
-Look for:
-
-```
-proto=rdma
-```
-
-### 5.2. Observe RDMA Traffic with tcpdump
-
-```bash
-tcpdump -i <rdma_iface> port 20049
-```
-
-NFS over RDMA uses port 20049. Seeing traffic here confirms that RDMA is being used.
-
-### 5.3. Run fio to Generate I/O
-
-Create fio job file `read.fio`:
-
-```ini
-[global]
-ioengine=libaio
-direct=1
-rw=read
-bs=1m
-numjobs=1
-size=1G
-directory=/mnt/powerscale_rdma
-
-[job1]
-name=readtest
-```
-
-Run:
-
-```bash
-fio read.fio
-```
-
-Compare results with RDMA vs TCP mount to confirm RDMA performance benefit.
-
-## 6. Optional: Real-World Application Verification
-
-### 6.1. Autodesk Flame 2022 Playback Test
-
-* Mount PowerScale over RDMA on workstation
-* Enable debug mode in Flame
-* Play 4K/60fps or 8K/24fps media
-* Compare dropped frames count over TCP vs RDMA
-
-  * RDMA should show massive improvement (example: from 6000 dropped frames to 11)
-
-### 6.2. DaVinci Resolve Playback Test
-
-* Use 6K PIZ compressed EXR or 8K DPX sequences
-* Observe playback smoothness and dropped frames
-* Test with TCP mount, then repeat with RDMA
-
-## 7. Troubleshooting
-
-### 7.1. No RDMA Device on Client
-
-* Check if OFED driver is installed
-* Verify NIC compatibility
-* Ensure no firewall or MTU mismatch
-
-### 7.2. Mount Fails with `permission denied`
-
-* Ensure NFS export is accessible from client IP
-* Validate export permissions in OneFS UI or CLI
-
-### 7.3. Poor Performance Despite RDMA
-
-* Check that MTU and flow control are properly set
-* Disable unnecessary system services
-* Run `top` to check for CPU bottlenecks
-
-## 8. References
-
-* [PowerScale OneFS Best Practices](https://infohub.delltechnologies.com/section-assets/h16857-wp-onefs-best-practices)
-* [How to Configure NFS over RDMA](http://www.unstructureddatatips.com/how-to-configure-nfs-over-rdma/)
-* [Filename Based Prefetch White Paper](https://www.delltechnologies.com/asset/en-us/products/storage/industry-market/h16951-wp-isilon-file-name-pre-fetch.pdf)
-* [Mellanox RoCE Tuning Guide](https://community.mellanox.com/s/article/roce-deployment-guide)
