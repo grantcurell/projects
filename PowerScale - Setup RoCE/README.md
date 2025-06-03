@@ -22,9 +22,11 @@
     - [Configuring the Multipath Driver](#configuring-the-multipath-driver)
   - [Swapping to NFSv4 (TODO)](#swapping-to-nfsv4-todo)
     - [Benchmarking](#benchmarking)
+      - [PowerScale Info](#powerscale-info)
       - [Run 1 - No Tuning](#run-1---no-tuning)
         - [PowerScale](#powerscale)
         - [FIO](#fio)
+        - [First Thoughts](#first-thoughts)
 
 
 This tutorial walks through setting up NFS over RDMA between a Dell R7625 running Linux and a PowerScale cluster running OneFS 9.2 or later.
@@ -438,6 +440,63 @@ If it isn't you can enable it with `isi nfs settings global modify --nfsv4-enabl
 
 ### Benchmarking
 
+For more information about FIO, see [my guide on using FIO](https://github.com/grantcurell/projects/tree/main/Using%20FIO#using-fio).
+
+#### PowerScale Info
+
+```bash
+AJ-PWRSCL1-1% isi devices drive list --format=table
+
+Lnn  Location  Device   Lnum  State   Serial
+----------------------------------------------------
+1    Bay 0     /dev/da1 0     HEALTHY S5YRNA0TA01885
+1    Bay 1     /dev/da2 3     HEALTHY S5YRNA0TA02107
+1    Bay 2     /dev/da3 2     HEALTHY S5YRNA0TA01745
+1    Bay 3     /dev/da4 1     HEALTHY S5YRNA0TA01703
+----------------------------------------------------
+Total: 4
+AJ-PWRSCL1-1% isi storagepool nodepools list --format=table
+
+ID   Name                     Nodes  Node Type IDs  Protection Policy  Manual
+------------------------------------------------------------------------------
+1    f200_7.5tb-ssd_96gb      1      1              +2d:1n             No
+                              2
+                              3
+3    a300_60tb_3.2tb-ssd_96gb 4      2              +2d:1n             No
+                              5
+                              6
+                              7
+------------------------------------------------------------------------------
+Total: 2
+AJ-PWRSCL1-1% isi storagepool nodepools view f200_7.5tb-ssd_96gb
+                  ID: 1
+                Name: f200_7.5tb-ssd_96gb
+               Nodes: 1, 2, 3
+       Node Type IDs: 1
+   Protection Policy: +2d:1n
+              Manual: No
+          L3 Enabled: No
+ L3 Migration Status: storage
+                Tier: -
+      Transfer Limit: 90%
+Transfer Limit State: default
+               Usage
+                Avail Bytes: 15.79T
+            Avail SSD Bytes: 15.79T
+            Avail HDD Bytes: 0.00
+                   Balanced: Yes
+                 Free Bytes: 19.42T
+             Free SSD Bytes: 19.42T
+             Free HDD Bytes: 0.00
+                Total Bytes: 20.51T
+            Total SSD Bytes: 20.51T
+            Total HDD Bytes: 0.00
+                 Used Bytes: 1.08T (6%)
+             Used SSD Bytes: 1.08T (6%)
+             Used HDD Bytes: 0.00 (0%)
+    Virtual Hot Spare Bytes: 3.63T
+```
+
 #### Run 1 - No Tuning
 
 ##### PowerScale
@@ -557,3 +616,7 @@ Run status group 0 (all jobs):
    READ: bw=1451MiB/s (1522MB/s), 1451MiB/s-1451MiB/s (1522MB/s-1522MB/s), io=86.1GiB (92.4GB), run=60723-60723msec
   WRITE: bw=1446MiB/s (1516MB/s), 1446MiB/s-1446MiB/s (1516MB/s-1516MB/s), io=85.7GiB (92.1GB), run=60723-60723msec
 ```
+
+##### First Thoughts
+
+I'm running on a 25Gb/s link so we should be able to get a max theoretical speed of 3.125GB/s unidirectional. Now with multipathing, we should get three streams because I have three nodes so we should see a max theoretical of 9.375GB/s. I haven't configured multipathing yet though.
