@@ -413,9 +413,21 @@ vermagic:       5.14.0-503.40.1.el9_5.x86_64 SMP preempt mod_unload modversions
 parm:           addr_resolution_retry_seconds:uint
 ```
 
+In my case, I also needed to update the networking on my PowerScale to support my IP addresses in the pool:
+
+```bash
+isi network subnets modify grantsrdmasubnet \
+  --prefixlen 29 \
+  --gateway 0.0.0.0
+```
+
 ## Swapping to NFSv4 (TODO)
 
 **This section is not finished!!!**
+
+**Warning. SmartConnect Failover will not work with NFSv4. See [this article](https://infohub.delltechnologies.com/en-au/l/powerscale-home-directory-storage-solutions-for-nfs-and-smb-environments-2/using-smartconnect-to-manage-client-connections/)**
+
+> Dynamic pools provide seamless failover only for NFSv3 clients. Other connection types, including SMB/NFSv4, do not support the failover mechanism that SmartConnect dynamic pools provide. Static pools are recommended for connecting those workloads.
 
 To run NFSv4 [OneFS must be at least version 9.8](https://infohub.delltechnologies.com/en-us/l/powerscale-onefs-nfs-design-considerations-and-best-practices-3/nfs-over-rdma-overview-1-1/)!!!.
 
