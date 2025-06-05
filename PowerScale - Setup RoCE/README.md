@@ -20,6 +20,10 @@
   - [Testing with FIO](#testing-with-fio)
   - [Tuning the PowerScale](#tuning-the-powerscale)
     - [Configuring the Multipath Driver](#configuring-the-multipath-driver)
+    - [Configure Networking on the PowerScale](#configure-networking-on-the-powerscale)
+    - [Configure bond0 on R7625](#configure-bond0-on-r7625)
+    - [Configure OS10 for LAG](#configure-os10-for-lag)
+    - [Configure DNS on R7625](#configure-dns-on-r7625)
   - [Swapping to NFSv4 (TODO)](#swapping-to-nfsv4-todo)
     - [Benchmarking](#benchmarking)
       - [PowerScale Info](#powerscale-info)
@@ -46,6 +50,27 @@ This tutorial walks through setting up NFS over RDMA between a Dell R7625 runnin
       isi auth roles modify CustomAuthRole --add-priv ISI_PRIV_AUTH
       isi auth roles modify CustomAuthRole --add-user <user>
       ```
+- You may also want to give your user access to the full command line which they can only do if they are part of the sudo group. You'll need to login **as root** and then run:
+
+- Open the override sudoers file:
+
+```bash
+isi_visudo -f /etc/mcp/override/sudoers
+```
+
+- Add this line for your local user:
+
+```bash
+grantcurell ALL=(ALL) NOPASSWD: ALL
+```
+
+Or for an AD user:
+
+```
+DOMAIN\\grantcurell ALL=(ALL) NOPASSWD: ALL
+```
+
+With the user privileges out of the way, now we'll move on to the rest.
 
 Run this on PowerScale CLI:
 ```bash
@@ -413,12 +438,138 @@ vermagic:       5.14.0-503.40.1.el9_5.x86_64 SMP preempt mod_unload modversions
 parm:           addr_resolution_retry_seconds:uint
 ```
 
+### Configure Networking on the PowerScale
+
 In my case, I also needed to update the networking on my PowerScale to support my IP addresses in the pool:
 
 ```bash
+# Modify the subnet 'grantsrdmasubnet' to expand it to a /29 prefix, allowing for 6 usable IPs
+# (from 10.99.99.97 to 10.99.99.102) and set the gateway to 0.0.0.0 (no gateway used).
 isi network subnets modify grantsrdmasubnet \
   --prefixlen 29 \
   --gateway 0.0.0.0
+
+# Assign the SmartConnect Service IP as 10.99.99.102 (reserved and not part of the pool's ranges).
+# This is the IP clients will query for DNS resolution to access the pool.
+isi network subnets modify grantsrdmasubnet \
+  --sc-service-addrs 10.99.99.102
+
+# Update the IP address range of the IP pool 'grantsrdmapool' to include only 10.99.99.97 to 10.99.99.101,
+# reserving 10.99.99.102 exclusively for SmartConnect.
+isi network pools modify groupnet0.grantsrdmasubnet.grantsrdmapool \
+  --ranges 10.99.99.97-10.99.99.101
+
+# Add interface 2:25gige-2 (on node 2) to the grantsrdmapool to enable traffic on that physical NIC.
+isi network pools modify groupnet0.grantsrdmasubnet.grantsrdmapool \
+  --add-ifaces 2:25gige-2
+```
+
+### Configure bond0 on R7625
+
+In the multipath driver setup I wanted to have multiple interfaces going out to the PowerScale so I LAG'd two server interfaces together going up to my Dell switch.
+
+First, we need to clear out any existing network manager configs for the interfaces:
+
+```bash
+sudo nmcli con delete ens6f0
+sudo nmcli con delete ens6f1
+```
+
+Then we'll config the LAG.
+
+```bash
+# Create the bond interface
+sudo nmcli con add type bond con-name bond0 ifname bond0 mode 802.3ad
+
+# Add ens6f0 to the bond
+sudo nmcli con add type ethernet con-name ens6f0-slave ifname ens6f0 master bond0
+
+# Add ens6f1 to the bond
+sudo nmcli con add type ethernet con-name ens6f1-slave ifname ens6f1 master bond0
+
+# Assign IP address in your /29
+sudo nmcli con modify bond0 ipv4.addresses 10.99.99.103/29 ipv4.method manual
+
+# Optional: Enable jumbo frames
+sudo nmcli con modify bond0 802-3-ethernet.mtu 9000
+
+# Bring up everything
+sudo nmcli con up bond0
+sudo nmcli con up ens6f0-slave
+sudo nmcli con up ens6f1-slave
+```
+
+### Configure OS10 for LAG
+
+I used `show mac address-table` to figure out which interfaces were connected on the switch to my PowerScale. Next I configured the port channel.
+
+```bash
+conf
+
+interface ethernet 1/1/21
+description "Interface for Grant's PowerScale NFS test"
+mtu 9216
+switchport mode access
+switchport access vlan 1010
+no shut
+exit
+
+interface ethernet 1/1/23
+description "Interface for Grant's PowerScale NFS test"
+mtu 9216
+switchport mode access
+switchport access vlan 1010
+no shut
+exit
+
+interface port-channel 10
+description "Grant's R7625 bond0 uplink for NFS test"
+mtu 9216
+switchport mode access
+switchport access vlan 1010
+exit
+
+interface ethernet 1/1/17
+description "Member of bond0 for Grant's NFS test"
+channel-group 10
+no shut
+exit
+
+interface ethernet 1/1/19
+description "Member of bond0 for Grant's NFS test"
+channel group 10
+no shut
+```
+
+You will also need to create a LAG down to the PowerScale. If you need to find out what interfaces on the PowerScale have what MAC addresses you can run `sudo isi_for_array -s "ifconfig -a | awk '/^[a-z]/ { iface=\$1 } /ether/ { print iface, \$2 }'"`. Keep in mind you'll need to have sudo privileges. I tell you how to set that up in the section [PowerScale Requirements](#powerscale-requirements\).
+
+### Configure DNS on R7625
+
+For SmartConnect to work, you have to delegate DNS resolution for the nodes down to the PowerScale itself. For my lab setup I decided to run `dnsmasq` on my R7625 to do this.
+
+First install dnsmasq with `dnf install -y dnsmasq`
+
+Create the file `/etc/dnsmasq.d/smartconnect.conf`
+
+```bash
+# Authoritative local DNS zone for SmartConnect testing
+domain=nfs.grantnfstest.lan
+
+# Static DNS entry for SmartConnect Service IP
+host-record=smartconnect.nfs.grantnfstest.lan,10.99.99.102
+
+# Only respond on bond0 interface
+interface=bond0
+
+# Disable DNS lookups from /etc/hosts
+no-hosts
+
+# Don't forward unresolved queries
+domain-needed
+bogus-priv
+
+# Optional: Act as DNS server for this zone only
+auth-server
 ```
 
 ## Swapping to NFSv4 (TODO)
