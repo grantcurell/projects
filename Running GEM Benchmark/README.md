@@ -45,7 +45,11 @@ This one is a bit more straightforward. The Earth isn't flat (probably). GEM's m
 
 > "Semi-implict semi-Lagrangian time discretization scheme"
 
+There are two ways we can evaluate a fluid - Lagrangian and Eulerian. Lagrangian means you follow the fluid as it moves, taking measurements as you go whereas Eulerian is the opposite. The "observer" is stationary and it takes measurements as the fluid moves past it. The semi-implicit part gets deep into math so I don't explain it fully here. What matters is that whether has a lot of things which happen quickly. For example, maybe you have a sudden gust of wind. Well the problem is if you assume that the wind is **always** moving at the gust's speed you end up being wildly wrong. You kinda want to pay attention to the gust of wind; you want the average of all the gusts basically, but you wouldn't want to just assume the wind is always gusting. That's what the semi-implicit is doing. It helps smooth all that out. You could potentially avoid this problem by taking a huge number of measurements. For example, you could check the wind speed every half second, but then your simulation becomes extremely expensive. Ideally, we would rather only calculate what's happening at larger intervals, for example, 10 minutes.
 
+> "Hydrostatic-pressure-type hybrid vertical coordinate"
+
+The vertical layers in GEM are not just at fixed heights. Near the surface, the layers more or less follow the terrain (mountains and valleys for example). However, higher up, they become more like flat slices of constant pressure. That's why it's a hybrid system. It blends terrain-following near the ground with pressure levels aloft.
 
 ## Install Prereqs
 
