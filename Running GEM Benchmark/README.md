@@ -6,8 +6,20 @@
   - [What are we doing here?](#what-are-we-doing-here)
   - [How are we going to do that?](#how-are-we-going-to-do-that)
   - [Ok, but **how** does GEM do that?](#ok-but-how-does-gem-do-that)
-- [Install Prereqs](#install-prereqs)
-- [Install](#install)
+- [Understanding the Benchmark](#understanding-the-benchmark)
+  - [Understanding Grids](#understanding-grids)
+    - [Global Yin-Yang Grid](#global-yin-yang-grid)
+    - [LAM Uniform Grid](#lam-uniform-grid)
+- [Install the Benchmark](#install-the-benchmark)
+  - [Install Prerequisites](#install-prerequisites)
+  - [Install `librmn`](#install-librmn)
+  - [Install `sverif`](#install-sverif)
+  - [Clone and Build GEM (Method 2)](#clone-and-build-gem-method-2)
+  - [Verify the Work Directory](#verify-the-work-directory)
+- [Run the Benchmark](#run-the-benchmark)
+  - [Using `findtopo`](#using-findtopo)
+  - [Running in a New Environment](#running-in-a-new-environment)
+- [Other Notes](#other-notes)
 
 
 ## Background
@@ -51,14 +63,44 @@ There are two ways we can evaluate a fluid - Lagrangian and Eulerian. Lagrangian
 
 The vertical layers in GEM are not just at fixed heights. Near the surface, the layers more or less follow the terrain (mountains and valleys for example). However, higher up, they become more like flat slices of constant pressure. That's why it's a hybrid system. It blends terrain-following near the ground with pressure levels aloft.
 
-## Install Prereqs
+
+## Understanding the Benchmark
+
+### Understanding Grids
+
+One of the first things we have to deal with is that the atmosphere is continuous, but computers aren't so we have to set up our problem to run on processors. We do this by turning the earth into one giant grid coordinate system. These are documented [here](https://wikienseignement.uqam.ca/display/EDDSDLTEL/namelists%3A+GEM+5.0).
+
+#### Global Yin-Yang Grid
+
+The yin-yang grid exists to tackle the problem of the poles. When you think about longitude and latitude, what happens is that as you approach the poles the grid boxes created by the lat / longs shrinks significantly. This causes their aspect ratio to skew high leading to numerical instability (when numbers get really really big or way too small in your equations) along with a bunch of other math problem. Effectively what happens is the model sort of falls apart. To avoid this we make two grids that look like this:
+
+![](images/2025-07-01-10-04-29.png)
+
+I wrote this code to allow you to visualize how changing `Grdc_ni` and `Grdc_nj` will impact the sphere. What you see above is with both set to 60. Here is what it would look like if you set both to 5:
+
+![](images/2025-07-01-10-09-10.png)
+
+Notice, what you are changing is the number of "grid lines". You can count them out and see that there are 5 with a total of four cells.
+
+This eliminates the problem of singularities near the pole, gives us a uniform resolution, and makes it so we can easily break the problem down in parallel.
+
+#### LAM Uniform Grid
+
+TODO
+
+TLDR: it's a small, rectangular, lat-long, grid used for regional simulations.
+
+
+## Install the Benchmark
+
+### Install Prerequisites
 
 ```bash
-# Enable EPEL and CRB (or PowerTools) repository
+# Enable EPEL and CRB (or PowerTools) repositories
 sudo dnf install -y epel-release
 sudo dnf config-manager --set-enabled crb || sudo dnf config-manager --set-enabled powertools
 
-# Install development tools and common build utilities
+# Install development tools and general build dependencies
 sudo dnf groupinstall -y "Development Tools"
 sudo dnf install -y \
   gcc \
@@ -74,41 +116,30 @@ sudo dnf install -y \
   texinfo \
   doxygen \
   libxml2-devel \
-  fftw-devel
-
-
-# Install MPI (OpenMPI)
-sudo dnf install -y openmpi openmpi-devel
-
-# Load MPI paths into shell (optional but helpful)
-echo 'export PATH=/usr/lib64/openmpi/bin:$PATH' >> ~/.bashrc
-echo 'export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
-source ~/.bashrc
-
-# Install NetCDF and HDF5 libraries
-sudo dnf install -y \
+  fftw-devel \
   netcdf \
   netcdf-devel \
   netcdf-fortran \
   netcdf-fortran-devel \
   hdf5 \
-  hdf5-devel
-
-# Install math libraries (optional)
-sudo dnf install -y \
+  hdf5-devel \
   blas \
   blas-devel \
   lapack \
   lapack-devel
 
+# Install MPI (OpenMPI)
+sudo dnf install -y openmpi openmpi-devel
+
+# Add OpenMPI to shell path (permanent)
+echo 'export PATH=/usr/lib64/openmpi/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-## Install
+### Install `librmn`
 
 ```bash
-##################
-# Install librmn #
-##################
 cd ~
 git clone https://github.com/ECCC-ASTD-MRD/librmn.git
 cd librmn
@@ -120,10 +151,11 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX=$HOME/librmn-install ..
 make -j$(nproc)
 make install
+```
 
-##################
-# Install sverif #
-##################
+### Install `sverif`
+
+```bash
 cd ~
 git clone https://github.com/ECCC-ASTD-MRD/sverif.git
 cd sverif
@@ -135,31 +167,75 @@ cmake -Drmn_ROOT=$HOME/librmn-install -DCMAKE_INSTALL_PREFIX=$HOME/sverif-instal
 make -j$(nproc)
 make install
 
-# Add sverif binaries to your path
-export PATH=$HOME/sverif-install/bin:$PATH
+# Add to PATH (permanent)
 echo 'export PATH=$HOME/sverif-install/bin:$PATH' >> ~/.bashrc
+export PATH=$HOME/sverif-install/bin:$PATH
+```
 
-###############
-# Install GEM #
-###############
+### Clone and Build GEM (Method 2)
+
+```bash
 cd ~
 git clone https://github.com/ECCC-ASTD-MRD/gem.git
 cd gem
 git checkout benchmark-5.3
 git submodule update --init --recursive
 
-# Download reference databases
+# Download necessary databases for model execution and benchmarking
 ./download-dbase.sh .
 ./download-dbase-benchmarks.sh .
 
-# Set up environment (choose one of: intel | gnu | nvhpc)
+# Set up environment (use "gnu" unless you know otherwise)
 . ./.common_setup gnu
 
-# Build GEM
-mkdir build
-cd build
-cmake ..
-make -j$(nproc)
-make work
+# Use Method 2: Set up architecture-specific build + work directories
+. ./.initial_setup
 
+# Compile GEM with architecture detection
+# cado is a custom script unique to gem
+cado cmake
+cado work -j
 ```
+
+---
+
+### Verify the Work Directory
+
+Check that `work-[OS]-[COMPILER]` was created:
+
+```bash
+ls work-*
+```
+
+## Run the Benchmark
+
+### Using `findtopo`
+
+```bash
+findtopo   -npex_low 1 -npex_high 96   -npey_low 1 -npey_high 96   -omp 1   -smt 1   -corespernode 32   -nml configurations/GEM_cfgs_GY_4km/cfg_0000/gem_settings.nml > topo.txt
+```
+
+- TODO explain what all this is doing
+
+### Running in a New Environment
+
+```bash
+# Step 1: Go to the GEM source directory
+cd ~/gem   # Or wherever you cloned the repo
+
+# Step 2: Source the compiler environment
+. ./.common_setup gnu
+
+# Step 3: Set GEM_WORK and switch to the working dir
+cd work-RockyLinux-9.5-x86_64-gnu-11.5.0
+export GEM_WORK=$(pwd)
+export GOAS_SCRIPT=""
+
+# Step 4: Run with small topology (1x1x1)
+../scripts/runmod.sh -dircfg configurations/GEM_cfgs_GY_4km -ptopo 1x1x1
+```
+
+## Other Notes
+
+- An analysis file is a snapshot of the initial state of the weather that we're going to use for our benchmark
+- This page might be helpful for defining variables: https://collaboration.cmc.ec.gc.ca/science/rpn/gem/gemdm/revisions_doc/v_3.3.0/gem_settings.nml.txt
