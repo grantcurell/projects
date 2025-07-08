@@ -6,10 +6,15 @@
   - [What are we doing here?](#what-are-we-doing-here)
   - [How are we going to do that?](#how-are-we-going-to-do-that)
   - [Ok, but **how** does GEM do that?](#ok-but-how-does-gem-do-that)
+  - [What is a Domain](#what-is-a-domain)
 - [Understanding the Benchmark](#understanding-the-benchmark)
   - [Understanding Grids](#understanding-grids)
     - [Global Yin-Yang Grid](#global-yin-yang-grid)
     - [LAM Uniform Grid](#lam-uniform-grid)
+- [Understanding ptopo](#understanding-ptopo)
+  - [`runmod.sh`](#runmodsh)
+  - [`setmod.sh`](#setmodsh)
+  - [`rungem.sh`](#rungemsh)
 - [Install the Benchmark](#install-the-benchmark)
   - [Install Prerequisites](#install-prerequisites)
   - [Install `librmn`](#install-librmn)
@@ -63,6 +68,9 @@ There are two ways we can evaluate a fluid - Lagrangian and Eulerian. Lagrangian
 
 The vertical layers in GEM are not just at fixed heights. Near the surface, the layers more or less follow the terrain (mountains and valleys for example). However, higher up, they become more like flat slices of constant pressure. That's why it's a hybrid system. It blends terrain-following near the ground with pressure levels aloft.
 
+### What is a Domain
+
+A domain is a spatial subdomain of the earth's atmosphere over which the model will compute equations independently. Ultimately, we want to solve for the entire atmosphere, but that's complicated, so instead we break it down into smaller subdomains. A domain corresponds in our code to a set of configuration files listed under `TASK_INPUT/cfg_XXXX` ex: `cfg_0000`, `cfg_0001`... etc. (TODO check this). This is a specific area of execution.
 
 ## Understanding the Benchmark
 
@@ -89,6 +97,126 @@ This eliminates the problem of singularities near the pole, gives us a uniform r
 TODO
 
 TLDR: it's a small, rectangular, lat-long, grid used for regional simulations.
+
+## Understanding ptopo
+
+### `runmod.sh`
+
+First you run `runmod.sh`. `cclargs_lite` breaks down the arguments and then everything is split into components with:
+
+
+```bash
+npex=$(echo ${ptopo} | cut -d "x" -f 1)
+npey=$(echo ${ptopo} | cut -d "x" -f 2)
+nomp=$(echo ${ptopo} | cut -d "x" -f 3)
+npex=${npex:-1}
+npey=${npey:-1}
+nomp=${nomp:-1}
+```
+
+Where `npex` is the number of MPI processes along the x axis, `npey` is the number of processes along the Y axis, and `nomp` is the number of OpenMP threads per MPI rank. This will default to 1 if anything is missing. `_npe` is a derived value calculated by `_npe=$((npex*npey))` containing the total number of MPI ranks.
+
+This all then gets fed into the domain calculation:
+
+```bash
+export CCARD_ARGS="-dom_start ${DOM} -dom_end ${last_domain} -dom_last ${DOMAIN_end} -npex ${npex} -npey ${npey} -ngrids ${ngrids} -smtdyn $smtdyn -smtphy $smtphy -along_Y ${alongYfirst} -input ${TASK_INPUT} -output ${TASK_OUTPUT}"
+```
+
+where:
+
+| Argument                  | Description                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `-dom_start ${DOM}`       | Starting index of the domain range that this invocation will process.                                                              |
+| `-dom_end ${last_domain}` | Ending index of the domain range (inclusive).                                                                                      |
+| `-dom_last ${DOMAIN_end}` | Final possible domain index; used to check bounds or stop conditions.                                                              |
+| `-npex ${npex}`           | Number of MPI processes (ranks) along the X dimension of the decomposition grid.                                                   |
+| `-npey ${npey}`           | Number of MPI processes (ranks) along the Y dimension.                                                                             |
+| `-ngrids ${ngrids}`       | Number of physical grids per domain. E.g., `2` if `GRDTYP == GY` (Yin-Yang grid), otherwise `1`.                                   |
+| `-smtdyn $smtdyn`         | SMT dynamic (logical thread-level parallelism). Refers (TODO) to how many logical threads are used dynamically (often 0 = off). |
+| `-smtphy $smtphy`         | SMT physical. The number of physical SMT threads per core (relevant on AIX or similar systems).                                    |
+| `-along_Y ${alongYfirst}` | Whether the PE layout prioritizes Y-axis first in the grid (value is `.true.` or `.false.`).                                       |
+| `-input ${TASK_INPUT}`    | Path to input files for the model (namelists, settings, etc).                                                                      |
+| `-output ${TASK_OUTPUT}`  | Path where model output files will be written.                                                                                     |
+
+
+Finally, we call `rungem.sh`:
+
+```bash
+printf "\n LAUNCHING rungem.sh for domain: cfg_${domain_number} $(date)\n\n"
+. r.call.dot ${TASK_BIN}/rungem.sh \
+  -npex $((npex*ngrids)) -npey $npey -nomp $nomp \
+  -nodespec ${nodespec} \
+  -dom_start ${DOM} -dom_end ${last_domain} -debug $debug \
+  -barrier ${barrier} -inorder ${inorder}
+```
+
+### `setmod.sh`
+
+TODO
+
+### `rungem.sh`
+
+All of our arguments from [runmod.sh](#runmodsh) are passed and parsed here:
+
+```bash
+eval `cclargs_lite -D "" $0 \
+  -npex      "1"     "1"     "[Block partitioning along-x     ]"\
+  -npey      "1"     "1"     "[Block partitioning along-y     ]"\
+  -nomp      "1"     "1"     "[Number of OMP threads          ]"\
+  -nodespec  "NoNe"  "NoNe"  "[Node distribution specification]"\
+  -dom_start "1"     "1"     "[Starting domain number         ]"\
+  -dom_end   "1"     "1"     "[Ending domain number           ]"\
+  -inorder   "0"     "5"     "[Ordered listing                ]"\
+  -barrier   "0"     "0"     "[DO NOT run binary              ]"\
+  -debug     "0"     "gdb"   "[Debug option: gdb, ddt         ]"\
+  -_status   "ABORT" "ABORT" "[return status                  ]"\
+  -_endstep  ""      ""      "[return last time step performed]"\
+  ++ $arguments`
+```
+
+where:
+
+| Argument     | Used in rungem.sh                                                            | Description |
+| ------------ | ---------------------------------------------------------------------------- | ----------- |
+| `-npex`      | Used to compute `npe_total` and passed to `r.mpirun`.                      |             |
+| `-npey`      | Used as 2D topology height (Y-axis).                                       |             |
+| `-nomp`      | Used to set `OMP_NUM_THREADS`.                                             |             |
+| `-nodespec`  | Passed to `r.mpirun` as node layout specification.                         |             |
+| `-dom_start` | Starting domain index (`idom` loop).                                       |             |
+| `-dom_end`   | Ending domain index.                                                       |             |
+| `-inorder`   | Controls how `r.mpirun` prints output. Enables `-inorder -tag -minstdout`. |             |
+| `-barrier`   | If set, skips actual run and calls `r.barrier` for sync only.              |             |
+| `-debug`     | If set (e.g., `gdb`, `ddt`), passes `-debug` to `r.mpirun`.                |             |
+| `-_status`   | Used as return flag, updated post-run.                                     |             |
+| `-_endstep`  | Not referenced in this script, likely used externally. (TODO)                     |             |
+
+Next we calculate the number of domains and then the total number of MPI ranks. `npe_total` can be ignored, it is only used in some print output.
+
+```bash
+ndomains=$((dom_end - dom_start + 1))
+npe_total=$(( npex * npey * ndomains ))
+```
+
+Set the number of OpenMP threads:
+
+```bash
+export OMP_NUM_THREADS=$nomp
+```
+
+Finally, we construct the run command:
+
+```bash
+CMD="${TASK_BIN}/r.mpirun -pgm ${TASK_BIN}/ATM_MOD.Abs -npex $((npex*npey)) -npey $ndomains $INORDER -nodespec ${nodespec} -minstdout ${inorder} -nocleanup"
+```
+
+As you start looking at this, there are some things that stick out as confusing. For starters, why is `npex` set to `$((npex*npey))` and `npey` only set to `ndomains`? Keep in mind that `r.mpirun` can only build a 2D, cartesian communicator, but GEM needs three logical axes: 
+
+```bash
+X  (columns)      = npex
+Y  (rows)         = npey
+Z  (domains/nests)= ndomains
+```
+
 
 
 ## Install the Benchmark
