@@ -15,6 +15,9 @@
   - [`runmod.sh`](#runmodsh)
   - [`setmod.sh`](#setmodsh)
   - [`rungem.sh`](#rungemsh)
+- [Understanding Grid Decomposition (TODO)](#understanding-grid-decomposition-todo)
+    - [High-level flow (annotated with the key code lines)](#high-level-flow-annotated-with-the-key-code-lines)
+    - [Why it matters in the model run](#why-it-matters-in-the-model-run)
 - [Install the Benchmark](#install-the-benchmark)
   - [Install Prerequisites](#install-prerequisites)
   - [Install `librmn`](#install-librmn)
@@ -24,7 +27,6 @@
 - [Run the Benchmark](#run-the-benchmark)
   - [Using `findtopo`](#using-findtopo)
   - [Running in a New Environment](#running-in-a-new-environment)
-- [Other Notes](#other-notes)
 
 
 ## Background
@@ -209,7 +211,23 @@ Finally, we construct the run command:
 CMD="${TASK_BIN}/r.mpirun -pgm ${TASK_BIN}/ATM_MOD.Abs -npex $((npex*npey)) -npey $ndomains $INORDER -nodespec ${nodespec} -minstdout ${inorder} -nocleanup"
 ```
 
-As you start looking at this, there are some things that stick out as confusing. For starters, why is `npex` set to `$((npex*npey))` and `npey` only set to `ndomains`? Keep in mind that `r.mpirun` can only build a 2D, cartesian communicator, but GEM needs three logical axes: 
+As you start looking at this, there are some things that stick out as confusing. First, what is `r.mpirun` - you may notice it isn't part of the codebase. It is [gem_mpirun.sh](https://github.com/ECCC-ASTD-MRD/gem/blob/master/scripts/gem_mpirun.sh) it is just a copy that gets moved into your work directory.
+
+`pgm` is the program to run. In this case we inject `ATM_MOD.Abs` which is the main GEM atmosphere executable produced by the build system. Ex:
+
+```bash
+[grant@rockyvm1 gem]$ find ./ -iname *ATM_MOD*
+./work-RockyLinux-9.5-x86_64-gnu-11.5.0/RUNMOD/bin/ATM_MOD.Abs
+```
+
+Next are `npex` and `npey` which at this point you are roughly familiar with. You might ask why is `npex` set to `$((npex*npey))` and `npey` only set to `ndomains`? Keep in mind that `r.mpirun` can only build a 2D, cartesian communicator, but GEM needs three logical axes: 
+
+```bash
+WORLD-X  = npex × npey          ← passed as –npex
+WORLD-Y  = ndomains             ← passed as –npey
+```
+
+You can think of what is happening here as flattening:
 
 ```bash
 X  (columns)      = npex
@@ -217,15 +235,49 @@ Y  (rows)         = npey
 Z  (domains/nests)= ndomains
 ```
 
-You can think of what is happening here as flattening:
+They are later unflattened internally in the code base.
 
-```bash
-WORLD-X  = npex × npey          ← passed as –npex
-WORLD-Y  = ndomains             ← passed as –npey
-```
+`-nodespec` - This is interpreted by `r.run_in_parallel` which seems to be a convienience script written by EC. `nodespec` will allow you to pass things like `skylake:48` to help provide architecture hints.
 
-This is later unflattened.
- 
+`minstdout` is empty by default and controls the amount of output. It just makes sure you don't overwhelm with log volume on large runs.
+
+`nocleanup` stops the script from deleting any temporary files in `TASK_WORK` for debug purposes.
+
+## Understanding Grid Decomposition (TODO)
+
+
+Grid decomposition occurs in `src/base/domain_decomp.F90`. The purpose of this function is to take `G_ni` and `G_nj` and decompose them into a `Ptopo_npex × Ptopo_npey` processor grid
+
+`domain_decomp` is GEM’s **initial domain-partitioning routine**.
+It slices the global horizontal mesh *(G\_ni × G\_nj)* into a , assigns each MPI rank its local tile size and starting indices, and stores those numbers in the global **glb\_ld** module where every solver loop can reach them.
+
+---
+
+#### High-level flow (annotated with the key code lines)
+
+| Step                                  | File lines                                            | What happens                                                                                                                                                                                                                                   |
+| ------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0. Initialise**                     | `errno = -1`                                          | Assume failure until both directions succeed.                                                                                                                                                                                                  |
+| **1. Log request**                    | `write (Lun_out,1000) G_ni,F_npex,G_nj,F_npey`        | Prints “DOMAIN\_DECOMP: checking partitioning …”.                                                                                                                                                                                              |
+| **2. Decompose X (i-direction)**      | first call to `decomp` (lines 24-30)                  | Passes global `G_ni`, halo width `Grd_extension+1`, desired sub-domains `F_npex`; receives:<br>• `l_minx,l_maxx` (halo-inclusive local bounds)<br>• `lnis(:)` (local x-sizes for every column of ranks)<br>• `l_i0` (my first global i index). |
+| **3. Decompose Y (j-direction)**      | second call to `decomp` (lines 30-34)                 | Same for `G_nj`, returns `l_miny,l_maxy`, `lnjs(:)`, `l_j0`.                                                                                                                                                                                   |
+| **4. Global success check**           | `rpn_comm_Allreduce`                                  | Reduces `errno` across all ranks (MPI MIN) → function value `domain_decomp`.                                                                                                                                                                   |
+| **5. Abort on error**                 | `if (domain_decomp < 0)`                              | Logs “ILLEGAL DOMAIN PARTITIONING” and exits.                                                                                                                                                                                                  |
+| **6. Store local sizes**              | `l_ni = lnis(1)`<br>`l_nj = lnjs(1)`<br>`l_nk = G_nk` | Those `l_*` variables live in module **glb\_ld**; every dynamics/physics loop uses them.                                                                                                                                                       |
+| **7. Derive edge-adjusted extents**   | `l_njv, l_niu` with `if (l_north) …`                  | Handles polar or east-edge staggering quirks.                                                                                                                                                                                                  |
+| **8. Optional global-position table** | `if (.not.F_checkparti_L) call glbpos()`              | Builds look-up arrays mapping each rank’s tile to its position.                                                                                                                                                                                |
+| **9. Debug print per rank**           | `write(Lun_out,2000) …`                               | Shows `(myrow,mycol)`, local size, and global i/j span.                                                                                                                                                                                        |
+
+---
+
+#### Why it matters in the model run
+
+* **Load balancing:** The helper function `decomp` chooses tile sizes so that each rank processes either ⌈N/P⌉ or ⌊N/P⌋ points (“ALLEQUALLBUT1” or “MOSTUNIFORM” strategy).
+* **Halo awareness:** The extra argument `(Grd_extension+1)` guarantees every tile owns enough guard-cells for its numerical stencil.
+* **One-time operation:** After `domain_decomp` succeeds, all subsequent memory allocation (`mem_tstp`, `mem_tracers`) and main loops (`dynstep`, `itf_phy_step`) rely on the local sizes and indices it recorded.
+
+In short, `domain_decomp` turns the **one big global grid** defined by the namelist into **576 (or however many) non-overlapping halo-padded tiles** and tells each MPI rank, *“These are the i/j rows you own.”*
+
 
 ## Install the Benchmark
 
@@ -370,8 +422,3 @@ export GOAS_SCRIPT=""
 # Step 4: Run with small topology (1x1x1)
 ../scripts/runmod.sh -dircfg configurations/GEM_cfgs_GY_4km -ptopo 1x1x1
 ```
-
-## Other Notes
-
-- An analysis file is a snapshot of the initial state of the weather that we're going to use for our benchmark
-- This page might be helpful for defining variables: https://collaboration.cmc.ec.gc.ca/science/rpn/gem/gemdm/revisions_doc/v_3.3.0/gem_settings.nml.txt
