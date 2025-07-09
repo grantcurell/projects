@@ -217,7 +217,15 @@ Y  (rows)         = npey
 Z  (domains/nests)= ndomains
 ```
 
+You can think of what is happening here as flattening:
 
+```bash
+WORLD-X  = npex × npey          ← passed as –npex
+WORLD-Y  = ndomains             ← passed as –npey
+```
+
+This is later unflattened.
+ 
 
 ## Install the Benchmark
 
