@@ -1,0 +1,296 @@
+login1.ls6(1128)$ bash runscript.sh
+
+Lmod is automatically replacing "intel/19.1.1" with "gcc/13.2.0".
+
+
+-----------------------------------------------------------------
+           Welcome to the Lonestar6 Supercomputer
+-----------------------------------------------------------------
+
+--> Submission error: all jobs must have a queue name specified with "-p"
+
+
+=====>  runmod.sh starts: Thu Jul 10 11:08:20 CDT 2025 ###########
+runmod.sh -dircfg ./configurations/GEM_cfgs_GY_4km -ptopo 12x16x1
+
+Changing multi-value argument delimiter from : to
+
+/work/10644/grantcurell/gem2/gem/scripts/setmod.sh -cfg 0:0 -dircfg ./configurations/GEM_cfgs_GY_4km -tsk_cfgfile /tmp/grantcurell-EK8e/mod3430676.cfg -dirdata /tmp/grantcurell-EK8e/modeldata.3430676
+
+Changing multi-value argument delimiter from : to
+Changing multi-value argument delimiter from : to
++ default_DIR_ATM=/work/10644/grantcurell/gem2/gem/gem_dbase
++ default_PATH_ATMDATA=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/modeldata
++ default_DIR_SIO=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants
++ geophy=/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/geophy
++ climato=/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/climato
++ PREP_dir=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000
++ IRTAB=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/irtab5_std
++ OZONE=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/ozoclim_phy45
++ CONST=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/thermoconsts
++ outcfg=./configurations/GEM_cfgs_GY_4km/cfg_0000/outcfg.out
++ phytbl=./configurations/GEM_cfgs_GY_4km/cfg_0000/physics_input_table
++ CACHEDIR='<no value>'
++ iaurep='<no value>'
++ nudge='<no value>'
++ restart='<no value>'
++ busper='<no value>'
++ analysis='<no value>'
++ mod_analysis='<no value>'
++ mod_inrep='<no value>'
++ '[' -e /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/ANALYSIS ']'
++ analysis=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/ANALYSIS
++ '[' -e /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/analysis ']'
++ mod_analysis=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/analysis
++ '[' -e /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/model_inrep ']'
++ mod_inrep=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/model_inrep
++ '[' -e /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/IAUREP ']'
++ '[' -e /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/NUDGE ']'
+++ which maingemdm
+++ alias
+++ eval declare -f
++++ declare -f
+++ /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot maingemdm
++ ATMMOD=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin/maingemdm
+++ dirname /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin/maingemdm
++ BINMOD=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin
++ '[' -n ./configurations/GEM_cfgs_GY_4km/cfg_0000/configexp.cfg ']'
++ . ./configurations/GEM_cfgs_GY_4km/cfg_0000/configexp.cfg
+++ ATM_MODEL_DFILES_DEFAULT=/work/10644/grantcurell/gem2/gem/gem_dbase
+++ GEM_ozone=ozoclim_Fortuin_Kelder1998
+++ GEM_anal=/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk_iau3/2020022912_000
+++ GEM_inrep=/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk
+++ GEM_climato=/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/climato_ic3_ozone
+++ GEM_geophy=/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/geophy2
++ config=./configurations/GEM_cfgs_GY_4km/cfg_0000/configexp.cfg
++ '[' -n '' ']'
++ geophy=/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/geophy2
++ climato=/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/climato_ic3_ozone
++ iaurep='<no value>'
++ nudge='<no value>'
++ restart='<no value>'
++ busper='<no value>'
++ CONST=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/thermoconsts
++ IRTAB=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/irtab5_std
++ OZONE=ozoclim_Fortuin_Kelder1998
++ '[' '!' -e ozoclim_Fortuin_Kelder1998 ']'
++ OZONE=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/ozoclim_Fortuin_Kelder1998
++ PHYTB=./configurations/GEM_cfgs_GY_4km/cfg_0000/physics_input_table
++ CACHEDIR='<no value>'
++ BINMOD=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin
++ ATMMOD=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin/maingemdm
++ cat
+++ printf %04d 1
++ domain_number=0001
++ '[' 0001 -le 0 ']'
++ cat /tmp/grantcurell-EK8e/mod3430676.cfg
+#############################################
+# <input>
+# cfg_0000/configexp.cfg ./configurations/GEM_cfgs_GY_4km/cfg_0000/configexp.cfg
+# cfg_0000/model_settings.nml ./configurations/GEM_cfgs_GY_4km/cfg_0000/gem_settings.nml
+# cfg_0000/output_settings ./configurations/GEM_cfgs_GY_4km/cfg_0000/outcfg.out
+# cfg_0000/ANALYSIS /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/ANALYSIS
+# cfg_0000/GEOPHY /work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/geophy2
+# cfg_0000/CLIMATO /work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/climato_ic3_ozone
+# cfg_0000/MODEL_ANALYSIS /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/analysis
+# cfg_0000/MODEL_INREP /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/model_inrep
+# cfg_0000/MODEL_INPUT  /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/modeldata/*
+# cfg_0000/RESTART.tar <no value>
+# cfg_0000/BUSPER.tar <no value>
+# cfg_0000/CACHE <no value>
+# cfg_0000/IAUREP <no value>
+# cfg_0000/NUDGE <no value>
+# cfg_0000/constantes /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/thermoconsts
+# cfg_0000/ozone_clim.fst /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/ozoclim_Fortuin_Kelder1998
+# cfg_0000/rad_table.fst /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/irtab5_std
+# cfg_0000/physics_input_table ./configurations/GEM_cfgs_GY_4km/cfg_0000/physics_input_table
++ cat
++ printf '\n### Content of config file to TASK_SETUP ####\n\n'
+
+### Content of config file to TASK_SETUP ####
+
++ cat /tmp/grantcurell-EK8e/mod3430676.cfg
+#############################################
+# <input>
+# cfg_0000/configexp.cfg ./configurations/GEM_cfgs_GY_4km/cfg_0000/configexp.cfg
+# cfg_0000/model_settings.nml ./configurations/GEM_cfgs_GY_4km/cfg_0000/gem_settings.nml
+# cfg_0000/output_settings ./configurations/GEM_cfgs_GY_4km/cfg_0000/outcfg.out
+# cfg_0000/ANALYSIS /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/ANALYSIS
+# cfg_0000/GEOPHY /work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/geophy2
+# cfg_0000/CLIMATO /work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/climato_ic3_ozone
+# cfg_0000/MODEL_ANALYSIS /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/analysis
+# cfg_0000/MODEL_INREP /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/model_inrep
+# cfg_0000/MODEL_INPUT  /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/modeldata/*
+# cfg_0000/RESTART.tar <no value>
+# cfg_0000/BUSPER.tar <no value>
+# cfg_0000/CACHE <no value>
+# cfg_0000/IAUREP <no value>
+# cfg_0000/NUDGE <no value>
+# cfg_0000/constantes /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/thermoconsts
+# cfg_0000/ozone_clim.fst /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/ozoclim_Fortuin_Kelder1998
+# cfg_0000/rad_table.fst /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/irtab5_std
+# cfg_0000/physics_input_table ./configurations/GEM_cfgs_GY_4km/cfg_0000/physics_input_table
+# </input>
+# <executables>
+# ATM_MOD.Abs     /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin/maingemdm
+# rungem.sh       rungem.sh
+# r.mpirun        gem_mpirun.sh
+# launch_sortie.sh Um_process_output.sh
+# </executables>
+# <output>
+
+# </output>
+#############################################
+Maestro is not loaded: using GOAS task setup scripts: /work/10644/grantcurell/gem2/gem/scripts/goas_task_setup.dot
+
+##### EXECUTING TASK_SETUP ##### goas_task_setup.dot
+** TASK_SETUP begins **
+Info 1: will not create link for cfg_0000/RESTART.tar because of special target value '<no value>'
+Info 1: will not create link for cfg_0000/BUSPER.tar because of special target value '<no value>'
+Info 1: will not create link for cfg_0000/CACHE because of special target value '<no value>'
+Info 1: will not create link for cfg_0000/IAUREP because of special target value '<no value>'
+Info 1: will not create link for cfg_0000/NUDGE because of special target value '<no value>'
+  <input>
+Info 1: creating subdirectory /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/input
+Info 1: linked file /input/cfg_0000/configexp.cfg => /work/10644/grantcurell/gem2/gem/share/configurations/GEM_cfgs_GY_4km/cfg_0000/configexp.cfg
+Info 1: linked file /input/cfg_0000/model_settings.nml => /work/10644/grantcurell/gem2/gem/share/configurations/GEM_cfgs_GY_4km/cfg_0000/gem_settings.nml
+Info 1: linked file /input/cfg_0000/output_settings => /work/10644/grantcurell/gem2/gem/share/configurations/GEM_cfgs_GY_4km/cfg_0000/outcfg.out
+Info 1: linked file /input/cfg_0000/ANALYSIS => /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/ANALYSIS
+Warning: file link cfg_0000/GEOPHY refers to a directory target ['/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/geophy2']
+Info 1: linked directory /input/cfg_0000/GEOPHY => /work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/geophy2
+Warning: file link cfg_0000/CLIMATO refers to a directory target ['/work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/climato_ic3_ozone']
+Info 1: linked directory /input/cfg_0000/CLIMATO => /work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/climato_ic3_ozone
+Warning: file link cfg_0000/MODEL_ANALYSIS refers to a directory target ['/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/analysis']
+Info 1: linked directory /input/cfg_0000/MODEL_ANALYSIS => /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/analysis
+Warning: file link cfg_0000/MODEL_INREP refers to a directory target ['/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/model_inrep']
+Info 1: linked directory /input/cfg_0000/MODEL_INREP => /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/model_inrep
+Info 1: linked file /input/cfg_0000/MODEL_INPUT/p3_lookupTable_1.dat-v6.5-2momI => /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/modeldata/p3_lookupTable_1.dat-v6.5-2momI
+Info 1: linked file /input/cfg_0000/MODEL_INPUT/p3_lookup_table_2.dat-v4 => /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/modeldata/p3_lookup_table_2.dat-v4
+Info 1: linked file /input/cfg_0000/MODEL_INPUT/p3_lookup_table_1.dat-v4 => /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/modeldata/p3_lookup_table_1.dat-v4
+Info 1: linked file /input/cfg_0000/constantes => /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/thermoconsts
+Info 1: linked file /input/cfg_0000/ozone_clim.fst => /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/ozoclim_Fortuin_Kelder1998
+Info 1: linked file /input/cfg_0000/rad_table.fst => /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/irtab5_std
+Info 1: linked file /input/cfg_0000/physics_input_table => /work/10644/grantcurell/gem2/gem/share/configurations/GEM_cfgs_GY_4km/cfg_0000/physics_input_table
+  </input>
+  <executables>
+Info 1: creating subdirectory /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/bin
+Info 1: linked file /bin/ATM_MOD.Abs => /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin/maingemdm
+Info 1: linked file /bin/rungem.sh => /work/10644/grantcurell/gem2/gem/scripts/rungem.sh
+Info 1: linked file /bin/r.mpirun => /work/10644/grantcurell/gem2/gem/scripts/gem_mpirun.sh
+Info 1: linked file /bin/launch_sortie.sh => /work/10644/grantcurell/gem2/gem/scripts/Um_process_output.sh
+  </executables>
+  <output>
+Info 1: creating subdirectory /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/output
+  </output>
+  <work>
+Info 1: creating subdirectory /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/work
+  </work>
+  <setup>
+Info 1: creating subdirectory /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/.setup
+Info 1: linked file /.setup/task_setup => /work/10644/grantcurell/gem2/gem/scripts/goas_task_setup.py
+Info 1: copied file /.setup/task_setup.cfg => /tmp/grantcurell-EK8e/mod3430676.cfg
+Info 1: moved file /.setup/task_setup_varcache.txt => /tmp/grantcurell-EK8e/tmp8v1qzuy9
+Info 1: copied file /.setup/task_setup_call.txt => /tmp/grantcurell-EK8e/tmpcbfhrupy
+Info 1: copied file /.setup/task_setup_env.txt => /tmp/grantcurell-EK8e/tmp0fu7je6n
+Info 1: moved file /.setup/task_setup_set.txt => /tmp/grantcurell-EK8e/task_setup_env3430676
+Info 1: linked file /.setup/task_setup_cachegen => /work/10644/grantcurell/gem2/gem/scripts/goas_task_setup_cachegen
+Info 1: linked file /.setup/task_setup_realpath => /usr/bin/realpath
+  </setup>
+** TASK_SETUP ends **
+##### EXECUTING TASK_SETUP DONE...#####
+
+##### RESULT OF TASK_SETUP #####
+/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/bin:
+total 8
+lrwxrwxrwx 1 grantcurell G-826495 85 Jul 10 11:08 ATM_MOD.Abs -> /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin/maingemdm
+lrwxrwxrwx 1 grantcurell G-826495 61 Jul 10 11:08 launch_sortie.sh -> /work/10644/grantcurell/gem2/gem/scripts/Um_process_output.sh
+lrwxrwxrwx 1 grantcurell G-826495 54 Jul 10 11:08 r.mpirun -> /work/10644/grantcurell/gem2/gem/scripts/gem_mpirun.sh
+lrwxrwxrwx 1 grantcurell G-826495 50 Jul 10 11:08 rungem.sh -> /work/10644/grantcurell/gem2/gem/scripts/rungem.sh
+
+/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/input/cfg_0000:
+total 48
+lrwxrwxrwx 1 grantcurell G-826495  101 Jul 10 11:08 ANALYSIS -> /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/ANALYSIS
+lrwxrwxrwx 1 grantcurell G-826495   65 Jul 10 11:08 CLIMATO -> /work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/climato_ic3_ozone
+lrwxrwxrwx 1 grantcurell G-826495   92 Jul 10 11:08 configexp.cfg -> /work/10644/grantcurell/gem2/gem/share/configurations/GEM_cfgs_GY_4km/cfg_0000/configexp.cfg
+lrwxrwxrwx 1 grantcurell G-826495   75 Jul 10 11:08 constantes -> /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/thermoconsts
+lrwxrwxrwx 1 grantcurell G-826495   55 Jul 10 11:08 GEOPHY -> /work/10644/grantcurell/gem2/gem/gem_dbase/bcmk/geophy2
+lrwxrwxrwx 1 grantcurell G-826495  101 Jul 10 11:08 MODEL_ANALYSIS -> /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/analysis
+drwx------ 2 grantcurell G-826495 4096 Jul 10 11:08 MODEL_INPUT
+lrwxrwxrwx 1 grantcurell G-826495  104 Jul 10 11:08 MODEL_INREP -> /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/PREP/output/cfg_0000/model_inrep
+lrwxrwxrwx 1 grantcurell G-826495   95 Jul 10 11:08 model_settings.nml -> /work/10644/grantcurell/gem2/gem/share/configurations/GEM_cfgs_GY_4km/cfg_0000/gem_settings.nml
+lrwxrwxrwx 1 grantcurell G-826495   89 Jul 10 11:08 output_settings -> /work/10644/grantcurell/gem2/gem/share/configurations/GEM_cfgs_GY_4km/cfg_0000/outcfg.out
+lrwxrwxrwx 1 grantcurell G-826495   89 Jul 10 11:08 ozone_clim.fst -> /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/ozoclim_Fortuin_Kelder1998
+lrwxrwxrwx 1 grantcurell G-826495   98 Jul 10 11:08 physics_input_table -> /work/10644/grantcurell/gem2/gem/share/configurations/GEM_cfgs_GY_4km/cfg_0000/physics_input_table
+lrwxrwxrwx 1 grantcurell G-826495   73 Jul 10 11:08 rad_table.fst -> /work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants/irtab5_std
+
+ LAUNCHING rungem.sh for domain: cfg_0000 Thu Jul 10 11:08:30 CDT 2025
+
+setting CallReturns=/tmp/grantcurell_Call_3430676
+
+=====>  rungem.sh starts: Thu Jul 10 11:08:30 CDT 2025 ###########
+/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/bin/rungem.sh -npex 24 -npey 16 -nomp 1 -nodespec NoNe -dom_start 0 -dom_end 0 -debug 0 -barrier 0 -inorder 0
+
+Changing multi-value argument delimiter from : to (null)
+
+ Running /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin/maingemdm on 384 (24 x 16) PEs:
+ OMP_STACKSIZE=4G
+ OMP_NUM_THREADS=1
+
+ ##### UM_TIMING: Um_model.sh STARTING AT: Thu Jul 10 11:08:30 CDT 2025
+
+ EXECUTING: /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/bin/r.mpirun -pgm /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/bin/ATM_MOD.Abs -npex 384 -npey 1  -nodespec NoNe -minstdout 0 -nocleanup
+
+/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/bin/r.mpirun -pgm /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/bin/ATM_MOD.Abs -npex 384 -npey 1 -nodespec NoNe -minstdout 0 -nocleanup
+
+Changing multi-value argument delimiter from : to
+/work/10644/grantcurell/gem2/gem/scripts/support/r.run_in_parallel
+Changing multi-value argument delimiter from : to (null)
+-------------------------------------------------------------------------------
+Script              : r.run_in_parallel
+Version             : 2.0.0
+Hostname            : login1.ls6.tacc.utexas.edu
+Architecture        :
+Run ID              : R.RUN_IN_PARALLEL-20250710_110830
+Start time          : Thu 10 Jul 2025 11:08:31 AM CDT
+-------------------------------------------------------------------------------
+
+(Thu Jul 10 11:08:32 CDT 2025) (INFO) Cores for job: 0, Cores per Node: 128, Cores per Socket: 64, Numa per Node: 2
+(Thu Jul 10 11:08:32 CDT 2025) (INFO) No nodefile found, creating one with 384 entries
+(Thu Jul 10 11:08:34 CDT 2025) (ERROR) Not enough cores available on node, 384 requested, 128 available
+(Thu Jul 10 11:08:34 CDT 2025) (ERROR) Not enough cores available on node, 384 requested, 128 available
+
+-------------------------------------------------------------------------------
+Status              : Job has encountered some errors (1 Error(s)).
+End time            : Thu 10 Jul 2025 11:08:34 AM CDT
+Total running time  : 00:00:03
+-------------------------------------------------------------------------------
+ ##### UM_TIMING: Um_model.sh ENDING AT: Thu Jul 10 11:08:34 CDT 2025
+ ##### UM_TIMING: POST Um_model.sh STARTING AT: Thu Jul 10 11:08:34 CDT 2025
++ for i in ${cfglist}
++ fn=/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/output/cfg_0000/./status_MOD.dot
++ '[' -s /work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/RUNMOD/output/cfg_0000/./status_MOD.dot ']'
++ _status=ABORT
++ (( nb_abort=nb_abort+1 ))
++ cd cfg_0000
++ /bin/rm -rf busper
++ '[' ABORT = ED ']'
++ cd ../
+++ date
++ printf ' ##### UM_TIMING: POST Um_model.sh ENDING AT: Thu Jul 10 11:08:34 CDT 2025\n'
+ ##### UM_TIMING: POST Um_model.sh ENDING AT: Thu Jul 10 11:08:34 CDT 2025
++ '[' 1 -gt 0 ']'
++ _status=ABORT
++ set +ex
+
+ DONE LAUNCHING all domains Thu Jul 10 11:08:34 CDT 2025
+
+
+=====>  rungem.sh ends: Thu Jul 10 11:08:34 CDT 2025 ###########
+
+WARNING: r.return.dot executed without previous r.call.dot
+NO variable values can be returned
+the following values would have been returned
+_status='ABORT';
+_endstep='';
+_npe='192';
+login1.ls6(1129)$
