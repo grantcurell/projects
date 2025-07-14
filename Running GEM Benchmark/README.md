@@ -19,14 +19,18 @@
     - [High-level flow (annotated with the key code lines)](#high-level-flow-annotated-with-the-key-code-lines)
     - [Why it matters in the model run](#why-it-matters-in-the-model-run)
 - [Install the Benchmark](#install-the-benchmark)
-  - [Install Prerequisites](#install-prerequisites)
-  - [Install `librmn`](#install-librmn)
-  - [Install `sverif`](#install-sverif)
-  - [Clone and Build GEM (Method 2)](#clone-and-build-gem-method-2)
+  - [On Your Own Hardware](#on-your-own-hardware)
+    - [Install Prerequisites](#install-prerequisites)
+    - [Install `librmn`](#install-librmn)
+    - [Install `sverif`](#install-sverif)
+    - [Clone and Build GEM (Method 2)](#clone-and-build-gem-method-2)
+  - [Texas Advanced Compute Center](#texas-advanced-compute-center)
   - [Verify the Work Directory](#verify-the-work-directory)
 - [Run the Benchmark](#run-the-benchmark)
   - [Using `findtopo`](#using-findtopo)
   - [Running in a New Environment](#running-in-a-new-environment)
+- [Running on Stampede](#running-on-stampede)
+  - [Compiling](#compiling)
 
 
 ## Background
@@ -251,7 +255,6 @@ Grid decomposition occurs in `src/base/domain_decomp.F90`. The purpose of this f
 `domain_decomp` is GEM’s **initial domain-partitioning routine**.
 It slices the global horizontal mesh *(G\_ni × G\_nj)* into a , assigns each MPI rank its local tile size and starting indices, and stores those numbers in the global **glb\_ld** module where every solver loop can reach them.
 
----
 
 #### High-level flow (annotated with the key code lines)
 
@@ -281,7 +284,9 @@ In short, `domain_decomp` turns the **one big global grid** defined by the namel
 
 ## Install the Benchmark
 
-### Install Prerequisites
+### On Your Own Hardware
+
+#### Install Prerequisites
 
 ```bash
 # Enable EPEL and CRB (or PowerTools) repositories
@@ -325,7 +330,7 @@ echo 'export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib:$LD_LIBRARY_PATH' >> ~/.bash
 source ~/.bashrc
 ```
 
-### Install `librmn`
+#### Install `librmn`
 
 ```bash
 cd ~
@@ -341,7 +346,7 @@ make -j$(nproc)
 make install
 ```
 
-### Install `sverif`
+#### Install `sverif`
 
 ```bash
 cd ~
@@ -360,7 +365,7 @@ echo 'export PATH=$HOME/sverif-install/bin:$PATH' >> ~/.bashrc
 export PATH=$HOME/sverif-install/bin:$PATH
 ```
 
-### Clone and Build GEM (Method 2)
+#### Clone and Build GEM (Method 2)
 
 ```bash
 cd ~
@@ -385,7 +390,25 @@ cado cmake
 cado work -j
 ```
 
----
+### Texas Advanced Compute Center
+
+```bash
+module load autotools/1.4   pmix/3.2.3   xalt/3.1   TACC   gcc/13.2.0  impi/21.12    fftw3/3.3.10   cmake/3.29.5   mkl/24.1
+git clone --recursive https://github.com/ECCC-ASTD-MRD/gem.git
+ln -s /scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/include/* src/gemdyn/gemdyn/CMakeFiles/gemdyn.dir/base/
+cd gem
+git submodule update --init --recursive
+./download-dbase.sh .
+./download-dbase-benchmarks.sh .
+. ./.common_setup gnu
+mkdir build
+cd build
+cmake ..
+make -j$(nproc)
+make work -j$(nproc)
+git checkout benchmark-5.3  # Grant note: I actually did the build without the benchmark branch - I did it in master because
+                            # master is broken. You get the fallow-argument-mismatch error
+```
 
 ### Verify the Work Directory
 
@@ -407,6 +430,21 @@ findtopo   -npex_low 1 -npex_high 96   -npey_low 1 -npey_high 96   -omp 1   -smt
 
 ### Running in a New Environment
 
+**CRITICAL**: Consider that when you do the math for ptopo you must take into account the fact that this is a ying yang grid so whatever you do will ultimately be multiplied by two. You can see this is the []`runmod.sh`](https://github.com/ECCC-ASTD-MRD/gem/blob/benchmark-5.3/scripts/runmod.sh) code:
+
+
+```bash
+if [ "$GRDTYP" == "GY" ] ; then ngrids=2 ; fi
+```
+
+After some experimentation I saw errors like:
+
+```shell
+Error allocating 1 308 694 400–1 530 000 000 bytes: Cannot allocate memory
+```
+
+when I tried to run against nodes. The way that's formatted is rather confusing, but what it means is it tried to allocate 1.22-1.43GBs of memory (if you do the math to convert from bytes). While I haven't exhaustively reversed this, I'm fairly confident this occurs in `set_sol.F90`
+
 ```bash
 # Step 1: Go to the GEM source directory
 cd ~/gem   # Or wherever you cloned the repo
@@ -421,4 +459,56 @@ export GOAS_SCRIPT=""
 
 # Step 4: Run with small topology (1x1x1)
 ../scripts/runmod.sh -dircfg configurations/GEM_cfgs_GY_4km -ptopo 1x1x1
+```
+
+## Running on Stampede
+
+### Compiling
+
+```bash
+git clone --recursive https://github.com/ECCC-ASTD-MRD/gem.git
+git checkout benchmark-5.3
+git submodule update --init --recursive
+./download-dbase.sh .
+./download-dbase-benchmarks.sh .
+# start clean
+module purge
+
+# Intel oneAPI compilers + MKL + Intel MPI (already default-loaded on login,
+# but make it explicit so batch jobs pick it up)
+module load intel/24.0          # ifx / icx + MKL
+module load impi/21.11          # Intel MPI matching the 24.x compilers
+
+# Runtime libraries the model expects
+module load fftw3/3.3.10        # built with Intel, gives the FFTW3 headers/libs
+module load hdf5/1.14.4         # pulls in zlib automatically
+module load netcdf/4.9.2        # C + Fortran interfaces linked to the same HDF5
+module load zlib/1.3.1          # only needed when you link static, safe to load
+
+# Build tools
+module load cmake/3.31.5        # ≥3.20 required
+
+. ./.common_setup gnu
+
+mkdir -p $HOME/soft/fftw              # anything under $HOME is fine
+
+# 2) Point CMake to a directory called “…/include”
+#    (CMake always looks for PREFIX/include/fftw3.h)
+ln -s /opt/apps/intel24/fftw3/3.3.10/include  $HOME/soft/fftw/include
+
+# 3) Do the same for the library directory so the later
+#    find_library() call succeeds
+ln -s /opt/apps/intel24/fftw3/3.3.10/lib      $HOME/soft/fftw/lib
+
+# 4) Tell CMake that “$HOME/soft/fftw” is one of its prefixes
+export CMAKE_PREFIX_PATH=$HOME/soft/fftw:$CMAKE_PREFIX_PATH
+
+cd gem
+mkdir build
+cd build
+cmake ..
+make -j$(nproc)
+make work -j$(nproc)
+git checkout benchmark-5.3  # Grant note: I actually did the build without the benchmark branch - I did it in master because
+                            # master is broken. You get the fallow-argument-mismatch error
 ```

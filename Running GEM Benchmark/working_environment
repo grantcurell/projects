@@ -1,0 +1,214 @@
+TACC_IMPI_BIN=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/bin
+TACC_PMIX_DIR=/opt/apps/pmix/3.2.3
+TACC_GCC_INC=/scratch/tacc/apps/gcc/13.2.0/include
+LD_LIBRARY_PATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/lib:/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/lib:/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/lib:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/opt/mpi/libfabric/lib:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/lib:/scratch/tacc/apps/gcc/13.2.0/lib64:/scratch/tacc/apps/gcc/13.2.0/lib:/opt/apps/pmix/3.2.3/lib
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=01;05;37;41:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=01;36:*.au=01;36:*.flac=01;36:*.m4a=01;36:*.mid=01;36:*.midi=01;36:*.mka=01;36:*.mp3=01;36:*.mpc=01;36:*.ogg=01;36:*.ra=01;36:*.wav=01;36:*.oga=01;36:*.opus=01;36:*.spx=01;36:*.xspf=01;36:
+UCX_TLS=knem,dc_x,rc
+__LMOD_REF_COUNT_PATH=/opt/apps/xalt/xalt/bin:1;/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/bin:1;/scratch/tacc/apps/cmake/3.29.5/bin:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/opt/mpi/libfabric/bin:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/libfabric/bin:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/bin:1;/scratch/tacc/apps/gcc/13.2.0/bin:1;/opt/apps/pmix/3.2.3/bin:1;/opt/apps/autotools/1.4/bin:1;/work/10644/grantcurell/gem/scripts:1;/work/10644/grantcurell/gem/scripts/support:1;/work/10644/grantcurell/gem/scripts/rpy:1;/work/10644/grantcurell/gem/src/rpnphy/bin:1;/work/10644/grantcurell/gem/src/modelutils/bin:1;/work/10644/grantcurell/gem/src/gemdyn/bin:1;/work/10644/grantcurell/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin:1;/usr/local/bin:1;/usr/bin:1;/usr/local/sbin:1;/usr/sbin:1;.:1
+_ModuleTable002_=MS40Lmx1YSIsCmZ1bGxOYW1lID0gImF1dG90b29scy8xLjQiLApsb2FkT3JkZXIgPSAxLApwcm9wVCA9IHt9LApzdGFja0RlcHRoID0gMSwKc3RhdHVzID0gImFjdGl2ZSIsCnVzZXJOYW1lID0gImF1dG90b29scyIsCndWID0gIjAwMDAwMDAwMS4wMDAwMDAwMDQuKnpmaW5hbCIsCn0sCmNtYWtlID0gewpmbiA9ICIvb3B0L2FwcHMvbW9kdWxlZmlsZXMvY21ha2UvMy4yOS41Lmx1YSIsCmZ1bGxOYW1lID0gImNtYWtlLzMuMjkuNSIsCmxvYWRPcmRlciA9IDgsCnByb3BUID0ge30sCnN0YWNrRGVwdGggPSAwLApzdGF0dXMgPSAiYWN0aXZlIiwKdXNlck5hbWUgPSAiY21ha2UvMy4yOS41IiwKd1YgPSAiMDAwMDAwMDAzLjAwMDAwMDAyOS4wMDAwMDAwMDUuKnpmaW5hbCIsCn0s
+TACC_GCC_DIR=/scratch/tacc/apps/gcc/13.2.0
+SSH_CONNECTION=24.91.42.43 60945 129.114.62.201 22
+ARCHIVE=/home/10644/grantcurell
+INCLUDE=/scratch/tacc/apps/gcc/13.2.0/include
+STOCKYARD2=/work/10644/grantcurell
+OMP_STACKSIZE=4G
+LMOD_FAMILY_MPI_VERSION=21.12
+LANG=en_US.UTF-8
+I_MPI_F90=gfortran
+gemdyn_version=5.2.3
+LMOD_FAMILY_COMPILER_VERSION=13.2.0
+HOSTNAME=login1.ls6.tacc.utexas.edu
+I_MPI_EXTRA_FILESYSTEM=enable
+LMOD_SYSTEM_DEFAULT_MODULES=TACC
+OLDPWD=/work/10644/grantcurell/gem2/gem
+COBBLER_SERVER=129.114.40.1
+CMCCONST=/work/10644/grantcurell/gem2/gem/gem_dbase/datafiles/constants
+TACC_FAMILY_LIBFABRIC_VERSION=21.12
+TACC_CCL_INC=/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/include
+ATM_MODEL_DFILES=/work/10644/grantcurell/gem2/gem/gem_dbase
+TACC_CMAKE_DIR=/scratch/tacc/apps/cmake/3.29.5
+I_MPI_STARTUP_MODE=pmi_shm_netmod
+TACC_FFTW3_INC=/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/include
+FPATH=/usr/local/share/zsh/site-functions:/usr/share/zsh/site-functions:/usr/share/zsh/5.8/functions:/opt/apps/lmod/lmod/init/ksh_funcs
+LMOD_CMAKE_DIR=/scratch/tacc/apps/cmake/3.29.5
+_ModuleTable007_=TmFtZSA9ICJ4YWx0LzMuMSIsCmxvYWRPcmRlciA9IDMsCnByb3BUID0ge30sCnN0YWNrRGVwdGggPSAxLApzdGF0dXMgPSAiYWN0aXZlIiwKdXNlck5hbWUgPSAieGFsdCIsCndWID0gIjAwMDAwMDAwMy4wMDAwMDAwMDEuKnpmaW5hbCIsCn0sCn0sCm1wYXRoQSA9IHsKIi9vcHQvYXBwcy9nY2MxM18yL2ltcGkyMS9tb2R1bGVmaWxlcyIsICIvb3B0L2FwcHMvZ2NjMTNfMi9tb2R1bGVmaWxlcyIsICIvb3B0L2FwcHMvbW9kdWxlZmlsZXMiLAp9LApzeXN0ZW1CYXNlTVBBVEggPSAiL29wdC9hcHBzL21vZHVsZWZpbGVzIiwKfQo=
+LMOD_FFTW3_DIR=/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10
+GEM_STORAGE_DIR=/work/10644/grantcurell/gem2/gem
+TACC_AUTOTOOLS_DIR=/opt/apps/autotools/1.4
+__LMOD_REF_COUNT_INCLUDE=/scratch/tacc/apps/gcc/13.2.0/include:1
+__LMOD_REF_COUNT_LD_LIBRARY_PATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/lib:1;/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/lib:1;/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/lib:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/opt/mpi/libfabric/lib:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/lib:1;/scratch/tacc/apps/gcc/13.2.0/lib64:1;/scratch/tacc/apps/gcc/13.2.0/lib:1;/opt/apps/pmix/3.2.3/lib:1
+TACC_MKL_BIN=bin
+TACC_AUTOTOOLS_BIN=/opt/apps/autotools/1.4/bin
+__LMOD_REF_COUNT_PKG_CONFIG_PATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/lib/pkgconfig:1;/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/lib/pkgconfig:1;/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/lib/pkgconfig:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/lib/pkgconfig:1
+__LMOD_Priority_PATH=/opt/apps/xalt/xalt/bin:-100
+I_MPI_F77=gfortran
+XALT_EXECUTABLE_TRACKING=yes
+TACC_XALT_BIN=/opt/apps/xalt/xalt/bin
+FI_PROVIDER_PATH=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/libfabric/lib/prov
+_ModuleTable004_=Z2NjLzEzLjIuMCIsCmxvYWRPcmRlciA9IDUsCnByb3BUID0ge30sCnN0YWNrRGVwdGggPSAwLApzdGF0dXMgPSAiYWN0aXZlIiwKdXNlck5hbWUgPSAiZ2NjLzEzLjIuMCIsCndWID0gIjAwMDAwMDAxMy4wMDAwMDAwMDIuKnpmaW5hbCIsCn0sCmltcGkgPSB7CmFjdGlvbkEgPSB7CiJwcmVwZW5kX3BhdGgoXCJNT0RVTEVQQVRIXCIsXCIvb3B0L2FwcHMvZ2NjMTNfMi9pbXBpMjEvbW9kdWxlZmlsZXNcIikiLAp9LApmbiA9ICIvb3B0L2FwcHMvZ2NjMTNfMi9tb2R1bGVmaWxlcy9pbXBpLzIxLjEyLmx1YSIsCmZ1bGxOYW1lID0gImltcGkvMjEuMTIiLApsb2FkT3JkZXIgPSA2LApwcm9wVCA9IHt9LApzdGFja0RlcHRoID0gMCwKc3RhdHVzID0gImFjdGl2ZSIsCnVzZXJOYW1l
+__LMOD_REF_COUNT_PYTHONPATH=/work/10644/grantcurell/gem/scripts/rpy:1;:1
+S_COLORS=auto
+which_declare=declare -f
+I_MPI_CXX=g++
+LMOD_FAMILY_LIBFABRIC=impi
+I_MPI_FC=gfortran
+LMOD_SETTARG_TITLE_BAR=yes
+CLASSPATH=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/share/java/mpi.jar
+TACC_MPI_GETMODE=impi_hydra
+USER=grantcurell
+TACC_MKL_LIB=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/lib
+SCRATCH_S2=/scratch_S2/10644/grantcurell
+I_MPI_OFI_LIBRARY=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/opt/mpi/libfabric/lib/libfabric.so
+TACC_MKL_INC=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/include
+modelutils_version=1.7.0
+__LMOD_REF_COUNT_LD_PRELOAD=/opt/apps/xalt/xalt/lib64/libxalt_init.so:1
+__LMOD_REF_COUNT_MODULEPATH=/opt/apps/gcc13_2/impi21/modulefiles:1;/opt/apps/gcc13_2/modulefiles:1;/opt/apps/modulefiles:1
+CCL_CONFIGURATION=cpu_gpu_dpcpp
+INPUTRC=/etc/inputrc
+PWD=/work/10644/grantcurell/gem2/gem/build
+CCL_ROOT=/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12
+HOME=/home1/10644/grantcurell
+rpnphy_version=6.2.1
+CMAKE_PREFIX_PATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1:/scratch/tacc/apps/cmake/3.29.5:/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10:/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12
+TACC_GCC_LIB64=/scratch/tacc/apps/gcc/13.2.0/lib64
+TACC_FAMILY_LIBFABRIC=impi
+SSH_CLIENT=24.91.42.43 60945 22
+__LMOD_REF_COUNT_COMPILER_PATH=/opt/apps/xalt/xalt/bin:1
+LMOD_VERSION=8.7.48
+CPATH=/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/include:/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/include:/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/include:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/include
+STOCKYARD=/work/10644/grantcurell
+WORK=/work/10644/grantcurell/ls6
+BASH_ENV=/etc/tacc/tacc_functions
+gem_DIR=/work/10644/grantcurell/gem2/gem
+LMOD_FAMILY_LIBFABRIC_VERSION=21.12
+XDG_DATA_DIRS=/home1/10644/grantcurell/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share
+COMPILER_SUITE=gnu
+__PERSONAL_PATH__=1
+TACC_CMAKE_INC=/scratch/tacc/apps/cmake/3.29.5/include
+NLSPATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/share/locale/%l_%t/%N
+UCX_UD_MLX5_TIMEOUT=600000000.00us
+FCFLAGS=-I/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/include
+__BASHRC_SOURCED__=1
+__LMOD_REF_COUNT_LIBRARY_PATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/lib:1;/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/lib:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/opt/mpi/libfabric/lib:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/lib:1
+COMPILER_PATH=/opt/apps/xalt/xalt/bin
+TOKIO_WORKER_THREADS=4
+WORK2=/work/10644/grantcurell/ls6
+TMPDIR=/tmp/grantcurell-MD8C
+TACC_FFTW3_VERSION=3.3.10
+LIBRARY_PATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/lib:/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/lib:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/opt/mpi/libfabric/lib:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/lib
+__LMOD_REF_COUNT_CMAKE_PREFIX_PATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1:1;/scratch/tacc/apps/cmake/3.29.5:1;/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10:1;/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12:1
+_ModuleTable001_=X01vZHVsZVRhYmxlXyA9IHsKTVR2ZXJzaW9uID0gMywKY19yZWJ1aWxkVGltZSA9IGZhbHNlLApjX3Nob3J0VGltZSA9IGZhbHNlLApkZXB0aFQgPSB7fSwKZmFtaWx5ID0gewpNUEkgPSAiaW1waSIsCmNvbXBpbGVyID0gImdjYyIsCmxpYmZhYnJpYyA9ICJpbXBpIiwKfSwKbVQgPSB7ClRBQ0MgPSB7CmZuID0gIi9vcHQvYXBwcy9tb2R1bGVmaWxlcy9UQUNDLmx1YSIsCmZ1bGxOYW1lID0gIlRBQ0MiLApsb2FkT3JkZXIgPSA0LApwcm9wVCA9IHt9LApzdGFja0RlcHRoID0gMCwKc3RhdHVzID0gImFjdGl2ZSIsCnVzZXJOYW1lID0gIlRBQ0MiLAp3ViA9ICJNLip6ZmluYWwiLAp9LAphdXRvdG9vbHMgPSB7CmZuID0gIi9vcHQvYXBwcy9tb2R1bGVmaWxlcy9hdXRvdG9vbHMv
+LOADEDMODULES=autotools/1.4:pmix/3.2.3:xalt/3.1:TACC:gcc/13.2.0:impi/21.12:fftw3/3.3.10:cmake/3.29.5:mkl/24.1
+I_MPI_CC=gcc
+FI_PROVIDER=mlx
+_ModuleTable006_=c3RhdHVzID0gImFjdGl2ZSIsCnVzZXJOYW1lID0gInBtaXgiLAp3ViA9ICIwMDAwMDAwMDMuMDAwMDAwMDAyLjAwMDAwMDAwMy4qemZpbmFsIiwKfSwKcHl0aG9uMyA9IHsKZm4gPSAiL29wdC9hcHBzL2ludGVsMTkvaW1waTE5XzAvbW9kdWxlZmlsZXMvcHl0aG9uMy8zLjkuNy5sdWEiLApmdWxsTmFtZSA9ICJweXRob24zLzMuOS43IiwKbG9hZE9yZGVyID0gLTksCnByb3BUID0ge30sCnN0YWNrRGVwdGggPSAxLApzdGF0dXMgPSAiaW5hY3RpdmUiLAp1c2VyTmFtZSA9ICJweXRob24zIiwKd1YgPSAiMDAwMDAwMDAzLjAwMDAwMDAwOS4wMDAwMDAwMDcuKnpmaW5hbCIsCn0sCnhhbHQgPSB7CmZuID0gIi9vcHQvYXBwcy9tb2R1bGVmaWxlcy94YWx0LzMuMS5sdWEiLApmdWxs
+__LMOD_REF_COUNT_MANPATH=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/share/man:1;/scratch/tacc/apps/gcc/13.2.0/share/man:1;/usr/local/man:1;/usr/share/man:1;/usr/X11R6/man:1;/usr/kerberos/man:1;/usr/man:1;/opt/apps/pmix/3.2.3/share/man:1;:1
+SCRATCH=/scratch/10644/grantcurell
+_ModuleTable003_=CmZmdHczID0gewpmbiA9ICIvb3B0L2FwcHMvZ2NjMTNfMi9pbXBpMjEvbW9kdWxlZmlsZXMvZmZ0dzMvMy4zLjEwLmx1YSIsCmZ1bGxOYW1lID0gImZmdHczLzMuMy4xMCIsCmxvYWRPcmRlciA9IDcsCnByb3BUID0ge30sCnN0YWNrRGVwdGggPSAwLApzdGF0dXMgPSAiYWN0aXZlIiwKdXNlck5hbWUgPSAiZmZ0dzMvMy4zLjEwIiwKd1YgPSAiMDAwMDAwMDAzLjAwMDAwMDAwMy4wMDAwMDAwMTAuKnpmaW5hbCIsCn0sCmdjYyA9IHsKYWN0aW9uQSA9IHsKInByZXBlbmRfcGF0aChcIk1PRFVMRVBBVEhcIixcIi9vcHQvYXBwcy9nY2MxM18yL21vZHVsZWZpbGVzXCIpIiwKfSwKZm4gPSAiL29wdC9hcHBzL21vZHVsZWZpbGVzL2djYy8xMy4yLjAubHVhIiwKZnVsbE5hbWUgPSAi
+LMOD_ROOT=/opt/apps/lmod
+SSH_TTY=/dev/pts/257
+MAIL=/var/spool/mail/grantcurell
+HOME_S2=/home1_S2/10644/grantcurell
+UCX_RC_MLX5_TIMEOUT=1200000.00us
+GCC_LIB=/scratch/tacc/apps/gcc/13.2.0/lib64
+__Init_Default_Modules=1
+TERM=xterm
+SHELL=/bin/bash
+TACC_PMIX_INC=/opt/apps/pmix/3.2.3/include
+I_MPI_FCFLAGS=-I/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/include/mpi/gfortran/11.1.0
+_ModuleTable_Sz_=7
+TACC_VEC_FLAGS=-march=haswell -mtune=haswell
+__LMOD_REF_COUNT_CPATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/include:1;/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/include:1;/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/include:1
+TACC_FFTW3_LIB=/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/lib
+LMOD_FAMILY_COMPILER=gcc
+TACC_IMPI_DIR=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12
+LMOD_FFTW3_INC=/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/include
+TACC_FAMILY_COMPILER_VERSION=13.2.0
+UCX_RC_MLX5_RETRY_COUNT=40
+ARCHIVER=ranch.tacc.utexas.edu
+TACC_GCC_BIN=/scratch/tacc/apps/gcc/13.2.0/bin
+PYTHONDONTWRITEBYTECODE=true
+SHLVL=1
+TACC_FAMILY_COMPILER=gcc
+UCX_DC_MLX5_TIMEOUT=1200000.00us
+PYTHONPATH=/work/10644/grantcurell/gem2/gem/scripts/rpy:/work/10644/grantcurell/gem/scripts/rpy::
+XALT_SAMPLING=yes
+PROMPT_COMMAND=${X_SET_TITLE_BAR:-:} "$USER@${SHOST}:${PWD/#$HOME/~}"
+UCX_DC_MLX5_RETRY_COUNT=40
+FFLAGS=-I/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/include
+TACC_CMAKE_BIN=/scratch/tacc/apps/cmake/3.29.5/bin
+MANPATH=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/share/man:/scratch/tacc/apps/gcc/13.2.0/share/man:/usr/local/man:/usr/share/man:/usr/X11R6/man:/usr/kerberos/man:/usr/man:/opt/apps/pmix/3.2.3/share/man::
+__LMOD_REF_COUNT_CLASSPATH=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/share/java/mpi.jar:1
+LMOD_CMAKE_INC=/scratch/tacc/apps/cmake/3.29.5/include
+LMOD_CMAKE_BIN=/scratch/tacc/apps/cmake/3.29.5/bin
+TACC_SYSTEM=ls6
+MODULEPATH=/opt/apps/gcc13_2/impi21/modulefiles:/opt/apps/gcc13_2/modulefiles:/opt/apps/modulefiles
+GEM_WORK=work-RockyLinux-8.10-x86_64-gnu-13.2.0
+TACC_FAMILY_MPI=impi
+LOGNAME=grantcurell
+TACC_MKL_DIR=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1
+MKLROOT=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1
+TACC_XALT_DIR=/opt/apps/xalt/xalt/
+GEM_ARCH=RockyLinux-8.10-x86_64-gnu-13.2.0
+TACC_FFTW3_DIR=/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10
+PATH=/work/10644/grantcurell/gem2/gem/scripts:/work/10644/grantcurell/gem2/gem/scripts/support:/work/10644/grantcurell/gem2/gem/scripts/rpy:/work/10644/grantcurell/gem2/gem/src/rpnphy/bin:/work/10644/grantcurell/gem2/gem/src/modelutils/bin:/work/10644/grantcurell/gem2/gem/src/gemdyn/bin:/work/10644/grantcurell/gem2/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin:/opt/apps/xalt/xalt/bin:/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/bin:/scratch/tacc/apps/cmake/3.29.5/bin:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/opt/mpi/libfabric/bin:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/libfabric/bin:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/bin:/scratch/tacc/apps/gcc/13.2.0/bin:/opt/apps/pmix/3.2.3/bin:/opt/apps/autotools/1.4/bin:/work/10644/grantcurell/gem/scripts:/work/10644/grantcurell/gem/scripts/support:/work/10644/grantcurell/gem/scripts/rpy:/work/10644/grantcurell/gem/src/rpnphy/bin:/work/10644/grantcurell/gem/src/modelutils/bin:/work/10644/grantcurell/gem/src/gemdyn/bin:/work/10644/grantcurell/gem/work-RockyLinux-8.10-x86_64-gnu-13.2.0/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:.
+TACC_PMIX_LIB=/opt/apps/pmix/3.2.3/lib
+_LMFILES_=/opt/apps/modulefiles/autotools/1.4.lua:/opt/apps/modulefiles/pmix/3.2.3.lua:/opt/apps/modulefiles/xalt/3.1.lua:/opt/apps/modulefiles/TACC.lua:/opt/apps/modulefiles/gcc/13.2.0.lua:/opt/apps/gcc13_2/modulefiles/impi/21.12.lua:/opt/apps/gcc13_2/impi21/modulefiles/fftw3/3.3.10.lua:/opt/apps/modulefiles/cmake/3.29.5.lua:/opt/apps/gcc13_2/modulefiles/mkl/24.1.lua
+PS1=login1.ls6(\!)\$ 
+DEBUGINFOD_URLS=https://debuginfod.centos.org/ 
+TACC_DOMAIN=ls6
+LMOD_FFTW3_LIB=/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/lib
+COMPILER_VERSION=13.2.0
+MODULESHOME=/opt/apps/lmod/lmod
+PKG_CONFIG_PATH=/scratch/projects/compilers/intel24.1/oneapi/mkl/2024.1/lib/pkgconfig:/scratch/tacc/apps/gcc13_2/impi21/fftw3/3.3.10/lib/pkgconfig:/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/lib/pkgconfig:/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/lib/pkgconfig
+LMOD_SETTARG_FULL_SUPPORT=yes
+TACC_FAMILY_MPI_VERSION=21.12
+TACC_GCC_LIB=/scratch/tacc/apps/gcc/13.2.0/lib
+I_MPI_ROOT=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12
+TACC_PMIX_BIN=/opt/apps/pmix/3.2.3/bin
+HISTSIZE=1000
+LD_PRELOAD=/opt/apps/xalt/xalt/lib64/libxalt_init.so
+LMOD_PKG=/opt/apps/lmod/lmod
+TACC_IMPI_INC=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/include
+TACC_CCL_LIB=/scratch/projects/compilers/intel24.1/oneapi/ccl/2021.12/lib
+_ModuleTable005_=ID0gImltcGkvMjEuMTIiLAp3ViA9ICIwMDAwMDAwMjEuMDAwMDAwMDEyLip6ZmluYWwiLAp9LApta2wgPSB7CmZuID0gIi9vcHQvYXBwcy9nY2MxM18yL21vZHVsZWZpbGVzL21rbC8yNC4xLmx1YSIsCmZ1bGxOYW1lID0gIm1rbC8yNC4xIiwKbG9hZE9yZGVyID0gOSwKcHJvcFQgPSB7fSwKc3RhY2tEZXB0aCA9IDAsCnN0YXR1cyA9ICJhY3RpdmUiLAp1c2VyTmFtZSA9ICJta2wvMjQuMSIsCndWID0gIjAwMDAwMDAyNC4wMDAwMDAwMDEuKnpmaW5hbCIsCn0sCnBtaXggPSB7CmZuID0gIi9vcHQvYXBwcy9tb2R1bGVmaWxlcy9wbWl4LzMuMi4zLmx1YSIsCmZ1bGxOYW1lID0gInBtaXgvMy4yLjMiLApsb2FkT3JkZXIgPSAyLApwcm9wVCA9IHt9LApzdGFja0RlcHRoID0gMSwK
+LMOD_CMD=/opt/apps/lmod/lmod/libexec/lmod
+MPI_ROOT=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12
+OMP_NUM_THREADS=1
+LESSOPEN=||/usr/bin/lesspipe.sh %s
+TACC_IMPI_LIB=/scratch/projects/compilers/intel24.1/oneapi/mpi/2021.12/lib
+ATM_MODEL_VERSION=5.2.3
+LMOD_DIR=/opt/apps/lmod/lmod/libexec
+LMOD_FAMILY_MPI=impi
+BASH_FUNC_which%%=() {  ( alias;
+ eval ${which_declare} ) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot $@
+}
+BASH_FUNC_module%%=() {  if [ -z "${LMOD_SH_DBG_ON+x}" ]; then
+ case "$-" in 
+ *v*x*)
+ __lmod_sh_dbg='vx'
+ ;;
+ *v*)
+ __lmod_sh_dbg='v'
+ ;;
+ *x*)
+ __lmod_sh_dbg='x'
+ ;;
+ esac;
+ fi;
+ if [ -n "${__lmod_sh_dbg:-}" ]; then
+ set +$__lmod_sh_dbg;
+ echo "Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output" 1>&2;
+ fi;
+ eval "$($LMOD_CMD shell "$@")" && eval "$(${LMOD_SETTARG_CMD:-:} -s sh)";
+ __lmod_my_status=$?;
+ if [ -n "${__lmod_sh_dbg:-}" ]; then
+ echo "Shell debugging restarted" 1>&2;
+ set -$__lmod_sh_dbg;
+ fi;
+ unset __lmod_sh_dbg;
+ return $__lmod_my_status
+}
+BASH_FUNC_ml%%=() {  eval "$($LMOD_DIR/ml_cmd "$@")"
+}
+_=/usr/bin/env
