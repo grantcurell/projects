@@ -377,7 +377,7 @@ git submodule update --init --recursive
 ./download-dbase-benchmarks.sh .
 . ./.common_setup gnu
 mkdir build
-cd build
+cd build 
 fix_gem_flags() {
   build_dir="."
   echo "⟹ Scrubbing -fallow-argument-mismatch and -Werror from $build_dir …"

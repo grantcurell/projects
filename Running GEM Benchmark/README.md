@@ -12,6 +12,7 @@
     - [Global Yin-Yang Grid](#global-yin-yang-grid)
     - [LAM Uniform Grid](#lam-uniform-grid)
 - [Understanding ptopo](#understanding-ptopo)
+  - [Full Callstack](#full-callstack)
   - [`runmod.sh`](#runmodsh)
   - [`setmod.sh`](#setmodsh)
   - [`rungem.sh`](#rungemsh)
@@ -105,6 +106,10 @@ TODO
 TLDR: it's a small, rectangular, lat-long, grid used for regional simulations.
 
 ## Understanding ptopo
+
+### Full Callstack
+
+`runmod.sh` -> `rungem.sh` -> `r.mpirun`
 
 ### `runmod.sh`
 
