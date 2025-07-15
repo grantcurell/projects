@@ -1,4 +1,6 @@
 
+## Build and Compile
+
 Before building, I had to modify the file `src/gemdyn/CMakeLists.txt` and change it to the below. All that is doing is adding the line `include_directories(BEFORE $ENV{FFTW_HOME}/include)`. I had to add that to get FFTW to compile.
 
 ```
@@ -123,5 +125,16 @@ cd bulid
 export FFTW_HOME=$HOME/fftw-openmp                
 cmake ..   -DCMAKE_PREFIX_PATH=$FFTW_HOME   -DFFTW_ROOT=$FFTW_HOME   -DCMAKE_Fortran_FLAGS="-I$FFTW_HOME/include -O2 -Wno-error" && make VERBOSE=1 2>&1 | tee /tmp/build.log
 make -j${nproc}
+make work
+```
 
+## Run the Code
+
+```bash
+export MPI_PREFIX=/usr/mpi/gcc/openmpi-4.1.7rc1          # one line
+export PATH=$MPI_PREFIX/bin:$PATH
+export LD_LIBRARY_PATH=$MPI_PREFIX/lib64:$LD_LIBRARY_PATH
+export OPEN_MPI_PARMS="--mca coll_hcoll_enable 0 --mca pml ucx --mca btl ^openib"
+export PARALLEL_NODEFILE=/home/grant/hosts.gem
+runmod.sh -dircfg configurations/GEM_cfgs_GY_4km -ptopo 8x6x2
 ```
