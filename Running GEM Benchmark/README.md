@@ -289,6 +289,8 @@ In short, `domain_decomp` turns the **one big global grid** defined by the namel
 
 ## Install the Benchmark
 
+Before continuing, make sure your nodes are truly identical. I wrote the helper script [check_host_node_types.sh](./check_host_node_types.sh) to do this. I was running in a lab and discovered the hard way that not all my hosts were actually the same.
+
 ### On Your Own Hardware
 
 #### Install Prerequisites
