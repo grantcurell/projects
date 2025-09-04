@@ -132,6 +132,7 @@ class PerformanceStats:
     memory_usage: float
     gpu_memory_usage: float
     throughput_mbps: float
+    gpu_throughput_mbps: float
     patterns_found: int
 
 
@@ -263,13 +264,14 @@ class GPUPayloadScanner:
         matches = []
         
         # Process payloads in batches for better GPU utilization
-        batch_size = 10  # Number of payloads to process together
+        batch_size = 100  # Increased batch size for better GPU utilization
         total_batches = (len(payloads) + batch_size - 1) // batch_size
         
         logger.info(f"Processing {len(payloads)} payloads in {total_batches} batches using GPU")
         
         try:
-            for batch_idx in tqdm(range(total_batches), desc="GPU Scanning"):
+            # Process batches without progress bar for speed
+            for batch_idx in range(total_batches):
                 start_idx = batch_idx * batch_size
                 end_idx = min(start_idx + batch_size, len(payloads))
                 
@@ -389,6 +391,7 @@ class PCAPScanner:
             memory_usage=0,
             gpu_memory_usage=0,
             throughput_mbps=0,
+            gpu_throughput_mbps=0,
             patterns_found=0
         )
     
@@ -421,7 +424,11 @@ class PCAPScanner:
         # Calculate final statistics
         self.stats.total_time = time.time() - start_time
         self.stats.patterns_found = len(matches)
-        self.stats.throughput_mbps = (self.stats.total_bytes / 1024 / 1024) / self.stats.total_time
+        
+        # Calculate throughput metrics
+        total_data_mb = self.stats.total_bytes / 1024 / 1024
+        self.stats.throughput_mbps = total_data_mb / self.stats.total_time  # Overall system throughput
+        self.stats.gpu_throughput_mbps = total_data_mb / self.stats.gpu_processing_time if self.stats.gpu_processing_time > 0 else 0  # Pure GPU throughput
         
         # Get memory usage
         process = psutil.Process()
@@ -439,12 +446,14 @@ class PCAPScanner:
         return matches
     
     def _extract_payloads(self, packets) -> Tuple[List[bytes], List[str], List[float]]:
-        """Extract payloads from packets with TCP reassembly"""
+        """Extract payloads from packets with TCP reassembly - optimized version"""
+        # Pre-allocate lists for better performance
         payloads = []
         flow_ids = []
         timestamps = []
         
-        for packet in tqdm(packets, desc="Processing packets"):
+        # Process packets without progress bar for speed
+        for packet in packets:
             if packet.haslayer(IP):
                 ip_layer = packet[IP]
                 
@@ -487,7 +496,8 @@ class PCAPScanner:
         print(f"TCP Reassembly Time: {self.stats.reassembly_time:.2f}s")
         print(f"GPU Processing Time: {self.stats.gpu_processing_time:.2f}s")
         print(f"Total Processing Time: {self.stats.total_time:.2f}s")
-        print(f"Throughput: {self.stats.throughput_mbps:.2f} MB/s")
+        print(f"{Fore.YELLOW}Overall Throughput: {self.stats.throughput_mbps:.2f} MB/s{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}Pure GPU Throughput: {self.stats.gpu_throughput_mbps:.2f} MB/s{Style.RESET_ALL}")
         print(f"Memory Usage: {self.stats.memory_usage:.2f} MB")
         if GPU_AVAILABLE:
             print(f"GPU Memory Usage: {self.stats.gpu_memory_usage:.2f} MB")
@@ -496,6 +506,16 @@ class PCAPScanner:
         if self.stats.total_time > 0:
             packets_per_second = self.stats.total_packets / self.stats.total_time
             print(f"Packets per Second: {packets_per_second:.2f}")
+            
+        # Performance breakdown
+        if self.stats.total_time > 0:
+            reassembly_pct = (self.stats.reassembly_time / self.stats.total_time) * 100
+            gpu_pct = (self.stats.gpu_processing_time / self.stats.total_time) * 100
+            other_pct = 100 - reassembly_pct - gpu_pct
+            print(f"\n{Fore.CYAN}Performance Breakdown:{Style.RESET_ALL}")
+            print(f"  TCP Reassembly: {reassembly_pct:.1f}% ({self.stats.reassembly_time:.2f}s)")
+            print(f"  GPU Processing: {gpu_pct:.1f}% ({self.stats.gpu_processing_time:.2f}s)")
+            print(f"  Other (I/O, etc): {other_pct:.1f}% ({self.stats.total_time - self.stats.reassembly_time - self.stats.gpu_processing_time:.2f}s)")
 
 
 def main():
