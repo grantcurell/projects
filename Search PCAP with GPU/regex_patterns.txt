@@ -91,3 +91,4 @@ onclick=
 # Data exfiltration patterns
 \b(export|download|upload|transfer|copy|move|backup|archive|compress|zip|tar|gzip)\b
 \b(email|mail|smtp|ftp|http|https|tcp|udp|dns|icmp|tunnel|proxy|vpn)\b
+

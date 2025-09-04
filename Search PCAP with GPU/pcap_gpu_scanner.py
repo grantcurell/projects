@@ -428,7 +428,10 @@ class PCAPScanner:
         self.stats.memory_usage = process.memory_info().rss / 1024 / 1024  # MB
         
         if GPU_AVAILABLE:
-            self.stats.gpu_memory_usage = cp.cuda.MemoryInfo().total / 1024 / 1024  # MB
+            try:
+                self.stats.gpu_memory_usage = cp.cuda.runtime.memGetInfo()[0] / 1024 / 1024  # MB (used memory)
+            except:
+                self.stats.gpu_memory_usage = 0
         
         logger.info(f"Scan completed in {self.stats.total_time:.2f}s")
         logger.info(f"Found {len(matches)} pattern matches")
