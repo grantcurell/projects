@@ -1,0 +1,122 @@
+# Example patterns for PCAP scanning
+# Each line contains a pattern to search for in PCAP payloads
+
+# HTTP/HTTPS patterns
+HTTP
+HTTPS
+GET
+POST
+PUT
+DELETE
+HEAD
+OPTIONS
+TRACE
+CONNECT
+
+# Common web patterns
+User-Agent
+Accept
+Content-Type
+Content-Length
+Authorization
+Cookie
+Set-Cookie
+Referer
+Host
+Connection
+
+# Security-related patterns
+password
+admin
+login
+logout
+session
+token
+bearer
+jwt
+oauth
+csrf
+
+# Malware/Threat patterns
+malware
+virus
+trojan
+backdoor
+keylogger
+ransomware
+spyware
+rootkit
+exploit
+vulnerability
+
+# Network protocols
+FTP
+SMTP
+POP3
+IMAP
+SSH
+TELNET
+DNS
+DHCP
+SNMP
+NTP
+
+# File types
+PDF
+EXE
+DLL
+ZIP
+RAR
+TAR
+GZ
+BZ2
+JPG
+PNG
+
+# Common strings in network traffic
+error
+warning
+debug
+info
+success
+failed
+timeout
+connection
+server
+client
+
+# Database patterns
+SELECT
+INSERT
+UPDATE
+DELETE
+CREATE
+DROP
+ALTER
+WHERE
+FROM
+JOIN
+
+# API patterns
+api
+rest
+json
+xml
+soap
+graphql
+endpoint
+resource
+method
+status
+
+# Authentication patterns
+authentication
+authorization
+credentials
+username
+email
+phone
+verification
+validation
+confirmation
+activation
