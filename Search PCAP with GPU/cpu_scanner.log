@@ -1,0 +1,699 @@
+2025-09-04 15:53:44,286 - INFO - Initialized CPU scanner with 3 patterns using 24 cores
+2025-09-04 15:53:44,287 - INFO - Starting CPU-only PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:53:44,287 - INFO - Reading PCAP file...
+2025-09-04 15:53:47,452 - INFO - Performing TCP reassembly...
+2025-09-04 15:53:47,812 - INFO - Scanning payloads using CPU processing...
+2025-09-04 15:53:47,813 - INFO - CPU scan completed in 3.53s
+2025-09-04 15:53:47,814 - INFO - Found 0 pattern matches
+2025-09-04 15:53:47,825 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:53:47,826 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-04 15:53:47,827 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:53:47,827 - INFO - Reading PCAP file...
+2025-09-04 15:53:51,140 - INFO - Performing TCP reassembly...
+2025-09-04 15:53:51,758 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:53:51,759 - INFO - Scan completed in 3.93s
+2025-09-04 15:53:51,759 - INFO - Found 0 pattern matches
+2025-09-04 15:53:52,783 - INFO - Initialized CPU scanner with 5 patterns using 24 cores
+2025-09-04 15:53:52,784 - INFO - Starting CPU-only PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:53:52,784 - INFO - Reading PCAP file...
+2025-09-04 15:53:56,269 - INFO - Performing TCP reassembly...
+2025-09-04 15:53:56,641 - INFO - Scanning payloads using CPU processing...
+2025-09-04 15:53:56,642 - INFO - CPU scan completed in 3.86s
+2025-09-04 15:53:56,642 - INFO - Found 0 pattern matches
+2025-09-04 15:53:56,655 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:53:56,655 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:53:56,656 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:53:56,656 - INFO - Reading PCAP file...
+2025-09-04 15:53:59,929 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:00,513 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:54:00,514 - INFO - Scan completed in 3.86s
+2025-09-04 15:54:00,515 - INFO - Found 0 pattern matches
+2025-09-04 15:54:01,545 - INFO - Initialized CPU scanner with 5 patterns using 24 cores
+2025-09-04 15:54:01,546 - INFO - Starting CPU-only PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:54:01,546 - INFO - Reading PCAP file...
+2025-09-04 15:54:05,172 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:05,765 - INFO - Scanning payloads using CPU processing...
+2025-09-04 15:54:05,766 - INFO - CPU scan completed in 4.22s
+2025-09-04 15:54:05,766 - INFO - Found 0 pattern matches
+2025-09-04 15:54:05,779 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:54:05,779 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:54:05,779 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:54:05,779 - INFO - Reading PCAP file...
+2025-09-04 15:54:09,324 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:09,887 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:54:09,888 - INFO - Scan completed in 4.11s
+2025-09-04 15:54:09,889 - INFO - Found 0 pattern matches
+2025-09-04 15:54:10,909 - INFO - Initialized CPU scanner with 5 patterns using 24 cores
+2025-09-04 15:54:10,910 - INFO - Starting CPU-only PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:54:10,910 - INFO - Reading PCAP file...
+2025-09-04 15:54:14,557 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:15,145 - INFO - Scanning payloads using CPU processing...
+2025-09-04 15:54:15,146 - INFO - CPU scan completed in 4.24s
+2025-09-04 15:54:15,147 - INFO - Found 0 pattern matches
+2025-09-04 15:54:15,160 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:54:15,160 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:54:15,160 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:54:15,160 - INFO - Reading PCAP file...
+2025-09-04 15:54:18,740 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:19,306 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:54:19,307 - INFO - Scan completed in 4.15s
+2025-09-04 15:54:19,308 - INFO - Found 0 pattern matches
+2025-09-04 15:54:20,340 - INFO - Initialized CPU scanner with 16 patterns using 24 cores
+2025-09-04 15:54:20,341 - INFO - Starting CPU-only PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:54:20,341 - INFO - Reading PCAP file...
+2025-09-04 15:54:23,972 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:24,562 - INFO - Scanning payloads using CPU processing...
+2025-09-04 15:54:24,563 - INFO - CPU scan completed in 4.22s
+2025-09-04 15:54:24,564 - INFO - Found 0 pattern matches
+2025-09-04 15:54:24,577 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:54:24,577 - INFO - Initialized GPU scanner with 16 patterns
+2025-09-04 15:54:24,577 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:54:24,578 - INFO - Reading PCAP file...
+2025-09-04 15:54:27,985 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:28,536 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:54:28,536 - INFO - Scan completed in 3.96s
+2025-09-04 15:54:28,537 - INFO - Found 0 pattern matches
+2025-09-04 15:54:39,611 - INFO - Initialized CPU scanner with 3 patterns using 24 cores
+2025-09-04 15:54:39,611 - INFO - Starting CPU-only PCAP scan: PCAP Files\The Ultimate PCAP v20250325.pcapng
+2025-09-04 15:54:39,611 - INFO - Reading PCAP file...
+2025-09-04 15:54:47,652 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:48,093 - INFO - Scanning payloads using CPU processing...
+2025-09-04 15:54:48,125 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,131 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,131 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,563 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,132 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,132 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,132 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,132 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,132 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,132 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,133 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,562 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,562 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,562 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,562 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,562 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,563 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,563 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,131 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,563 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,564 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,581 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,581 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,582 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,603 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,605 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,605 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,606 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,606 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,606 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,606 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,607 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,607 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,607 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,607 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,607 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,608 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,608 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,608 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,608 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,608 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,609 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,609 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,609 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,609 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,609 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,609 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,610 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,610 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,610 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,610 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,610 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,611 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,611 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,611 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,611 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,611 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,611 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,612 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,612 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,612 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,612 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,612 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,612 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,613 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,613 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,613 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,613 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,614 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,614 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,614 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,706 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,804 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,824 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,827 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,828 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,829 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,830 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,831 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,832 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,833 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,834 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,835 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,835 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,835 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,836 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,837 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,837 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,852 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,912 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,973 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:48,979 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,005 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,006 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,008 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,009 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,010 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,011 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,012 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,013 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,013 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,014 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,015 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:54:49,072 - INFO - CPU scanning completed in 0.98s, found 0 matches
+2025-09-04 15:54:49,079 - INFO - CPU scan completed in 9.47s
+2025-09-04 15:54:49,079 - INFO - Found 0 pattern matches
+2025-09-04 15:54:49,083 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:54:49,084 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-04 15:54:49,084 - INFO - Starting PCAP scan: PCAP Files\The Ultimate PCAP v20250325.pcapng
+2025-09-04 15:54:49,084 - INFO - Reading PCAP file...
+2025-09-04 15:54:58,052 - INFO - Performing TCP reassembly...
+2025-09-04 15:54:58,510 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:54:58,511 - INFO - Processing 18183 payloads in 182 batches using GPU
+2025-09-04 15:55:23,357 - INFO - GPU scanning completed in 24.85s, found 258 matches
+2025-09-04 15:55:23,358 - INFO - Scan completed in 34.27s
+2025-09-04 15:55:23,358 - INFO - Found 258 pattern matches
+2025-09-04 15:55:24,373 - INFO - Initialized CPU scanner with 5 patterns using 24 cores
+2025-09-04 15:55:24,374 - INFO - Starting CPU-only PCAP scan: PCAP Files\The Ultimate PCAP v20250325.pcapng
+2025-09-04 15:55:24,374 - INFO - Reading PCAP file...
+2025-09-04 15:55:32,773 - INFO - Performing TCP reassembly...
+2025-09-04 15:55:33,232 - INFO - Scanning payloads using CPU processing...
+2025-09-04 15:55:33,248 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,249 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,268 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,269 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,269 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,535 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,535 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,535 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,535 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,536 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:33,536 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,153 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,153 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,172 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,172 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,173 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,173 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,173 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,173 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,173 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,174 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,174 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,174 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,174 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,174 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,174 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,175 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,175 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,176 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,177 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,177 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,178 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,178 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,178 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,179 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,179 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,179 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,180 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,180 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,181 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,181 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,182 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,182 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,183 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,183 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,183 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,184 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,184 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,184 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,185 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,185 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,185 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,186 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,186 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,186 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,187 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,187 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,187 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,188 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,188 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,188 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,189 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,189 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,189 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,190 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,190 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,190 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,191 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,191 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,191 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,192 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,192 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,192 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,192 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,193 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,193 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,193 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,194 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,194 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,194 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,195 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,195 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,195 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,195 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,196 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,196 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,196 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,197 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,197 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,197 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,198 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,198 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,198 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,199 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,199 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,199 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,200 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,200 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,200 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,201 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,201 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,201 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,202 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,202 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,202 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,202 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,203 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,203 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,203 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,204 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,204 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,204 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,205 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,205 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,205 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,206 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,206 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,206 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,207 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,207 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,207 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,207 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,208 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,208 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,208 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,209 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,209 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,209 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,210 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,210 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,210 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,211 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,211 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,211 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,211 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,212 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,212 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,212 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,213 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,213 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,213 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,213 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,214 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,214 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,215 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,215 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,215 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,216 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,216 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,217 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,217 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,217 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,218 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,218 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,218 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,218 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,219 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,219 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,219 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,220 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,220 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,220 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,221 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,221 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,221 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,222 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,222 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,222 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,223 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,224 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,225 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,226 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,227 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,228 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,228 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,229 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,230 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,231 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,232 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,233 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,246 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,247 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,247 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,248 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,248 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,249 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,250 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,250 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,253 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,253 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,263 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,265 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,265 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,266 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,271 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,273 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,273 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,273 - ERROR - Error in pattern matching: 'str' object has no attribute 'decode'
+2025-09-04 15:55:34,309 - INFO - CPU scanning completed in 1.08s, found 0 matches
+2025-09-04 15:55:34,314 - INFO - CPU scan completed in 9.94s
+2025-09-04 15:55:34,315 - INFO - Found 0 pattern matches
+2025-09-04 15:55:34,320 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:55:34,320 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:55:34,320 - INFO - Starting PCAP scan: PCAP Files\The Ultimate PCAP v20250325.pcapng
+2025-09-04 15:55:34,320 - INFO - Reading PCAP file...
+2025-09-04 15:55:43,270 - INFO - Performing TCP reassembly...
+2025-09-04 15:55:43,724 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:55:43,725 - INFO - Processing 18183 payloads in 182 batches using GPU
+2025-09-04 15:57:31,249 - INFO - Initialized CPU scanner with 3 patterns
+2025-09-04 15:57:31,250 - INFO - Starting CPU PCAP scan: PCAP Files/The Ultimate PCAP v20250325.pcapng
+2025-09-04 15:57:31,250 - INFO - Reading PCAP file...
+2025-09-04 15:57:39,437 - INFO - Performing TCP reassembly...
+2025-09-04 15:57:39,891 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:57:39,892 - INFO - Processing 19624 payloads using CPU
+2025-09-04 15:57:42,105 - INFO - CPU scanning completed in 2.21s, found 392 matches
+2025-09-04 15:57:42,106 - INFO - CPU scan completed in 10.86s
+2025-09-04 15:57:42,106 - INFO - Found 392 pattern matches
+2025-09-04 15:58:16,039 - INFO - Initialized CPU scanner with 3 patterns
+2025-09-04 15:58:16,040 - INFO - Starting CPU PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:16,040 - INFO - Reading PCAP file...
+2025-09-04 15:58:16,876 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:16,960 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:58:16,961 - INFO - Processing 10000 payloads using CPU
+2025-09-04 15:58:17,510 - INFO - CPU scanning completed in 0.55s, found 17595 matches
+2025-09-04 15:58:17,511 - INFO - CPU scan completed in 1.47s
+2025-09-04 15:58:17,511 - INFO - Found 17595 pattern matches
+2025-09-04 15:58:17,514 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:58:17,515 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-04 15:58:17,515 - INFO - Starting PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:17,515 - INFO - Reading PCAP file...
+2025-09-04 15:58:18,331 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:18,424 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:58:18,425 - INFO - Processing 4999 payloads in 50 batches using GPU
+2025-09-04 15:58:19,537 - INFO - GPU scanning completed in 1.11s, found 17591 matches
+2025-09-04 15:58:19,538 - INFO - Scan completed in 2.02s
+2025-09-04 15:58:19,538 - INFO - Found 17591 pattern matches
+2025-09-04 15:58:19,543 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 15:58:19,543 - INFO - Starting CPU PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:19,543 - INFO - Reading PCAP file...
+2025-09-04 15:58:20,571 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:20,655 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:58:20,655 - INFO - Processing 10000 payloads using CPU
+2025-09-04 15:58:21,368 - INFO - CPU scanning completed in 0.71s, found 7809 matches
+2025-09-04 15:58:21,369 - INFO - CPU scan completed in 1.83s
+2025-09-04 15:58:21,369 - INFO - Found 7809 pattern matches
+2025-09-04 15:58:21,372 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:58:21,372 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:58:21,372 - INFO - Starting PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:21,372 - INFO - Reading PCAP file...
+2025-09-04 15:58:22,299 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:22,393 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:58:22,393 - INFO - Processing 4999 payloads in 50 batches using GPU
+2025-09-04 15:58:23,523 - INFO - GPU scanning completed in 1.13s, found 7820 matches
+2025-09-04 15:58:23,524 - INFO - Scan completed in 2.15s
+2025-09-04 15:58:23,524 - INFO - Found 7820 pattern matches
+2025-09-04 15:58:23,527 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 15:58:23,527 - INFO - Starting CPU PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:23,527 - INFO - Reading PCAP file...
+2025-09-04 15:58:24,449 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:24,532 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:58:24,532 - INFO - Processing 10000 payloads using CPU
+2025-09-04 15:58:25,225 - INFO - CPU scanning completed in 0.69s, found 1930 matches
+2025-09-04 15:58:25,226 - INFO - CPU scan completed in 1.70s
+2025-09-04 15:58:25,226 - INFO - Found 1930 pattern matches
+2025-09-04 15:58:25,228 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:58:25,228 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:58:25,228 - INFO - Starting PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:25,228 - INFO - Reading PCAP file...
+2025-09-04 15:58:26,147 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:26,235 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:58:26,236 - INFO - Processing 4999 payloads in 50 batches using GPU
+2025-09-04 15:58:27,292 - INFO - GPU scanning completed in 1.06s, found 1928 matches
+2025-09-04 15:58:27,293 - INFO - Scan completed in 2.06s
+2025-09-04 15:58:27,293 - INFO - Found 1928 pattern matches
+2025-09-04 15:58:27,296 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 15:58:27,296 - INFO - Starting CPU PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:27,296 - INFO - Reading PCAP file...
+2025-09-04 15:58:28,177 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:28,259 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:58:28,259 - INFO - Processing 10000 payloads using CPU
+2025-09-04 15:58:28,922 - INFO - CPU scanning completed in 0.66s, found 0 matches
+2025-09-04 15:58:28,922 - INFO - CPU scan completed in 1.63s
+2025-09-04 15:58:28,923 - INFO - Found 0 pattern matches
+2025-09-04 15:58:28,924 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:58:28,925 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:58:28,925 - INFO - Starting PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:28,925 - INFO - Reading PCAP file...
+2025-09-04 15:58:29,827 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:29,921 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:58:29,922 - INFO - Processing 4999 payloads in 50 batches using GPU
+2025-09-04 15:58:37,487 - INFO - GPU scanning completed in 7.56s, found 0 matches
+2025-09-04 15:58:37,487 - INFO - Scan completed in 8.56s
+2025-09-04 15:58:37,487 - INFO - Found 0 pattern matches
+2025-09-04 15:58:37,491 - INFO - Initialized CPU scanner with 16 patterns
+2025-09-04 15:58:37,491 - INFO - Starting CPU PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:37,491 - INFO - Reading PCAP file...
+2025-09-04 15:58:38,423 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:38,507 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:58:38,507 - INFO - Processing 10000 payloads using CPU
+2025-09-04 15:58:40,749 - INFO - CPU scanning completed in 2.24s, found 27334 matches
+2025-09-04 15:58:40,749 - INFO - CPU scan completed in 3.26s
+2025-09-04 15:58:40,749 - INFO - Found 27334 pattern matches
+2025-09-04 15:58:40,751 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:58:40,752 - INFO - Initialized GPU scanner with 16 patterns
+2025-09-04 15:58:40,752 - INFO - Starting PCAP scan: PCAP Files\realistic_tcp_flows.pcapng
+2025-09-04 15:58:40,752 - INFO - Reading PCAP file...
+2025-09-04 15:58:41,707 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:41,799 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:58:41,799 - INFO - Processing 4999 payloads in 50 batches using GPU
+2025-09-04 15:58:49,501 - INFO - GPU scanning completed in 7.70s, found 27339 matches
+2025-09-04 15:58:49,502 - INFO - Scan completed in 8.75s
+2025-09-04 15:58:49,502 - INFO - Found 27339 pattern matches
+2025-09-04 15:58:49,509 - INFO - Initialized CPU scanner with 3 patterns
+2025-09-04 15:58:49,509 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:58:49,509 - INFO - Reading PCAP file...
+2025-09-04 15:58:52,818 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:53,164 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:58:53,165 - INFO - Processing 34952 payloads using CPU
+2025-09-04 15:58:54,916 - INFO - CPU scanning completed in 1.75s, found 7375 matches
+2025-09-04 15:58:54,917 - INFO - CPU scan completed in 5.41s
+2025-09-04 15:58:54,918 - INFO - Found 7375 pattern matches
+2025-09-04 15:58:54,921 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:58:54,921 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-04 15:58:54,921 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:58:54,922 - INFO - Reading PCAP file...
+2025-09-04 15:58:58,477 - INFO - Performing TCP reassembly...
+2025-09-04 15:58:59,135 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:58:59,136 - INFO - Scan completed in 4.21s
+2025-09-04 15:58:59,137 - INFO - Found 0 pattern matches
+2025-09-04 15:58:59,172 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 15:58:59,173 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:58:59,173 - INFO - Reading PCAP file...
+2025-09-04 15:59:02,877 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:03,505 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:59:03,506 - INFO - Processing 34952 payloads using CPU
+2025-09-04 15:59:06,556 - INFO - CPU scanning completed in 3.05s, found 12464 matches
+2025-09-04 15:59:06,557 - INFO - CPU scan completed in 7.38s
+2025-09-04 15:59:06,557 - INFO - Found 12464 pattern matches
+2025-09-04 15:59:06,560 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:59:06,561 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:59:06,561 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:59:06,561 - INFO - Reading PCAP file...
+2025-09-04 15:59:10,468 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:10,821 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:59:10,821 - INFO - Scan completed in 4.26s
+2025-09-04 15:59:10,822 - INFO - Found 0 pattern matches
+2025-09-04 15:59:10,857 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 15:59:10,857 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:59:10,857 - INFO - Reading PCAP file...
+2025-09-04 15:59:14,399 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:15,057 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:59:15,058 - INFO - Processing 34952 payloads using CPU
+2025-09-04 15:59:17,948 - INFO - CPU scanning completed in 2.89s, found 7520 matches
+2025-09-04 15:59:17,948 - INFO - CPU scan completed in 7.09s
+2025-09-04 15:59:17,949 - INFO - Found 7520 pattern matches
+2025-09-04 15:59:17,953 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:59:17,953 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:59:17,953 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:59:17,954 - INFO - Reading PCAP file...
+2025-09-04 15:59:21,883 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:22,235 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:59:22,236 - INFO - Scan completed in 4.28s
+2025-09-04 15:59:22,236 - INFO - Found 0 pattern matches
+2025-09-04 15:59:22,276 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 15:59:22,276 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:59:22,276 - INFO - Reading PCAP file...
+2025-09-04 15:59:25,838 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:26,178 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:59:26,179 - INFO - Processing 34952 payloads using CPU
+2025-09-04 15:59:29,153 - INFO - CPU scanning completed in 2.97s, found 2480 matches
+2025-09-04 15:59:29,153 - INFO - CPU scan completed in 6.88s
+2025-09-04 15:59:29,154 - INFO - Found 2480 pattern matches
+2025-09-04 15:59:29,157 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:59:29,157 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:59:29,158 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:59:29,158 - INFO - Reading PCAP file...
+2025-09-04 15:59:32,709 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:33,367 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:59:33,368 - INFO - Scan completed in 4.21s
+2025-09-04 15:59:33,368 - INFO - Found 0 pattern matches
+2025-09-04 15:59:33,403 - INFO - Initialized CPU scanner with 16 patterns
+2025-09-04 15:59:33,403 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:59:33,404 - INFO - Reading PCAP file...
+2025-09-04 15:59:37,302 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:37,643 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:59:37,643 - INFO - Processing 34952 payloads using CPU
+2025-09-04 15:59:47,137 - INFO - CPU scanning completed in 9.49s, found 29839 matches
+2025-09-04 15:59:47,137 - INFO - CPU scan completed in 13.73s
+2025-09-04 15:59:47,138 - INFO - Found 29839 pattern matches
+2025-09-04 15:59:47,141 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:59:47,141 - INFO - Initialized GPU scanner with 16 patterns
+2025-09-04 15:59:47,141 - INFO - Starting PCAP scan: PCAP Files\synthetic_50mb.pcapng
+2025-09-04 15:59:47,141 - INFO - Reading PCAP file...
+2025-09-04 15:59:50,727 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:51,402 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:59:51,403 - INFO - Scan completed in 4.26s
+2025-09-04 15:59:51,403 - INFO - Found 0 pattern matches
+2025-09-04 15:59:51,442 - INFO - Initialized CPU scanner with 3 patterns
+2025-09-04 15:59:51,442 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 15:59:51,442 - INFO - Reading PCAP file...
+2025-09-04 15:59:58,782 - INFO - Performing TCP reassembly...
+2025-09-04 15:59:59,960 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 15:59:59,961 - INFO - Processing 69905 payloads using CPU
+2025-09-04 16:00:03,488 - INFO - CPU scanning completed in 3.53s, found 15076 matches
+2025-09-04 16:00:03,489 - INFO - CPU scan completed in 12.05s
+2025-09-04 16:00:03,489 - INFO - Found 15076 pattern matches
+2025-09-04 16:00:03,494 - INFO - Advanced GPU kernels initialized
+2025-09-04 16:00:03,494 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-04 16:00:03,495 - INFO - Starting PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:00:03,495 - INFO - Reading PCAP file...
+2025-09-04 16:00:11,110 - INFO - Performing TCP reassembly...
+2025-09-04 16:00:12,366 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 16:00:12,367 - INFO - Scan completed in 8.87s
+2025-09-04 16:00:12,368 - INFO - Found 0 pattern matches
+2025-09-04 16:00:12,435 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 16:00:12,435 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:00:12,435 - INFO - Reading PCAP file...
+2025-09-04 16:00:20,433 - INFO - Performing TCP reassembly...
+2025-09-04 16:00:21,698 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 16:00:21,698 - INFO - Processing 69905 payloads using CPU
+2025-09-04 16:00:27,688 - INFO - CPU scanning completed in 5.99s, found 25018 matches
+2025-09-04 16:00:27,689 - INFO - CPU scan completed in 15.25s
+2025-09-04 16:00:27,689 - INFO - Found 25018 pattern matches
+2025-09-04 16:00:27,693 - INFO - Advanced GPU kernels initialized
+2025-09-04 16:00:27,694 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 16:00:27,694 - INFO - Starting PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:00:27,694 - INFO - Reading PCAP file...
+2025-09-04 16:00:35,328 - INFO - Performing TCP reassembly...
+2025-09-04 16:00:36,598 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 16:00:36,599 - INFO - Scan completed in 8.90s
+2025-09-04 16:00:36,599 - INFO - Found 0 pattern matches
+2025-09-04 16:00:36,667 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 16:00:36,668 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:00:36,668 - INFO - Reading PCAP file...
+2025-09-04 16:00:44,633 - INFO - Performing TCP reassembly...
+2025-09-04 16:00:45,892 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 16:00:45,892 - INFO - Processing 69905 payloads using CPU
+2025-09-04 16:00:51,712 - INFO - CPU scanning completed in 5.82s, found 14840 matches
+2025-09-04 16:00:51,713 - INFO - CPU scan completed in 15.04s
+2025-09-04 16:00:51,713 - INFO - Found 14840 pattern matches
+2025-09-04 16:00:51,719 - INFO - Advanced GPU kernels initialized
+2025-09-04 16:00:51,720 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 16:00:51,720 - INFO - Starting PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:00:51,720 - INFO - Reading PCAP file...
+2025-09-04 16:01:08,644 - INFO - Performing TCP reassembly...
+2025-09-04 16:01:10,079 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 16:01:10,080 - INFO - Scan completed in 18.36s
+2025-09-04 16:01:10,080 - INFO - Found 0 pattern matches
+2025-09-04 16:01:10,161 - INFO - Initialized CPU scanner with 5 patterns
+2025-09-04 16:01:10,161 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:01:10,161 - INFO - Reading PCAP file...
+2025-09-04 16:01:18,325 - INFO - Performing TCP reassembly...
+2025-09-04 16:01:19,656 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 16:01:19,657 - INFO - Processing 69905 payloads using CPU
+2025-09-04 16:01:25,912 - INFO - CPU scanning completed in 6.25s, found 5033 matches
+2025-09-04 16:01:25,912 - INFO - CPU scan completed in 15.75s
+2025-09-04 16:01:25,913 - INFO - Found 5033 pattern matches
+2025-09-04 16:01:25,919 - INFO - Advanced GPU kernels initialized
+2025-09-04 16:01:25,919 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 16:01:25,919 - INFO - Starting PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:01:25,919 - INFO - Reading PCAP file...
+2025-09-04 16:01:33,879 - INFO - Performing TCP reassembly...
+2025-09-04 16:01:34,577 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 16:01:34,578 - INFO - Scan completed in 8.66s
+2025-09-04 16:01:34,579 - INFO - Found 0 pattern matches
+2025-09-04 16:01:34,644 - INFO - Initialized CPU scanner with 16 patterns
+2025-09-04 16:01:34,644 - INFO - Starting CPU PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:01:34,644 - INFO - Reading PCAP file...
+2025-09-04 16:01:41,973 - INFO - Performing TCP reassembly...
+2025-09-04 16:01:43,120 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 16:01:43,121 - INFO - Processing 69905 payloads using CPU
+2025-09-04 16:02:02,415 - INFO - CPU scanning completed in 19.29s, found 59967 matches
+2025-09-04 16:02:02,416 - INFO - CPU scan completed in 27.77s
+2025-09-04 16:02:02,416 - INFO - Found 59967 pattern matches
+2025-09-04 16:02:02,422 - INFO - Advanced GPU kernels initialized
+2025-09-04 16:02:02,422 - INFO - Initialized GPU scanner with 16 patterns
+2025-09-04 16:02:02,422 - INFO - Starting PCAP scan: PCAP Files\synthetic_100mb.pcapng
+2025-09-04 16:02:02,422 - INFO - Reading PCAP file...
+2025-09-04 16:02:10,232 - INFO - Performing TCP reassembly...
+2025-09-04 16:02:10,930 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 16:02:10,930 - INFO - Scan completed in 8.51s
+2025-09-04 16:02:10,931 - INFO - Found 0 pattern matches
+2025-09-04 16:02:10,998 - INFO - Initialized CPU scanner with 3 patterns
+2025-09-04 16:02:10,998 - INFO - Starting CPU PCAP scan: PCAP Files\The Ultimate PCAP v20250325.pcapng
+2025-09-04 16:02:10,999 - INFO - Reading PCAP file...
+2025-09-04 16:02:19,849 - INFO - Performing TCP reassembly...
+2025-09-04 16:02:20,316 - INFO - Scanning payloads for patterns using CPU...
+2025-09-04 16:02:20,317 - INFO - Processing 19624 payloads using CPU
+2025-09-04 16:02:22,545 - INFO - CPU scanning completed in 2.23s, found 392 matches
+2025-09-04 16:02:22,546 - INFO - CPU scan completed in 11.55s
+2025-09-04 16:02:22,546 - INFO - Found 392 pattern matches
+2025-09-04 16:02:22,549 - INFO - Advanced GPU kernels initialized
+2025-09-04 16:02:22,550 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-04 16:02:22,550 - INFO - Starting PCAP scan: PCAP Files\The Ultimate PCAP v20250325.pcapng
+2025-09-04 16:02:22,550 - INFO - Reading PCAP file...
+2025-09-04 16:02:31,165 - INFO - Performing TCP reassembly...
+2025-09-04 16:02:31,626 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 16:02:31,627 - INFO - Processing 18183 payloads in 182 batches using GPU

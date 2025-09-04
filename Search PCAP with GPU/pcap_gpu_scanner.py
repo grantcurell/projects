@@ -181,29 +181,22 @@ class TCPReassembler:
         return self._try_reassemble(flow_key)
     
     def _try_reassemble(self, flow_key: FlowKey) -> Optional[Tuple[FlowKey, bytes, float]]:
-        """Attempt to reassemble TCP stream"""
+        """Attempt to reassemble TCP stream - FIXED to process every packet immediately"""
         flow_data = self.flows[flow_key]
         packets = flow_data['packets']
         
-        if len(packets) < 2:
+        # FIXED: Process every packet immediately, don't wait for multiple packets
+        if len(packets) == 0:
             return None
             
-        # Sort packets by sequence number
-        sorted_packets = sorted(packets, key=lambda p: p['seq'])
+        # Get the most recent packet
+        latest_packet = packets[-1]
         
-        # Simple reassembly - in production you'd want more sophisticated handling
-        reassembled = bytearray()
-        expected_seq = sorted_packets[0]['seq']
-        
-        for packet in sorted_packets:
-            if packet['seq'] == expected_seq:
-                reassembled.extend(packet['payload'])
-                expected_seq += len(packet['payload'])
-        
-        if len(reassembled) > 0:
-            # Clear processed packets
+        # Return the payload immediately (same logic as CPU scanner)
+        if len(latest_packet['payload']) > 0:
+            # Clear processed packets to avoid duplicates
             flow_data['packets'].clear()
-            return (flow_key, bytes(reassembled), sorted_packets[0]['timestamp'])
+            return (flow_key, latest_packet['payload'], latest_packet['timestamp'])
         
         return None
 
