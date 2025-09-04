@@ -50,3 +50,57 @@
 2025-09-04 14:30:37,951 - ERROR - GPU batch processing failed: CuPy failed to load nvrtc64_120_0.dll: FileNotFoundError: Could not find module 'nvrtc64_120_0.dll' (or one of its dependencies). Try using the full path with constructor syntax.
 2025-09-04 14:30:37,956 - ERROR - GPU scanning failed: GPU batch processing failed: CuPy failed to load nvrtc64_120_0.dll: FileNotFoundError: Could not find module 'nvrtc64_120_0.dll' (or one of its dependencies). Try using the full path with constructor syntax.
 2025-09-04 14:30:37,957 - ERROR - Error during scanning: GPU pattern matching failed: GPU batch processing failed: CuPy failed to load nvrtc64_120_0.dll: FileNotFoundError: Could not find module 'nvrtc64_120_0.dll' (or one of its dependencies). Try using the full path with constructor syntax.
+2025-09-04 14:55:02,303 - INFO - Advanced GPU kernels initialized
+2025-09-04 14:55:02,304 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 14:55:02,304 - INFO - Starting PCAP scan: PCAP Files
+2025-09-04 14:55:02,304 - INFO - Reading PCAP file...
+2025-09-04 14:55:02,304 - ERROR - Error during scanning: [Errno 13] Permission denied: 'PCAP Files'
+2025-09-04 14:55:11,292 - INFO - Advanced GPU kernels initialized
+2025-09-04 14:55:11,292 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 14:55:11,292 - INFO - Starting PCAP scan: PCAP Files/The Ultimate PCAP v20250325.pcapng
+2025-09-04 14:55:11,292 - INFO - Reading PCAP file...
+2025-09-04 14:55:19,438 - INFO - Performing TCP reassembly...
+2025-09-04 14:55:19,960 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 14:55:19,960 - INFO - Processing 18183 payloads in 1819 batches using GPU
+2025-09-04 14:55:20,488 - ERROR - GPU batch processing failed: CuPy failed to load nvrtc64_120_0.dll: FileNotFoundError: Could not find module 'nvrtc64_120_0.dll' (or one of its dependencies). Try using the full path with constructor syntax.
+2025-09-04 14:55:20,490 - ERROR - GPU scanning failed: GPU batch processing failed: CuPy failed to load nvrtc64_120_0.dll: FileNotFoundError: Could not find module 'nvrtc64_120_0.dll' (or one of its dependencies). Try using the full path with constructor syntax.
+2025-09-04 14:55:20,490 - ERROR - Error during scanning: GPU pattern matching failed: GPU batch processing failed: CuPy failed to load nvrtc64_120_0.dll: FileNotFoundError: Could not find module 'nvrtc64_120_0.dll' (or one of its dependencies). Try using the full path with constructor syntax.
+2025-09-04 14:58:44,557 - INFO - Advanced GPU kernels initialized
+2025-09-04 14:58:44,557 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-04 14:58:44,557 - INFO - Starting PCAP scan: PCAP Files/The Ultimate PCAP v20250325.pcapng
+2025-09-04 14:58:44,557 - INFO - Reading PCAP file...
+2025-09-04 14:58:52,801 - INFO - Performing TCP reassembly...
+2025-09-04 14:58:53,284 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 14:58:53,284 - INFO - Processing 18183 payloads in 1819 batches using GPU
+2025-09-04 14:58:57,398 - INFO - GPU scanning completed in 4.11s, found 258 matches
+2025-09-04 14:58:57,398 - ERROR - Error during scanning: module 'cupy.cuda' has no attribute 'MemoryInfo'
+2025-09-04 14:59:25,154 - INFO - Advanced GPU kernels initialized
+2025-09-04 14:59:25,154 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-04 14:59:25,155 - INFO - Starting PCAP scan: PCAP Files/The Ultimate PCAP v20250325.pcapng
+2025-09-04 14:59:25,155 - INFO - Reading PCAP file...
+2025-09-04 14:59:33,126 - INFO - Performing TCP reassembly...
+2025-09-04 14:59:33,605 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 14:59:33,605 - INFO - Processing 18183 payloads in 1819 batches using GPU
+2025-09-04 14:59:37,623 - INFO - GPU scanning completed in 4.02s, found 258 matches
+2025-09-04 14:59:37,623 - INFO - Scan completed in 12.47s
+2025-09-04 14:59:37,624 - INFO - Found 258 pattern matches
+2025-09-04 15:00:02,246 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:00:02,246 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:00:02,246 - INFO - Starting PCAP scan: PCAP Files/The Ultimate PCAP v20250325.pcapng
+2025-09-04 15:00:02,247 - INFO - Reading PCAP file...
+2025-09-04 15:00:10,428 - INFO - Performing TCP reassembly...
+2025-09-04 15:00:10,894 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:00:10,894 - INFO - Processing 18183 payloads in 1819 batches using GPU
+2025-09-04 15:00:15,090 - INFO - GPU scanning completed in 4.20s, found 326 matches
+2025-09-04 15:00:15,090 - INFO - Scan completed in 12.84s
+2025-09-04 15:00:15,090 - INFO - Found 326 pattern matches
+2025-09-04 15:00:21,610 - INFO - Advanced GPU kernels initialized
+2025-09-04 15:00:21,610 - INFO - Initialized GPU scanner with 5 patterns
+2025-09-04 15:00:21,610 - INFO - Starting PCAP scan: PCAP Files/The Ultimate PCAP v20250325.pcapng
+2025-09-04 15:00:21,611 - INFO - Reading PCAP file...
+2025-09-04 15:00:29,715 - INFO - Performing TCP reassembly...
+2025-09-04 15:00:30,287 - INFO - Scanning payloads for patterns using GPU acceleration...
+2025-09-04 15:00:30,287 - INFO - Processing 18183 payloads in 1819 batches using GPU
+2025-09-04 15:00:35,237 - INFO - GPU scanning completed in 4.95s, found 4 matches
+2025-09-04 15:00:35,238 - INFO - Scan completed in 13.63s
+2025-09-04 15:00:35,238 - INFO - Found 4 pattern matches
