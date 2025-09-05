@@ -48,56 +48,45 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global timeout flag and GPU cleanup
+# Global timeout flag
 timeout_reached = False
-current_gpu_scanner = None
 
-def timeout_handler():
-    """Handle timeout with aggressive GPU cleanup"""
-    global timeout_reached, current_gpu_scanner
-    time.sleep(180)  # 3 minutes
-    if not timeout_reached:  # Only print once
-        timeout_reached = True
-        print(f"\n{Fore.RED}⏰ TIMEOUT REACHED (3 minutes) - FORCE KILLING GPU PROCESS{Style.RESET_ALL}")
-        
-        # Aggressive GPU cleanup
+def run_gpu_with_timeout(gpu_scanner, payloads, flow_ids, timeout_seconds=180):
+    """Run GPU processing with a timeout using threading"""
+    global timeout_reached
+    
+    result_container = {'matches': [], 'error': None, 'completed': False}
+    
+    def gpu_worker():
         try:
-            if current_gpu_scanner is not None:
-                print(f"{Fore.YELLOW}🧹 Force killing GPU scanner...{Style.RESET_ALL}")
-                
-                # Try to interrupt the GPU scanner
-                try:
-                    # Force cleanup of GPU scanner
-                    del current_gpu_scanner
-                    current_gpu_scanner = None
-                except:
-                    pass
-                
-                # Force CuPy cleanup and reset
-                try:
-                    import cupy as cp
-                    # Force free all memory
-                    cp.get_default_memory_pool().free_all_blocks()
-                    cp.get_default_pinned_memory_pool().free_all_blocks()
-                    
-                    # Force GPU synchronization
-                    cp.cuda.Stream.null.synchronize()
-                    
-                    # Reset GPU context
-                    cp.cuda.runtime.deviceReset()
-                    
-                    print(f"{Fore.GREEN}✓ GPU forcefully reset{Style.RESET_ALL}")
-                except Exception as e:
-                    print(f"{Fore.RED}⚠ GPU force reset warning: {e}{Style.RESET_ALL}")
-                    
+            matches = gpu_scanner.gpu_scanner.scan_payloads(payloads, flow_ids)
+            result_container['matches'] = matches
+            result_container['completed'] = True
         except Exception as e:
-            print(f"{Fore.RED}⚠ Force cleanup error: {e}{Style.RESET_ALL}")
-        
-        # Force Python garbage collection
-        import gc
-        gc.collect()
-        
-        print(f"{Fore.RED}⏰ GPU PROCESS FORCE KILLED - Continuing to next test{Style.RESET_ALL}")
+            result_container['error'] = str(e)
+            result_container['completed'] = True
+    
+    # Start GPU processing in a thread
+    gpu_thread = threading.Thread(target=gpu_worker, daemon=True)
+    start_time = time.time()
+    gpu_thread.start()
+    
+    # Wait for completion or timeout
+    gpu_thread.join(timeout=timeout_seconds)
+    
+    gpu_time = time.time() - start_time
+    
+    if gpu_thread.is_alive():
+        # Thread is still running - timeout occurred
+        timeout_reached = True
+        print(f"{Fore.RED}⏰ GPU processing timed out after {timeout_seconds}s{Style.RESET_ALL}")
+        return [], gpu_time, "Timeout"
+    
+    # Thread completed
+    if result_container['error']:
+        return [], gpu_time, f"Error: {result_container['error']}"
+    else:
+        return result_container['matches'], gpu_time, "Success"
 
 @dataclass
 class ComprehensiveBenchmarkResult:
@@ -387,32 +376,14 @@ class ComprehensivePatternBenchmark:
     
     def _run_gpu_benchmark(self, payloads: List[bytes], flow_ids: List[str], patterns: List[str]) -> Tuple[int, float, str, int, int]:
         """Run GPU-accelerated pattern matching benchmark"""
-        global timeout_reached, current_gpu_scanner
-        
         print(f"{Fore.MAGENTA}🚀 Running GPU benchmark...{Style.RESET_ALL}")
         
-        start_time = time.time()
-        
         try:
-            # Check if timeout was reached before starting
-            if timeout_reached:
-                print(f"{Fore.RED}⏰ Skipping GPU benchmark due to timeout{Style.RESET_ALL}")
-                return 0, 0.0, "Timeout", 0, 0
+            # Create GPU scanner
+            gpu_scanner = PCAPScanner(patterns, use_regex=False)
             
-            # Create GPU scanner and store reference for cleanup
-            current_gpu_scanner = PCAPScanner(patterns, use_regex=False)
-            
-            # Check timeout again before processing
-            if timeout_reached:
-                print(f"{Fore.RED}⏰ Skipping GPU processing due to timeout{Style.RESET_ALL}")
-                return 0, 0.0, "Timeout", 0, 0
-            
-            gpu_matches = current_gpu_scanner.gpu_scanner.scan_payloads(payloads, flow_ids)
-            
-            gpu_time = time.time() - start_time
-            
-            # Clear the global reference
-            current_gpu_scanner = None
+            # Run GPU processing with timeout using multiprocessing
+            gpu_matches, gpu_time, status = run_gpu_with_timeout(gpu_scanner, payloads, flow_ids, timeout_seconds=180)
             
             # Determine algorithm used based on pattern count
             if len(patterns) == 1:
@@ -431,31 +402,28 @@ class ComprehensivePatternBenchmark:
                 batch_size = 5000
             else:
                 batch_size = 10000
-            
+                
             batch_count = (len(payloads) + batch_size - 1) // batch_size
             kernel_launches = batch_count
             
-            print(f"✓ GPU: {gpu_time:.3f}s, {len(gpu_matches):,} matches ({algorithm})")
-            print(f"✓ GPU batches: {batch_count:,}, kernel launches: {kernel_launches:,}")
-            
-            return len(gpu_matches), gpu_time, algorithm, batch_count, kernel_launches
-            
+            if status == "Timeout":
+                print(f"{Fore.RED}⏰ GPU: TIMEOUT after {gpu_time:.3f}s{Style.RESET_ALL}")
+                return 0, gpu_time, f"{algorithm} (Timeout)", batch_count, kernel_launches
+            elif status.startswith("Error"):
+                print(f"{Fore.RED}❌ GPU Error: {status}{Style.RESET_ALL}")
+                return 0, gpu_time, f"{algorithm} (Error)", batch_count, kernel_launches
+            else:
+                print(f"✓ GPU: {gpu_time:.3f}s, {len(gpu_matches):,} matches ({algorithm})")
+                print(f"✓ GPU batches: {batch_count:,}, kernel launches: {kernel_launches:,}")
+                
+                return len(gpu_matches), gpu_time, algorithm, batch_count, kernel_launches
+                
         except Exception as e:
             print(f"{Fore.RED}❌ GPU Error: {e}{Style.RESET_ALL}")
-            # Clear the global reference on error
-            current_gpu_scanner = None
-            return 0, time.time() - start_time, "Error", 0, 0
+            return 0, 0.0, "Error", 0, 0
     
     def run_single_test(self, scenario: Dict[str, Any]) -> Optional[ComprehensiveBenchmarkResult]:
         """Run a single test scenario"""
-        global timeout_reached, current_gpu_scanner
-        timeout_reached = False
-        current_gpu_scanner = None  # Reset GPU scanner reference
-        
-        # Set up timeout
-        timeout_thread = threading.Thread(target=timeout_handler, daemon=True)
-        timeout_thread.start()
-        
         try:
             print(f"\n{Fore.CYAN}🧪 Test: {scenario['test_id']}{Style.RESET_ALL}")
             print(f"   File: {Path(scenario['pcap_file']).name}")
@@ -474,16 +442,10 @@ class ComprehensivePatternBenchmark:
             # Run CPU benchmark
             cpu_matches, cpu_time, cpu_algorithm = self._run_cpu_benchmark(payloads, scenario['patterns'])
             
-            if timeout_reached:
-                return None
-            
             # Run GPU benchmark
             gpu_matches, gpu_time, gpu_algorithm, batch_count, kernel_launches = self._run_gpu_benchmark(
                 payloads, flow_ids, scenario['patterns']
             )
-            
-            if timeout_reached:
-                return None
             
             # Calculate metrics
             cpu_throughput_mbps = (total_bytes / 1024 / 1024) / cpu_time if cpu_time > 0 else 0
@@ -492,6 +454,9 @@ class ComprehensivePatternBenchmark:
             validation_passed = cpu_matches == gpu_matches
             
             # Store results
+            # Determine if timeout was reached
+            timeout_reached = "Timeout" in gpu_algorithm
+            
             result = ComprehensiveBenchmarkResult(
                 test_id=scenario['test_id'],
                 pcap_file=Path(scenario['pcap_file']).name,
@@ -544,16 +509,34 @@ class ComprehensivePatternBenchmark:
         if result.timeout_reached:
             print(f"Status: {Fore.RED}⏰ TIMEOUT REACHED{Style.RESET_ALL}")
     
-    def run_all_tests(self) -> bool:
-        """Run all test scenarios"""
-        print(f"{Fore.YELLOW}🚀 Starting comprehensive benchmark...{Style.RESET_ALL}")
+    def run_all_tests(self, resume_from: Optional[str] = None) -> bool:
+        """Run all test scenarios, optionally resuming from a specific test"""
+        if resume_from:
+            print(f"{Fore.YELLOW}🔄 Resuming benchmark from {resume_from}...{Style.RESET_ALL}")
+            # Load existing results when resuming
+            self._load_existing_results("comprehensive_benchmark_progress.csv")
+        else:
+            print(f"{Fore.YELLOW}🚀 Starting comprehensive benchmark...{Style.RESET_ALL}")
+        
         print(f"Total tests: {len(self.test_scenarios)}")
         print()
+        
+        # Find the starting index if resuming
+        start_index = 0
+        if resume_from:
+            for i, scenario in enumerate(self.test_scenarios):
+                if scenario['test_id'] == resume_from:
+                    start_index = i
+                    print(f"{Fore.GREEN}✓ Found resume point: {resume_from} (test {i+1}/{len(self.test_scenarios)}){Style.RESET_ALL}")
+                    break
+            else:
+                print(f"{Fore.RED}❌ Resume test '{resume_from}' not found!{Style.RESET_ALL}")
+                return False
         
         successful_tests = 0
         failed_tests = 0
         
-        for i, scenario in enumerate(self.test_scenarios, 1):
+        for i, scenario in enumerate(self.test_scenarios[start_index:], start_index + 1):
             print(f"\n{Fore.YELLOW}Progress: {i}/{len(self.test_scenarios)} tests{Style.RESET_ALL}")
             
             result = self.run_single_test(scenario)
@@ -629,6 +612,51 @@ class ComprehensivePatternBenchmark:
         print(f"Successful: {successful_tests}/3")
         print(f"Failed: {3 - successful_tests}/3")
     
+    def _load_existing_results(self, filename: str):
+        """Load existing results from CSV file when resuming"""
+        if not os.path.exists(filename):
+            print(f"{Fore.YELLOW}⚠️  No existing results file found: {filename}{Style.RESET_ALL}")
+            return
+        
+        try:
+            df = pd.read_csv(filename)
+            print(f"{Fore.GREEN}✓ Loaded {len(df)} existing results from {filename}{Style.RESET_ALL}")
+            
+            # Convert DataFrame back to ComprehensiveBenchmarkResult objects
+            for _, row in df.iterrows():
+                # Convert string representations back to proper types
+                patterns = eval(row['patterns']) if isinstance(row['patterns'], str) else row['patterns']
+                
+                result = ComprehensiveBenchmarkResult(
+                    test_id=row['test_id'],
+                    pcap_file=row['pcap_file'],
+                    pcap_size_mb=float(row['pcap_size_mb']),
+                    packet_type=row['packet_type'],
+                    packet_count=int(row['packet_count']),
+                    avg_packet_size=float(row['avg_packet_size']),
+                    total_payload_bytes=int(row['total_payload_bytes']),
+                    pattern_count=int(row['pattern_count']),
+                    patterns=patterns,
+                    cpu_pattern_time=float(row['cpu_pattern_time']),
+                    gpu_pattern_time=float(row['gpu_pattern_time']),
+                    cpu_matches=int(row['cpu_matches']),
+                    gpu_matches=int(row['gpu_matches']),
+                    cpu_throughput_mbps=float(row['cpu_throughput_mbps']),
+                    gpu_throughput_mbps=float(row['gpu_throughput_mbps']),
+                    speedup=float(row['speedup']),
+                    validation_passed=bool(row['validation_passed']),
+                    timeout_reached=bool(row['timeout_reached']),
+                    cpu_algorithm=row['cpu_algorithm'],
+                    gpu_algorithm=row['gpu_algorithm'],
+                    gpu_batch_count=int(row['gpu_batch_count']),
+                    gpu_kernel_launches=int(row['gpu_kernel_launches'])
+                )
+                self.results.append(result)
+                
+        except Exception as e:
+            print(f"{Fore.RED}❌ Error loading existing results: {e}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}⚠️  Starting fresh benchmark{Style.RESET_ALL}")
+
     def save_results_to_csv(self, filename: str):
         """Save results to CSV file"""
         if not self.results:
@@ -688,6 +716,7 @@ def main():
     parser.add_argument('--file', '-f', help='Specific PCAP file to test')
     parser.add_argument('--test-id', '-t', help='Specific test ID to run (e.g., test_001)')
     parser.add_argument('--quick', '-q', action='store_true', help='Run only first 3 tests for quick validation')
+    parser.add_argument('--resume-from', '-r', help='Resume benchmark from specific test ID (e.g., test_019)')
     parser.add_argument('--list-tests', '-l', action='store_true', help='List all available tests')
     
     args = parser.parse_args()
@@ -709,6 +738,23 @@ def main():
         print(f"{Fore.YELLOW}⚡ Running quick validation (first 3 tests){Style.RESET_ALL}")
         benchmark.run_quick_test()
         return 0
+    elif args.resume_from:
+        print(f"{Fore.YELLOW}🔄 Resuming benchmark from: {args.resume_from}{Style.RESET_ALL}")
+        success = benchmark.run_all_tests(resume_from=args.resume_from)
+        
+        if success:
+            # Save final results
+            benchmark.save_results_to_csv("comprehensive_benchmark_results.csv")
+            
+            # Print final summary
+            benchmark.print_final_summary()
+            
+            print(f"\n{Fore.GREEN}✅ Comprehensive benchmark completed successfully!{Style.RESET_ALL}")
+            print(f"📄 Results saved to: comprehensive_benchmark_results.csv")
+            return 0
+        else:
+            print(f"\n{Fore.RED}❌ Comprehensive benchmark failed{Style.RESET_ALL}")
+            return 1
     else:
         success = benchmark.run_all_tests()
         

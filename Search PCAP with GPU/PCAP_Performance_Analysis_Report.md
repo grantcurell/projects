@@ -196,3 +196,5 @@ CPU performance was exceptional due to:
 **GPU acceleration for PCAP pattern matching is not viable** due to fundamental architectural mismatches between the workload characteristics and GPU capabilities. The CPU-based approach achieves superior performance with lower complexity and better reliability. Future optimization efforts should focus on I/O acceleration and CPU-specific optimizations rather than GPU acceleration.
 
 The results demonstrate that **not all workloads benefit from GPU acceleration**, and careful analysis of workload characteristics is essential before implementing GPU-based solutions. For pattern matching in network traffic analysis, **CPU-based implementations remain the optimal choice**.
+
+
