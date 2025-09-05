@@ -356,8 +356,13 @@ class ComprehensivePatternBenchmark:
             
             gpu_time = time.time() - start_time
             
-            # Determine algorithm used
-            algorithm = "Aho-Corasick"  # Based on GPU kernel implementation
+            # Determine algorithm used based on pattern count
+            if len(patterns) == 1:
+                algorithm = "Boyer-Moore-Horspool"
+            elif len(patterns) <= 10:
+                algorithm = "Vectorized Multi-Pattern"
+            else:
+                algorithm = "Aho-Corasick (PFAC)"
             
             # Calculate batch information
             batch_size = 100  # From GPU scanner implementation
