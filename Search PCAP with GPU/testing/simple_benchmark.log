@@ -1,0 +1,7 @@
+2025-09-05 11:17:52,212 - INFO - Advanced GPU kernels initialized
+2025-09-05 11:17:52,212 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-05 11:17:52,213 - INFO - Processing 1055254 payloads in 10553 batches using GPU
+2025-09-05 11:21:44,482 - INFO - Advanced GPU kernels initialized
+2025-09-05 11:21:44,483 - INFO - Initialized GPU scanner with 3 patterns
+2025-09-05 11:21:44,483 - INFO - Processing 9600 payloads in 96 batches using GPU
+2025-09-05 11:21:47,248 - INFO - GPU scanning completed in 2.77s, found 4767 matches
