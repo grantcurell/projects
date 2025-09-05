@@ -274,14 +274,15 @@ class GPUPayloadScanner:
         try:
             # Process batches without progress bar for speed
             for batch_idx in range(total_batches):
-                # Check for timeout (import here to avoid circular imports)
-                try:
-                    import comprehensive_pattern_benchmark
-                    if hasattr(comprehensive_pattern_benchmark, 'timeout_reached') and comprehensive_pattern_benchmark.timeout_reached:
-                        logger.warning(f"Timeout reached, stopping GPU processing at batch {batch_idx}/{total_batches}")
-                        break
-                except:
-                    pass  # If import fails, continue processing
+                # Check for timeout every 10 batches (import here to avoid circular imports)
+                if batch_idx % 10 == 0:
+                    try:
+                        import comprehensive_pattern_benchmark
+                        if hasattr(comprehensive_pattern_benchmark, 'timeout_reached') and comprehensive_pattern_benchmark.timeout_reached:
+                            logger.warning(f"Timeout reached, stopping GPU processing at batch {batch_idx}/{total_batches}")
+                            break
+                    except:
+                        pass  # If import fails, continue processing
                 
                 start_idx = batch_idx * batch_size
                 end_idx = min(start_idx + batch_size, len(payloads))

@@ -232,3 +232,4 @@ The data reveals a **critical relationship between packet count and GPU performa
 The results demonstrate that **workload characteristics are critical** for GPU acceleration success. While GPU shows significant promise for specific scenarios (9.44x speedup), it fails catastrophically for others (260x slower). A **hybrid approach** that automatically selects the optimal algorithm based on packet characteristics would provide the best overall performance.
 
 The benchmark reveals that **not all workloads benefit from GPU acceleration**, and careful analysis of workload characteristics is essential before implementing GPU-based solutions. For comprehensive PCAP analysis systems, **intelligent algorithm selection** based on packet characteristics would provide optimal performance across diverse network traffic patterns.
+
