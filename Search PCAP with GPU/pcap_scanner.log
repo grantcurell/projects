@@ -116,3 +116,18 @@
 2025-09-05 12:53:05,707 - INFO - Initialized GPU scanner with 8 patterns
 2025-09-05 12:53:05,707 - INFO - Processing 34952 payloads in 350 batches using GPU
 2025-09-05 12:54:00,631 - INFO - GPU scanning completed in 54.92s, found 7375 matches
+2025-09-05 12:56:18,800 - INFO - Advanced GPU kernels initialized
+2025-09-05 12:56:18,800 - INFO - Initialized GPU scanner with 1 patterns
+2025-09-05 12:56:18,801 - INFO - Processing 34952 payloads in 350 batches using GPU
+2025-09-05 12:56:40,241 - INFO - GPU scanning completed in 21.44s, found 2572 matches
+2025-09-05 12:56:44,534 - INFO - Advanced GPU kernels initialized
+2025-09-05 12:56:44,534 - INFO - Initialized GPU scanner with 4 patterns
+2025-09-05 12:56:44,534 - INFO - Processing 34952 payloads in 350 batches using GPU
+2025-09-05 12:57:39,824 - INFO - GPU scanning completed in 55.29s, found 7375 matches
+2025-09-05 12:57:44,367 - INFO - Advanced GPU kernels initialized
+2025-09-05 12:57:44,368 - INFO - Initialized GPU scanner with 8 patterns
+2025-09-05 12:57:44,368 - INFO - Processing 34952 payloads in 350 batches using GPU
+2025-09-05 12:58:39,631 - INFO - GPU scanning completed in 55.26s, found 7375 matches
+2025-09-05 13:02:41,324 - INFO - Advanced GPU kernels initialized
+2025-09-05 13:02:41,324 - INFO - Initialized GPU scanner with 1 patterns
+2025-09-05 13:02:41,324 - INFO - Processing 34952 payloads in 350 batches using GPU

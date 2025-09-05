@@ -306,9 +306,31 @@ class GPUPayloadScanner:
         """Scan a single payload for all patterns using advanced GPU kernels"""
         matches = []
         
-        # Use advanced kernels for maximum performance
-        if len(self.patterns) > 1:
-            # Use vectorized multi-pattern search for better performance
+        # Choose optimal algorithm based on pattern count
+        if len(self.patterns) == 1:
+            # Single pattern: Use Boyer-Moore-Horspool (fastest for single patterns)
+            pattern_bytes = self.patterns[0].encode()
+            pattern_matches = self.advanced_kernels.boyer_moore_search(payload, pattern_bytes)
+            
+            # Convert matches to results
+            for match_offset in pattern_matches:
+                # Get context around the match
+                start = max(0, match_offset - 20)
+                end = min(len(payload), match_offset + len(pattern_bytes) + 20)
+                context = payload[start:end]
+                
+                match_result = MatchResult(
+                    flow_id=flow_id,
+                    pattern=self.patterns[0],
+                    offset=match_offset,
+                    packet_timestamp=time.time(),
+                    flow_start=start,
+                    flow_end=end,
+                    match_context=context.hex()
+                )
+                matches.append(match_result)
+        elif len(self.patterns) <= 10:
+            # Few patterns (2-10): Use vectorized multi-pattern search
             pattern_bytes = [p.encode() for p in self.patterns]
             pattern_matches = self.advanced_kernels.vectorized_multi_search(payload, pattern_bytes)
             
@@ -331,27 +353,28 @@ class GPUPayloadScanner:
                     )
                     matches.append(match_result)
         else:
-            # Use Boyer-Moore for single pattern
-            pattern_bytes = self.patterns[0].encode()
-            pattern_matches = self.advanced_kernels.boyer_moore_search(payload, pattern_bytes)
+            # Many patterns (10+): Use Aho-Corasick (PFAC)
+            pattern_bytes = [p.encode() for p in self.patterns]
+            pattern_matches = self.advanced_kernels.aho_corasick_search(payload, pattern_bytes)
             
             # Convert matches to results
-            for match_offset in pattern_matches:
-                # Get context around the match
-                start = max(0, match_offset - 20)
-                end = min(len(payload), match_offset + len(pattern_bytes) + 20)
-                context = payload[start:end]
-                
-                match_result = MatchResult(
-                    flow_id=flow_id,
-                    pattern=self.patterns[0],
-                    offset=match_offset,
-                    packet_timestamp=time.time(),
-                    flow_start=start,
-                    flow_end=end,
-                    match_context=context.hex()
-                )
-                matches.append(match_result)
+            for pattern_idx, pattern in enumerate(self.patterns):
+                for match_offset in pattern_matches[pattern_idx]:
+                    # Get context around the match
+                    start = max(0, match_offset - 20)
+                    end = min(len(payload), match_offset + len(pattern_bytes[pattern_idx]) + 20)
+                    context = payload[start:end]
+                    
+                    match_result = MatchResult(
+                        flow_id=flow_id,
+                        pattern=pattern,
+                        offset=match_offset,
+                        packet_timestamp=time.time(),
+                        flow_start=start,
+                        flow_end=end,
+                        match_context=context.hex()
+                    )
+                    matches.append(match_result)
         
         return matches
     
