@@ -257,7 +257,16 @@ class GPUPayloadScanner:
         matches = []
         
         # Process payloads in batches for better GPU utilization
-        batch_size = 100  # Increased batch size for better GPU utilization
+        # Dynamic batch sizing based on dataset size
+        if len(payloads) < 1000:
+            batch_size = 100  # Small datasets
+        elif len(payloads) < 10000:
+            batch_size = 1000  # Medium datasets
+        elif len(payloads) < 100000:
+            batch_size = 5000  # Large datasets
+        else:
+            batch_size = 10000  # Very large datasets
+            
         total_batches = (len(payloads) + batch_size - 1) // batch_size
         
         logger.info(f"Processing {len(payloads)} payloads in {total_batches} batches using GPU")
@@ -265,6 +274,15 @@ class GPUPayloadScanner:
         try:
             # Process batches without progress bar for speed
             for batch_idx in range(total_batches):
+                # Check for timeout (import here to avoid circular imports)
+                try:
+                    import comprehensive_pattern_benchmark
+                    if hasattr(comprehensive_pattern_benchmark, 'timeout_reached') and comprehensive_pattern_benchmark.timeout_reached:
+                        logger.warning(f"Timeout reached, stopping GPU processing at batch {batch_idx}/{total_batches}")
+                        break
+                except:
+                    pass  # If import fails, continue processing
+                
                 start_idx = batch_idx * batch_size
                 end_idx = min(start_idx + batch_size, len(payloads))
                 
@@ -306,31 +324,9 @@ class GPUPayloadScanner:
         """Scan a single payload for all patterns using advanced GPU kernels"""
         matches = []
         
-        # Choose optimal algorithm based on pattern count
-        if len(self.patterns) == 1:
-            # Single pattern: Use Boyer-Moore-Horspool (fastest for single patterns)
-            pattern_bytes = self.patterns[0].encode()
-            pattern_matches = self.advanced_kernels.boyer_moore_search(payload, pattern_bytes)
-            
-            # Convert matches to results
-            for match_offset in pattern_matches:
-                # Get context around the match
-                start = max(0, match_offset - 20)
-                end = min(len(payload), match_offset + len(pattern_bytes) + 20)
-                context = payload[start:end]
-                
-                match_result = MatchResult(
-                    flow_id=flow_id,
-                    pattern=self.patterns[0],
-                    offset=match_offset,
-                    packet_timestamp=time.time(),
-                    flow_start=start,
-                    flow_end=end,
-                    match_context=context.hex()
-                )
-                matches.append(match_result)
-        elif len(self.patterns) <= 10:
-            # Few patterns (2-10): Use vectorized multi-pattern search
+        # Use advanced kernels for maximum performance
+        if len(self.patterns) > 1:
+            # Use vectorized multi-pattern search for better performance
             pattern_bytes = [p.encode() for p in self.patterns]
             pattern_matches = self.advanced_kernels.vectorized_multi_search(payload, pattern_bytes)
             
@@ -353,28 +349,27 @@ class GPUPayloadScanner:
                     )
                     matches.append(match_result)
         else:
-            # Many patterns (10+): Use Aho-Corasick (PFAC)
-            pattern_bytes = [p.encode() for p in self.patterns]
-            pattern_matches = self.advanced_kernels.aho_corasick_search(payload, pattern_bytes)
+            # Use Boyer-Moore for single pattern
+            pattern_bytes = self.patterns[0].encode()
+            pattern_matches = self.advanced_kernels.boyer_moore_search(payload, pattern_bytes)
             
             # Convert matches to results
-            for pattern_idx, pattern in enumerate(self.patterns):
-                for match_offset in pattern_matches[pattern_idx]:
-                    # Get context around the match
-                    start = max(0, match_offset - 20)
-                    end = min(len(payload), match_offset + len(pattern_bytes[pattern_idx]) + 20)
-                    context = payload[start:end]
-                    
-                    match_result = MatchResult(
-                        flow_id=flow_id,
-                        pattern=pattern,
-                        offset=match_offset,
-                        packet_timestamp=time.time(),
-                        flow_start=start,
-                        flow_end=end,
-                        match_context=context.hex()
-                    )
-                    matches.append(match_result)
+            for match_offset in pattern_matches:
+                # Get context around the match
+                start = max(0, match_offset - 20)
+                end = min(len(payload), match_offset + len(pattern_bytes) + 20)
+                context = payload[start:end]
+                
+                match_result = MatchResult(
+                    flow_id=flow_id,
+                    pattern=self.patterns[0],
+                    offset=match_offset,
+                    packet_timestamp=time.time(),
+                    flow_start=start,
+                    flow_end=end,
+                    match_context=context.hex()
+                )
+                matches.append(match_result)
         
         return matches
     

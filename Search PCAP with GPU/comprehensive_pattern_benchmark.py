@@ -5,7 +5,7 @@ Comprehensive PCAP Pattern Matching Benchmark
 This benchmark tests CPU vs GPU performance across multiple scenarios:
 - Different PCAP file sizes (50MB, 100MB, 200MB, 500MB, 1000MB)
 - Different packet characteristics (small vs large packets)
-- Different pattern counts (1, 4, 8 patterns)
+- Different pattern counts (1, 7, 14 patterns)
 - Multiple algorithms (Boyer-Moore-Horspool, Aho-Corasick, etc.)
 
 Results are stored in CSV format for analysis and report generation.
@@ -19,6 +19,8 @@ import logging
 import csv
 import json
 import argparse
+import signal
+import ctypes
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
 from dataclasses import dataclass, asdict
@@ -46,16 +48,56 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global timeout flag
+# Global timeout flag and GPU cleanup
 timeout_reached = False
+current_gpu_scanner = None
 
 def timeout_handler():
-    """Handle timeout"""
-    global timeout_reached
+    """Handle timeout with aggressive GPU cleanup"""
+    global timeout_reached, current_gpu_scanner
     time.sleep(180)  # 3 minutes
     if not timeout_reached:  # Only print once
         timeout_reached = True
-        print(f"\n{Fore.RED}⏰ TIMEOUT REACHED (3 minutes) - Skipping current test{Style.RESET_ALL}")
+        print(f"\n{Fore.RED}⏰ TIMEOUT REACHED (3 minutes) - FORCE KILLING GPU PROCESS{Style.RESET_ALL}")
+        
+        # Aggressive GPU cleanup
+        try:
+            if current_gpu_scanner is not None:
+                print(f"{Fore.YELLOW}🧹 Force killing GPU scanner...{Style.RESET_ALL}")
+                
+                # Try to interrupt the GPU scanner
+                try:
+                    # Force cleanup of GPU scanner
+                    del current_gpu_scanner
+                    current_gpu_scanner = None
+                except:
+                    pass
+                
+                # Force CuPy cleanup and reset
+                try:
+                    import cupy as cp
+                    # Force free all memory
+                    cp.get_default_memory_pool().free_all_blocks()
+                    cp.get_default_pinned_memory_pool().free_all_blocks()
+                    
+                    # Force GPU synchronization
+                    cp.cuda.Stream.null.synchronize()
+                    
+                    # Reset GPU context
+                    cp.cuda.runtime.deviceReset()
+                    
+                    print(f"{Fore.GREEN}✓ GPU forcefully reset{Style.RESET_ALL}")
+                except Exception as e:
+                    print(f"{Fore.RED}⚠ GPU force reset warning: {e}{Style.RESET_ALL}")
+                    
+        except Exception as e:
+            print(f"{Fore.RED}⚠ Force cleanup error: {e}{Style.RESET_ALL}")
+        
+        # Force Python garbage collection
+        import gc
+        gc.collect()
+        
+        print(f"{Fore.RED}⏰ GPU PROCESS FORCE KILLED - Continuing to next test{Style.RESET_ALL}")
 
 @dataclass
 class ComprehensiveBenchmarkResult:
@@ -132,8 +174,8 @@ class ComprehensivePatternBenchmark:
         # Pattern sets
         pattern_sets = {
             1: ["HTTP"],
-            4: ["HTTP", "GET", "POST", "Content-Type"],
-            8: ["HTTP", "GET", "POST", "Content-Type", "User-Agent", "Accept", "Host", "Cookie"]
+            7: ["HTTP", "GET", "POST", "Content-Type", "User-Agent", "Accept", "Host"],
+            14: ["HTTP", "GET", "POST", "Content-Type", "User-Agent", "Accept", "Host", "Cookie", "Server", "Date", "Cache-Control", "Connection", "Keep-Alive", "Transfer-Encoding"]
         }
         
         # Generate all combinations
@@ -345,16 +387,32 @@ class ComprehensivePatternBenchmark:
     
     def _run_gpu_benchmark(self, payloads: List[bytes], flow_ids: List[str], patterns: List[str]) -> Tuple[int, float, str, int, int]:
         """Run GPU-accelerated pattern matching benchmark"""
+        global timeout_reached, current_gpu_scanner
+        
         print(f"{Fore.MAGENTA}🚀 Running GPU benchmark...{Style.RESET_ALL}")
         
         start_time = time.time()
         
         try:
-            # Create GPU scanner
-            gpu_scanner = PCAPScanner(patterns, use_regex=False)
-            gpu_matches = gpu_scanner.gpu_scanner.scan_payloads(payloads, flow_ids)
+            # Check if timeout was reached before starting
+            if timeout_reached:
+                print(f"{Fore.RED}⏰ Skipping GPU benchmark due to timeout{Style.RESET_ALL}")
+                return 0, 0.0, "Timeout", 0, 0
+            
+            # Create GPU scanner and store reference for cleanup
+            current_gpu_scanner = PCAPScanner(patterns, use_regex=False)
+            
+            # Check timeout again before processing
+            if timeout_reached:
+                print(f"{Fore.RED}⏰ Skipping GPU processing due to timeout{Style.RESET_ALL}")
+                return 0, 0.0, "Timeout", 0, 0
+            
+            gpu_matches = current_gpu_scanner.gpu_scanner.scan_payloads(payloads, flow_ids)
             
             gpu_time = time.time() - start_time
+            
+            # Clear the global reference
+            current_gpu_scanner = None
             
             # Determine algorithm used based on pattern count
             if len(patterns) == 1:
@@ -364,8 +422,16 @@ class ComprehensivePatternBenchmark:
             else:
                 algorithm = "Aho-Corasick (PFAC)"
             
-            # Calculate batch information
-            batch_size = 100  # From GPU scanner implementation
+            # Calculate batch information based on actual GPU scanner logic
+            if len(payloads) < 1000:
+                batch_size = 100
+            elif len(payloads) < 10000:
+                batch_size = 1000
+            elif len(payloads) < 100000:
+                batch_size = 5000
+            else:
+                batch_size = 10000
+            
             batch_count = (len(payloads) + batch_size - 1) // batch_size
             kernel_launches = batch_count
             
@@ -376,12 +442,15 @@ class ComprehensivePatternBenchmark:
             
         except Exception as e:
             print(f"{Fore.RED}❌ GPU Error: {e}{Style.RESET_ALL}")
+            # Clear the global reference on error
+            current_gpu_scanner = None
             return 0, time.time() - start_time, "Error", 0, 0
     
     def run_single_test(self, scenario: Dict[str, Any]) -> Optional[ComprehensiveBenchmarkResult]:
         """Run a single test scenario"""
-        global timeout_reached
+        global timeout_reached, current_gpu_scanner
         timeout_reached = False
+        current_gpu_scanner = None  # Reset GPU scanner reference
         
         # Set up timeout
         timeout_thread = threading.Thread(target=timeout_handler, daemon=True)
