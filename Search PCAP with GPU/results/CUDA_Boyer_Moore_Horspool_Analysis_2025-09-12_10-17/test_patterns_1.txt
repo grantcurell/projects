@@ -1,0 +1,4 @@
+# Test patterns for CUDA PCAP scanner - 1 pattern
+# Single pattern test for baseline performance
+
+password

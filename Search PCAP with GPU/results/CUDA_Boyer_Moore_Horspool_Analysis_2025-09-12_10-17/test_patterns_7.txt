@@ -1,0 +1,10 @@
+# Test patterns for CUDA PCAP scanner - 7 patterns
+# Medium complexity test with common network patterns
+
+password
+GET
+POST
+HTTP
+HTTPS
+User-Agent
+Authorization
