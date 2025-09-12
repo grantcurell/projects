@@ -76,9 +76,9 @@ This project represents a comprehensive exploration of GPU acceleration for PCAP
 
 1. **Test 1:** CPU vs GPU comparison revealing fundamental packet size dependencies
 2. **Test 2:** CUDA Boyer-Moore-Horspool implementation with simulation analysis  
-3. **Test 3:** Optimized CuPy-based implementation achieving exceptional performance
+3. **[Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary):** Optimized CuPy-based implementation achieving exceptional performance
 
-Tests 1 and 2 I largely consider failures. The problem was I ended up launching too many GPU kernels leading to huge slowdowns. Test 3 I got right.
+Tests 1 and 2 I largely consider failures. The problem was I ended up launching too many GPU kernels leading to huge slowdowns. [Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary) I got right.
 
 ## Test Dataset Overview
 
@@ -180,7 +180,7 @@ Here are some things we could have done to make this go a bit faster that I didn
 - **Pattern scaling:** Linear degradation - 14 patterns = 14x more work
 - **No parallelization:** Patterns processed one at a time, not simultaneously
 
-### Test 3: Optimized CuPy Implementation
+### [Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary): Optimized CuPy Implementation
 
 **Approach:** Optimized CuPy-based implementation with adaptive algorithms
 
@@ -284,7 +284,7 @@ for packet_id, packet_data in enumerate(packets_data):
 - **Bad character table:** Pre-computed shift table for efficient pattern skipping
 - **Match collection:** Results stored as (packet_id, offset, pattern_id) tuples
 
-### Test 3: Optimized CuPy Implementation
+### [Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary): Optimized CuPy Implementation
 
 #### Methodology
 - **CuPy Integration:** Native CuPy arrays and kernels
@@ -317,9 +317,9 @@ else:  # If many patterns (like 14+)
 
 **Evidence:**
 - **Small packets (43-139 bytes):** Consistently poor GPU performance across all Tests
-- **Large packets (26KB average):** Excellent GPU performance in Test 3
+- **Large packets (26KB average):** Excellent GPU performance in [Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary)
 - **Test 1:** GPU was 20-300x slower than CPU for small packets
-- **Test 3:** Large packets achieved 2,741 MB/s peak throughput
+- **[Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary):** Large packets achieved 2,741 MB/s peak throughput
 
 **Implication:** Packet size characteristics must be considered when choosing CPU vs GPU processing.
 
@@ -328,7 +328,7 @@ else:  # If many patterns (like 14+)
 
 **Evidence:**
 - **Test 2:** Sequential CPU BMH showed 20x degradation with multiple patterns
-- **Test 3:** Adaptive BMH/PFAC selection maintained performance
+- **[Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary):** Adaptive BMH/PFAC selection maintained performance
 - **Single patterns:** BMH excels (2,741 MB/s peak)
 - **Multiple patterns:** PFAC prevents severe degradation
 
@@ -340,7 +340,7 @@ else:  # If many patterns (like 14+)
 **Evidence:**
 - **Test 1:** GPU was often slower than CPU
 - **Test 2:** CPU implementation showed 61 MB/s peak
-- **Test 3:** Achieved 2,741 MB/s peak (45x improvement over CPU implementation)
+- **[Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary):** Achieved 2,741 MB/s peak (45x improvement over CPU implementation)
 
 **Implication:** Proper GPU optimization can achieve exceptional performance gains.
 
@@ -350,7 +350,7 @@ else:  # If many patterns (like 14+)
 **Evidence:**
 - **Test 1:** GPU performance degraded severely with file size
 - **Test 2:** Consistent ~61 MB/s across all file sizes (CPU implementation)
-- **Test 3:** Performance increases with file size up to ~500MB, then plateaus potentially. More experimentation is needed
+- **[Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary):** Performance increases with file size up to ~500MB, then plateaus potentially. More experimentation is needed
 
 **Implication:** Well-optimized implementations can maintain or improve performance with larger files.
 
@@ -359,7 +359,7 @@ else:  # If many patterns (like 14+)
 
 **Evidence:**
 - **Test 2:** Sequential CPU processing caused 20x degradation
-- **Test 3:** Adaptive algorithms reduced degradation to 50-80%
+- **[Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary):** Adaptive algorithms reduced degradation to 50-80%
 - **Pattern scaling:** Performance degrades exponentially with pattern count
 
 **Implication:** Multi-pattern workloads require specialized algorithms and careful optimization.
@@ -425,7 +425,7 @@ for pattern_id, matcher in enumerate(self.bmh_matchers):
 - Multiple patterns: Repeated access to same data
 - Cache efficiency decreases with pattern count
 
-### Why Test 3 Achieved Exceptional Performance
+### Why [Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary) Achieved Exceptional Performance
 
 #### 1. Adaptive Algorithm Selection
 
@@ -472,7 +472,7 @@ else:
 
 **Test 1:** Performance degraded with file size due to timeout issues<br>
 **Test 2:** Consistent performance (~61 MB/s) across all file sizes (CPU implementation)<br>
-**Test 3:** Performance increases with file size up to ~500MB, then plateaus
+**[Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary):** Performance increases with file size up to ~500MB, then plateaus
 
 **Reasoning:**
 - **Small files:** GPU setup overhead dominates
@@ -483,7 +483,7 @@ else:
 
 **Test 1:** Severe degradation with multiple patterns<br>
 **Test 2:** Linear degradation (20x slower with 14 patterns) - CPU implementation<br>
-**Test 3:** Reduced degradation (50-80% performance reduction)
+**[Test 3](Test3_Final_GPU_Test_2025-09-12-13-00/HOW_NEWTEST_WORKS.md#executive-summary):** Reduced degradation (50-80% performance reduction)
 
 **Reasoning:**
 - **Single patterns:** Optimal algorithm performance

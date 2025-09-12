@@ -6,7 +6,7 @@ This folder contains the successful GPU-accelerated PCAP scanner implementation 
 
 ## Files Explained
 
-### `newtest.py` - Main GPU Scanner
+### [`newtest.py`](./HOW_NEWTEST_WORKS.md) - Main GPU Scanner
 - **Purpose**: The actual GPU-accelerated PCAP scanner implementation
 - **Technology**: Uses CuPy (CUDA) for GPU acceleration
 - **Algorithms**: 
