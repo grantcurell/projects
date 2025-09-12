@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-CUDA PCAP Scanner Simulation
-This script simulates the CUDA scanner functionality using Python/CuPy
+CPU PCAP Scanner Implementation
+This script implements CPU-based PCAP pattern matching using Python
 to test the Boyer-Moore-Horspool algorithm approach
 """
 
@@ -19,14 +19,14 @@ from scapy.all import rdpcap, IP, TCP, UDP
 from collections import defaultdict, deque
 from dataclasses import dataclass
 
-# Try to import CuPy for GPU acceleration
+# Try to import CuPy for GPU acceleration (not used in this implementation)
 try:
     import cupy as cp
     GPU_AVAILABLE = True
-    print("✓ CuPy available - GPU acceleration enabled")
+    print("✓ CuPy available - but using CPU implementation")
 except ImportError:
     GPU_AVAILABLE = False
-    print("⚠ CuPy not available - falling back to CPU simulation")
+    print("⚠ CuPy not available - using CPU implementation")
 
 @dataclass
 class Match:
@@ -85,8 +85,8 @@ class BoyerMooreHorspool:
                 
         return matches
 
-class CUDAScannerSimulator:
-    """Simulates the CUDA scanner using Python/CuPy"""
+class CPUScannerImplementation:
+    """CPU-based PCAP pattern matching implementation"""
     
     def __init__(self):
         self.patterns = []
@@ -139,8 +139,8 @@ class PCAPLoader:
             print(f"Error loading PCAP file {pcap_file}: {e}")
             return [], [], []
 
-class CUDABenchmarkSimulator:
-    """Benchmark simulator for CUDA scanner approach"""
+class CPUBenchmarkImplementation:
+    """Benchmark implementation for CPU scanner approach"""
     
     def __init__(self, results_dir="results"):
         self.results_dir = Path(results_dir)
@@ -195,7 +195,7 @@ class CUDABenchmarkSimulator:
         if not patterns:
             return None
             
-        print(f"Simulating CUDA scanner on {pcap_file} with {len(patterns)} patterns...")
+        print(f"Running CPU scanner on {pcap_file} with {len(patterns)} patterns...")
         
         # Load PCAP data
         packet_data, offsets, lengths = PCAPLoader.load_pcap(pcap_file)
@@ -208,7 +208,7 @@ class CUDABenchmarkSimulator:
             }
             
         # Initialize scanner
-        scanner = CUDAScannerSimulator()
+        scanner = CPUScannerImplementation()
         for pattern in patterns:
             scanner.add_pattern(pattern)
             
@@ -230,7 +230,7 @@ class CUDABenchmarkSimulator:
         
     def run_benchmark(self):
         """Run complete benchmark suite"""
-        print("CUDA PCAP Scanner Simulation Benchmark")
+        print("CPU PCAP Scanner Implementation Benchmark")
         print("=" * 50)
         
         total_tests = len(self.pcap_files) * len(self.pattern_files)
@@ -295,7 +295,7 @@ class CUDABenchmarkSimulator:
             return
             
         # Save CSV
-        csv_file = self.results_dir / "cuda_scanner_simulation.csv"
+        csv_file = self.results_dir / "cpu_scanner_results.csv"
         with open(csv_file, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=[
                 'timestamp', 'pcap_file', 'pcap_size_mb', 'pattern_count', 
@@ -307,7 +307,7 @@ class CUDABenchmarkSimulator:
                 writer.writerow({k: v for k, v in result.items() if k in writer.fieldnames})
                 
         # Save JSON
-        json_file = self.results_dir / "cuda_scanner_simulation.json"
+        json_file = self.results_dir / "cpu_scanner_results.json"
         with open(json_file, 'w') as f:
             json.dump(self.results, f, indent=2)
             
@@ -322,7 +322,7 @@ class CUDABenchmarkSimulator:
             return
             
         print("\n" + "=" * 60)
-        print("CUDA SCANNER SIMULATION SUMMARY")
+        print("CPU SCANNER IMPLEMENTATION SUMMARY")
         print("=" * 60)
         
         # Group by pattern count
@@ -359,16 +359,16 @@ class CUDABenchmarkSimulator:
                           f"{result['packet_count']:,} packets")
 
 def main():
-    parser = argparse.ArgumentParser(description='CUDA PCAP Scanner Simulation Benchmark')
+    parser = argparse.ArgumentParser(description='CPU PCAP Scanner Implementation Benchmark')
     parser.add_argument('--results-dir', default='results',
                        help='Directory to save results')
     
     args = parser.parse_args()
     
-    benchmark = CUDABenchmarkSimulator(args.results_dir)
+    benchmark = CPUBenchmarkImplementation(args.results_dir)
     
-    print("Starting CUDA PCAP Scanner Simulation...")
-    print(f"GPU Available: {GPU_AVAILABLE}")
+    print("Starting CPU PCAP Scanner Implementation...")
+    print(f"GPU Available: {GPU_AVAILABLE} (not used)")
     print(f"Results: {args.results_dir}")
     
     success = benchmark.run_benchmark()
@@ -377,8 +377,8 @@ def main():
         benchmark.save_results()
         benchmark.print_summary()
         print("\nSimulation completed successfully!")
-        print("\nNote: This is a Python simulation of the CUDA scanner approach.")
-        print("The actual CUDA implementation would be significantly faster.")
+        print("\nNote: This is a CPU implementation of the Boyer-Moore-Horspool algorithm.")
+        print("The implementation processes patterns sequentially on CPU.")
     else:
         print("\nSimulation failed!")
         sys.exit(1)
