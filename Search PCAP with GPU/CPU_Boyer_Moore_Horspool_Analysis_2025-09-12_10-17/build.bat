@@ -1,8 +1,8 @@
 @echo off
-REM Build script for CUDA PCAP scanner on Windows
-REM Requires NVIDIA CUDA Toolkit and libpcap development libraries
+REM Build script for CPU PCAP scanner on Windows
+REM This script is for reference - the actual implementation is pure Python
 
-echo Building CUDA PCAP Scanner...
+echo Building CPU PCAP Scanner (Reference CUDA Build)...
 
 REM Set CUDA path
 set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0

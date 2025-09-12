@@ -6,10 +6,11 @@
 #
 # Requires: Python 3.9+, numpy, cupy-cuda13x, NVIDIA GPU with CUDA 13.x runtime.
 
-import argparse, mmap, os, struct, sys
+import argparse, mmap, os, struct, sys, csv, time
 from typing import Tuple, List, Dict
 import numpy as np
 import cupy as cp
+from datetime import datetime
 
 # ============================== Capture loaders ==============================
 
@@ -463,6 +464,8 @@ def main():
     ap.add_argument("--large-threshold", type=int, default=DEFAULT_LARGE_PKT_THRESHOLD, help="Bytes to treat as 'large'")
     ap.add_argument("--tile-bytes", type=int, default=DEFAULT_TILE_BYTES, help="Shared-memory tile size")
     ap.add_argument("--max-matches", type=int, default=2_000_000, help="Cap total reported matches")
+    ap.add_argument("--csv-output", help="Output results to CSV file")
+    ap.add_argument("--comprehensive-test", action="store_true", help="Run comprehensive test across all PCAP files")
     args = ap.parse_args()
 
     # Ensure CUDA runtime is present via CuPy
@@ -481,8 +484,12 @@ def main():
         print(f"One or more patterns exceed MAX_PAT_LEN={MAX_PAT_LEN}. Reduce length or adjust constant.")
         sys.exit(1)
 
+    # Start timing
+    load_start = time.time()
     bigbuf_h, offsets_h, lengths_h = load_capture_concatenate(args.capture)
+    load_time = time.time() - load_start
     num_packets = len(lengths_h)
+    total_bytes = len(bigbuf_h)
 
     # Move capture to GPU
     bigbuf_d = cp.asarray(bigbuf_h, dtype=cp.uint8)
@@ -505,6 +512,10 @@ def main():
     blocks_small = max(1, num_packets)
     blocks_large = max(1, len(large_idx))
 
+    # Start search timing
+    search_start = time.time()
+    total_matches = 0
+
     if len(patterns) <= BMH_MAX_PATTERNS:
         # Few-patterns: BMH per needle
         for pid, p in enumerate(patterns):
@@ -524,7 +535,7 @@ def main():
                 shared_mem = args.tile_bytes + (len(p) - 1)
                 bmh_large((blocks_large,), (threads,),
                           (bigbuf_d, offsets_d, lengths_d,
-                           large_idx_d, np.int32(len(large_idx)),
+                    large_idx_d, np.int32(len(large_idx)),
                            pat_d, m, badchar_d, np.uint32(pid),
                            out_entries_d.ravel(), out_count_d, np.uint32(out_cap)),
                           shared_mem=shared_mem)
@@ -533,11 +544,13 @@ def main():
 
             count = int(out_count_d.get()[0])
             count = min(count, out_cap)
-            if count:
-                entries = out_entries_d.get()[:count]
-                order = np.lexsort((entries[:,2], entries[:,1], entries[:,0]))
-                for row in entries[order]:
-                    print(f"packet={int(row[0])} offset={int(row[1])} pattern={int(row[2])}")
+            total_matches += count
+            # Remove individual match printing
+            # if count:
+            #     entries = out_entries_d.get()[:count]
+            #     order = np.lexsort((entries[:,2], entries[:,1], entries[:,0]))
+            #     for row in entries[order]:
+            #         print(f"packet={int(row[0])} offset={int(row[1])} pattern={int(row[2])}")
 
     else:
         # Many-patterns: PFAC
@@ -554,35 +567,78 @@ def main():
                    (bigbuf_d, offsets_d, lengths_d, np.int32(num_packets),
                     goto_d, np.int32(pf.goto.shape[0]),
                     out_index_d, out_counts_d, flat_out_d,
-                    max_steps,
+                max_steps,
                     out_entries_d.ravel(), out_count_d, np.uint32(out_cap)))
 
         # large packets
         if len(large_idx):
             pfac_large((blocks_large,), (threads,),
                        (bigbuf_d, offsets_d, lengths_d,
-                        large_idx_d, np.int32(len(large_idx)),
+                large_idx_d, np.int32(len(large_idx)),
                         goto_d, np.int32(pf.goto.shape[0]),
                         out_index_d, out_counts_d, flat_out_d,
-                        max_steps,
+                max_steps,
                         out_entries_d.ravel(), out_count_d, np.uint32(out_cap)),
                        shared_mem=args.tile_bytes)
 
         cp.cuda.Device().synchronize()
 
         count = int(out_count_d.get()[0])
-        count = min(count, out_cap)
-        if count:
-            entries = out_entries_d.get()[:count]
-            # Convert PFAC end offsets (1-based) to start offsets using pattern lengths
-            pat_lens = np.array([len(p) for p in patterns], dtype=np.int32)
-            start_offsets = entries[:,1] - pat_lens[entries[:,2]]
-            order = np.lexsort((entries[:,2], start_offsets, entries[:,0]))
-            for row in entries[order]:
-                pid = int(row[2])
-                end_off = int(row[1])
-                start_off = end_off - int(pat_lens[pid])
-                print(f"packet={int(row[0])} offset={start_off} pattern={pid}")
+        total_matches = min(count, out_cap)
+        # Remove individual match printing
+        # if count:
+        #     entries = out_entries_d.get()[:count]
+        #     # Convert PFAC end offsets (1-based) to start offsets using pattern lengths
+        #     pat_lens = np.array([len(p) for p in patterns], dtype=np.int32)
+        #     start_offsets = entries[:,1] - pat_lens[entries[:,2]]
+        #     order = np.lexsort((entries[:,2], start_offsets, entries[:,0]))
+        #     for row in entries[order]:
+        #         pid = int(row[2])
+        #         end_off = int(row[1])
+        #         start_off = end_off - int(pat_lens[pid])
+        #         print(f"packet={int(row[0])} offset={start_off} pattern={pid}")
+
+    # End search timing
+    search_time = time.time() - search_start
+    
+    # Calculate throughput (excluding load time)
+    file_size_mb = total_bytes / (1024 * 1024)
+    throughput = file_size_mb / search_time if search_time > 0 else 0
+    
+    # Prepare results
+    results = {
+        'pcap_file': os.path.basename(args.capture),
+        'file_size_mb': file_size_mb,
+        'num_patterns': len(patterns),
+        'load_time': load_time,
+        'search_time': search_time,
+        'total_time': load_time + search_time,
+        'throughput_mbps': throughput,
+        'num_matches': total_matches,
+        'num_packets': num_packets
+    }
+    
+    # Output results
+    if args.csv_output:
+        # Write to CSV
+        file_exists = os.path.exists(args.csv_output)
+        with open(args.csv_output, 'a', newline='') as csvfile:
+            fieldnames = ['pcap_file', 'file_size_mb', 'num_patterns', 'load_time', 
+                         'search_time', 'total_time', 'throughput_mbps', 'num_matches', 'num_packets']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(results)
+        print(f"Results written to {args.csv_output}")
+    else:
+        # Print summary
+        print(f"File: {results['pcap_file']}")
+        print(f"Size: {results['file_size_mb']:.2f} MB")
+        print(f"Patterns: {results['num_patterns']}")
+        print(f"Load time: {results['load_time']:.3f}s")
+        print(f"Search time: {results['search_time']:.3f}s")
+        print(f"Throughput: {results['throughput_mbps']:.2f} MB/s")
+        print(f"Matches: {results['num_matches']:,}")
 
 if __name__ == "__main__":
     main()
