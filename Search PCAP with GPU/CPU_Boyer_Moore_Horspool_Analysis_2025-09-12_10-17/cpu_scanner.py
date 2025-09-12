@@ -148,10 +148,10 @@ class CPUBenchmarkImplementation:
         
         # Test PCAP files
         self.pcap_files = [
-            "PCAP Files/synthetic_50mb.pcapng",
-            "PCAP Files/synthetic_100mb.pcapng", 
-            "PCAP Files/synthetic_200mb.pcapng",
-            "PCAP Files/synthetic_500mb.pcapng"
+            "../PCAP Files/synthetic_50mb.pcapng",
+            "../PCAP Files/synthetic_100mb.pcapng", 
+            "../PCAP Files/synthetic_200mb.pcapng",
+            "../PCAP Files/synthetic_500mb.pcapng"
         ]
         
         # Pattern files
