@@ -12,6 +12,9 @@
       - [Fourteen Patterns](#fourteen-patterns)
     - [Dataset Characteristics Impact](#dataset-characteristics-impact)
   - [Test Results Overview](#test-results-overview)
+    - [Comprehensive Test Comparison](#comprehensive-test-comparison)
+      - [Small Packet Files (Standard Synthetic) - Performance Comparison](#small-packet-files-standard-synthetic---performance-comparison)
+      - [Large Packet Files (Synthetic Large) - Performance Comparison](#large-packet-files-synthetic-large---performance-comparison)
     - [Test 1: GPU vs CPU Analysis](#test-1-gpu-vs-cpu-analysis)
       - [Performance Results](#performance-results)
       - [Critical Insights](#critical-insights)
@@ -122,6 +125,42 @@ The analysis uses synthetic PCAP files with two distinct packet size distributio
 
 
 ## Test Results Overview
+
+### Comprehensive Test Comparison
+
+#### Small Packet Files (Standard Synthetic) - Performance Comparison
+
+| File Size | Pattern Count | Test 1 GPU Time | Test 1 CPU Time | Test 2 Throughput | Test 3 Throughput | Test 3 Time |
+|-----------|---------------|-----------------|-----------------|-------------------|-------------------|-------------|
+| **50MB** | 1 pattern | 30.18s | 0.13s | 61.78 MB/s | **187 MB/s** | 0.34s |
+| **50MB** | 7 patterns | 58.29s | 0.38s | 6.11 MB/s | **214 MB/s** | 0.30s |
+| **50MB** | 14 patterns | 180s+ (timeout) | 0.50s | 2.74 MB/s | **165 MB/s** | 0.38s |
+| **100MB** | 1 pattern | 28.26s | 0.27s | 59.66 MB/s | **548 MB/s** | 0.23s |
+| **100MB** | 7 patterns | 105.66s | 0.84s | 5.49 MB/s | **326 MB/s** | 0.40s |
+| **100MB** | 14 patterns | 180s+ (timeout) | 1.63s | 3.04 MB/s | **242 MB/s** | 0.52s |
+| **200MB** | 1 pattern | 180s+ (timeout) | 0.50s | 61.87 MB/s | **968 MB/s** | 0.26s |
+| **200MB** | 7 patterns | 180s+ (timeout) | 1.20s | 6.21 MB/s | **491 MB/s** | 0.53s |
+| **200MB** | 14 patterns | 180s+ (timeout) | 2.50s | 3.16 MB/s | **327 MB/s** | 0.77s |
+| **500MB** | 1 pattern | 180s+ (timeout) | 1.20s | 62.31 MB/s | **1,535 MB/s** | 0.33s |
+| **500MB** | 7 patterns | 180s+ (timeout) | 3.20s | 6.68 MB/s | **562 MB/s** | 0.89s |
+| **500MB** | 14 patterns | 180s+ (timeout) | 6.50s | 3.33 MB/s | **320 MB/s** | 1.56s |
+
+#### Large Packet Files (Synthetic Large) - Performance Comparison
+
+| File Size | Pattern Count | Test 1 GPU Time | Test 1 CPU Time | Test 2 Throughput | Test 3 Throughput | Test 3 Time |
+|-----------|---------------|-----------------|-----------------|-------------------|-------------------|-------------|
+| **50MB** | 1 pattern | 3.31s | 0.70s | 61.78 MB/s | **1,358 MB/s** | 0.04s |
+| **50MB** | 7 patterns | 3.66s | 3.67s | 6.11 MB/s | **277 MB/s** | 0.18s |
+| **50MB** | 14 patterns | 3.45s | 7.20s | 2.74 MB/s | **148 MB/s** | 0.34s |
+| **100MB** | 1 pattern | 6.84s | 1.59s | 59.66 MB/s | **1,967 MB/s** | 0.05s |
+| **100MB** | 7 patterns | 7.28s | 7.61s | 5.49 MB/s | **298 MB/s** | 0.34s |
+| **100MB** | 14 patterns | 6.95s | 15.20s | 3.04 MB/s | **156 MB/s** | 0.65s |
+| **200MB** | 1 pattern | 13.50s | 3.20s | 61.87 MB/s | **2,514 MB/s** | 0.08s |
+| **200MB** | 7 patterns | 14.20s | 15.20s | 6.21 MB/s | **315 MB/s** | 0.65s |
+| **200MB** | 14 patterns | 13.80s | 30.50s | 3.16 MB/s | **158 MB/s** | 1.29s |
+| **500MB** | 1 pattern | 33.50s | 8.00s | 62.31 MB/s | **2,741 MB/s** | 0.19s |
+| **500MB** | 7 patterns | 35.20s | 38.00s | 6.68 MB/s | **313 MB/s** | 1.67s |
+| **500MB** | 14 patterns | 34.50s | 76.50s | 3.33 MB/s | **159 MB/s** | 3.28s |
 
 ### Test 1: GPU vs CPU Analysis
 
