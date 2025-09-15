@@ -1,3 +1,4 @@
+# Run Linux on Latitude 7455
 
 - Download the Fedora ISO
 - Install the minimal toolchain to build the device tree blob
