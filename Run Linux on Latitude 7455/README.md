@@ -103,3 +103,23 @@ normal  # This will take us back to Fedora
 This is where I got stuck and haven't continued. I was able to get everything to build with the regular build of Fedora 42-1.1 AARCH64. However, it dies at the graphics handoff. I tried forcing text and it just black screened.
 
 I also tried Rawhide, but Rawhide didn't even bring up GRUB. I didn't fiddle with it much though.
+
+On regular I tried the following kernel options with GRUB and booting:
+
+### Regular Boot
+
+```bash
+earlycon keep_bootcon ignore_loglevel
+```
+
+### Text Only Mode
+
+```bash
+earlycon keep_bootcon ignore_loglevel loglevel=8 systemd.log_level=debug systemd unit=multi-user.target nomodeset
+```
+
+### Text Only Mode and Blocking the `msm` Driver
+
+```bash
+earlycon keep_bootcon ignore_loglevel loglevel=8 systemd.log_level=debug systemd.unit=multi-user.target modprobe.blacklist=msm
+```
