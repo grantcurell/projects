@@ -96,3 +96,10 @@ devicetree ($dtb)/7455.dtb
 normal  # This will take us back to Fedora
 ```
 
+## TODO
+
+![](images/2025-09-14-22-06-09.png)
+
+This is where I got stuck and haven't continued. I was able to get everything to build with the regular build of Fedora 42-1.1 AARCH64. However, it dies at the graphics handoff. I tried forcing text and it just black screened.
+
+I also tried Rawhide, but Rawhide didn't even bring up GRUB. I didn't fiddle with it much though.
