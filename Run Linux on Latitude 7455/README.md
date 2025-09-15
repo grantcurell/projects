@@ -1,5 +1,15 @@
 # Run Linux on Latitude 7455
 
+- [Run Linux on Latitude 7455](#run-linux-on-latitude-7455)
+  - [Build the Device Tree](#build-the-device-tree)
+  - [Boot Linux](#boot-linux)
+  - [TODO (Where this tutorial is stuck)](#todo-where-this-tutorial-is-stuck)
+    - [Regular Boot](#regular-boot)
+    - [Text Only Mode](#text-only-mode)
+    - [Text Only Mode and Blocking the `msm` Driver](#text-only-mode-and-blocking-the-msm-driver)
+
+## Build the Device Tree
+
 - Download the Fedora ISO
 - Install the minimal toolchain to build the device tree blob
 
@@ -64,9 +74,12 @@ ls arch/arm64/boot/dts/qcom/x1e80100-dell-latitude-7455.dtb
 
 - Take note that I called the partition DTB! That's going to be important later.
 - I then copied the DTB file there and called it 7455.dtb
+
+## Boot Linux
+
 - Next insert the USB stick in the target and boot. The boot menu for me looked a bit weird, select the top Fedora entry:
 
-TODO - add the image
+![](images/2025-09-14-22-25-48.png)
 
 - Once you see GRUB, hit `c` to enter the command prompt.
 - Run the below to load the modules you need:
@@ -96,7 +109,7 @@ devicetree ($dtb)/7455.dtb
 normal  # This will take us back to Fedora
 ```
 
-## TODO
+## TODO (Where this tutorial is stuck)
 
 ![](images/2025-09-14-22-06-09.png)
 
