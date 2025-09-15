@@ -1,6 +1,7 @@
 # GPU-Accelerated PCAP Scanner: Comprehensive Analysis Report
 
 - [GPU-Accelerated PCAP Scanner: Comprehensive Analysis Report](#gpu-accelerated-pcap-scanner-comprehensive-analysis-report)
+  - [Warning](#warning)
   - [Executive Summary](#executive-summary)
   - [Test Dataset Overview](#test-dataset-overview)
     - [PCAP File Characteristics](#pcap-file-characteristics)
@@ -71,7 +72,9 @@
 
 
 
-**Project Overview:** This repository contains three distinct approaches to GPU-accelerated PCAP pattern matching, each used a different strategy with different code.
+## Warning
+
+I (Grant Curell) have written and edited this README. The docs that are in the sub-folders I let AI generate for me. From what I saw, they made sense and I primarily wanted a quick way to spin myself back up if I needed to come back to this, but heads up, I haven't written any of the docs aside from this one.
 
 ## Executive Summary
 
