@@ -257,7 +257,6 @@ Notes for this file:
 ### Cross-file interaction and operational notes
 
 - Listener and ACLs
-
   - `interface` and `port` (local-resolver.conf) define where Unbound listens; `access-control` rules govern who can recurse. Ensure your OS firewall matches that intent.
 - DNSSEC with DNS64
   - `auto-trust-anchor-file` enables DNSSEC validation for public zones. Synthesized AAAA from DNS64 cannot be DNSSEC-validated, so clients will see the AD bit unset on those AAAA answers; other data (e.g., A records, NS/DNSKEY) can still validate.
