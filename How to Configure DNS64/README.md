@@ -256,21 +256,21 @@ Notes for this file:
 
 ### Cross-file interaction and operational notes
 
-* Listener and ACLs
+- Listener and ACLs
 
-  * `interface` and `port` (local-resolver.conf) define where Unbound listens; `access-control` rules govern who can recurse. Ensure your OS firewall matches that intent.
-* DNSSEC with DNS64
-  * `auto-trust-anchor-file` enables DNSSEC validation for public zones. Synthesized AAAA from DNS64 cannot be DNSSEC-validated, so clients will see the AD bit unset on those AAAA answers; other data (e.g., A records, NS/DNSKEY) can still validate.
-  * For `testlab.lab.`, `domain-insecure: "testlab.lab."` disables DNSSEC validation entirely under that subtree, so answers there will not be validated and the AD bit will be unset even for A records. This avoids SERVFAIL for an unsigned internal zone.
-* Forcing NAT64
-  * `dns64-ignore-aaaa: "."` means even dual-stack destinations are accessed via NAT64. If you want native IPv6 to remain in use when available, remove that line or scope it only to domains that require forced synthesis.
-* Stubbed private zone
-  * The `stub-zone` for `testlab.lab.` makes Unbound query your internal authoritative servers (`192.168.1.21`, `192.168.1.22`) directly instead of performing public recursion or using a forwarder. If those IPs are unreachable, lookups under `testlab.lab.` fail fast (no fallback to the public DNS tree).
-  * `private-domain: "testlab.lab."` allows RFC1918/ULA answers to be returned for that suffix without DNS-rebinding filtering (only relevant if `private-address:` filtering is enabled).
-  * With your global DNS64 settings, AAAA queries under `testlab.lab.` will be synthesized from A using `64:ff9b::/96` and will not carry the AD bit.
-* Local overrides
-  * `local-data` entries make Unbound authoritative for those exact names; upstream data for those names is ignored.
-  * Active in your config: `ipv4.me.` and `v4.ipv6test.app.` are served from `local-data` (A answers come from your file; AAAA are synthesized by DNS64).
+  - `interface` and `port` (local-resolver.conf) define where Unbound listens; `access-control` rules govern who can recurse. Ensure your OS firewall matches that intent.
+- DNSSEC with DNS64
+  - `auto-trust-anchor-file` enables DNSSEC validation for public zones. Synthesized AAAA from DNS64 cannot be DNSSEC-validated, so clients will see the AD bit unset on those AAAA answers; other data (e.g., A records, NS/DNSKEY) can still validate.
+  - For `testlab.lab.`, `domain-insecure: "testlab.lab."` disables DNSSEC validation entirely under that subtree, so answers there will not be validated and the AD bit will be unset even for A records. This avoids SERVFAIL for an unsigned internal zone.
+- Forcing NAT64
+  - `dns64-ignore-aaaa: "."` means even dual-stack destinations are accessed via NAT64. If you want native IPv6 to remain in use when available, remove that line or scope it only to domains that require forced synthesis.
+- Stubbed private zone
+  - The `stub-zone` for `testlab.lab.` makes Unbound query your internal authoritative servers (`192.168.1.21`, `192.168.1.22`) directly instead of performing public recursion or using a forwarder. If those IPs are unreachable, lookups under `testlab.lab.` fail fast (no fallback to the public DNS tree).
+  - `private-domain: "testlab.lab."` allows RFC1918/ULA answers to be returned for that suffix without DNS-rebinding filtering (only relevant if `private-address:` filtering is enabled).
+  - With your global DNS64 settings, AAAA queries under `testlab.lab.` will be synthesized from A using `64:ff9b::/96` and will not carry the AD bit.
+- Local overrides
+  - `local-data` entries make Unbound authoritative for those exact names; upstream data for those names is ignored.
+  - Active in your config: `ipv4.me.` and `v4.ipv6test.app.` are served from `local-data` (A answers come from your file; AAAA are synthesized by DNS64).
 
 ## Key Configurations
 
