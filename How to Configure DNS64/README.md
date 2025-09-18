@@ -83,8 +83,8 @@ server:
 
 stub-zone:
   name: "testlab.lab."
-  stub-addr: 192.168.101.21
-  stub-addr: 192.168.101.22
+  stub-addr: 192.168.1.21
+  stub-addr: 192.168.1.22
 ===== /etc/unbound/unbound.conf =====
 # Unbound configuration file for Debian.
 #
@@ -256,18 +256,21 @@ Notes for this file:
 
 ### Cross-file interaction and operational notes
 
-- Listener and ACLs
-  - `interface` and `port` (local-resolver.conf) define where Unbound listens; `access-control` rules govern who can recurse. Ensure your OS firewall matches that intent.
-- DNSSEC with DNS64
-  - `auto-trust-anchor-file` enables DNSSEC validation, but synthesized AAAA records from DNS64 cannot be DNSSEC-validated. Clients will see the AD bit unset on those AAAA answers; other data (e.g., A records, NS/DNSKEY) remain validated.
-- Forcing NAT64
-  - `dns64-ignore-aaaa: "."` means even dual-stack destinations will be accessed via NAT64. If you want native IPv6 to remain in use when available, remove that line or scope it to the domains that require forced synthesis.
-- Logging volume
-  - With `log-queries`, `log-replies`, and `verbosity: 1`, expect substantial logs on a busy resolver. Consider increasing `verbosity` temporarily when deep debugging, or disabling some logging directives in steady state.
-- Forwarded private zone
-  - The `forward-zone` for `testlab.lab.` ensures internal names resolve using your designated servers only; be sure those forwarders are reachable from Unbound over the networks you allowed.
-- Local overrides
-  - `local-data` entries make Unbound authoritative for those names; upstream data for those names will be ignored. Keep these in sync with your operational needs to avoid surprises.
+* Listener and ACLs
+
+  * `interface` and `port` (local-resolver.conf) define where Unbound listens; `access-control` rules govern who can recurse. Ensure your OS firewall matches that intent.
+* DNSSEC with DNS64
+  * `auto-trust-anchor-file` enables DNSSEC validation for public zones. Synthesized AAAA from DNS64 cannot be DNSSEC-validated, so clients will see the AD bit unset on those AAAA answers; other data (e.g., A records, NS/DNSKEY) can still validate.
+  * For `testlab.lab.`, `domain-insecure: "testlab.lab."` disables DNSSEC validation entirely under that subtree, so answers there will not be validated and the AD bit will be unset even for A records. This avoids SERVFAIL for an unsigned internal zone.
+* Forcing NAT64
+  * `dns64-ignore-aaaa: "."` means even dual-stack destinations are accessed via NAT64. If you want native IPv6 to remain in use when available, remove that line or scope it only to domains that require forced synthesis.
+* Stubbed private zone
+  * The `stub-zone` for `testlab.lab.` makes Unbound query your internal authoritative servers (`192.168.1.21`, `192.168.1.22`) directly instead of performing public recursion or using a forwarder. If those IPs are unreachable, lookups under `testlab.lab.` fail fast (no fallback to the public DNS tree).
+  * `private-domain: "testlab.lab."` allows RFC1918/ULA answers to be returned for that suffix without DNS-rebinding filtering (only relevant if `private-address:` filtering is enabled).
+  * With your global DNS64 settings, AAAA queries under `testlab.lab.` will be synthesized from A using `64:ff9b::/96` and will not carry the AD bit.
+* Local overrides
+  * `local-data` entries make Unbound authoritative for those exact names; upstream data for those names is ignored.
+  * Active in your config: `ipv4.me.` and `v4.ipv6test.app.` are served from `local-data` (A answers come from your file; AAAA are synthesized by DNS64).
 
 ## Key Configurations
 
@@ -277,5 +280,5 @@ Notes for this file:
 - edns-buffer-size: 1232 and max-udp-size: 1232 minimize IPv6 path fragmentation issues and nudge large answers to TCP; do-tcp: yes enables that fallback so oversized DNS responses complete reliably.
 - access-control entries allow your localhost, LAN IPv4 ranges, and ULA/GUA IPv6 prefixes to perform recursion against this resolver.
 - Unbound listens on 0.0.0.0 and ::0 on port 53, so clients can reach it natively over IPv6; no NAT64 is required for DNS queries to the resolver itself.
-- stub-zone for testlab.lab. tells Unbound to contact 192.168.101.21 and 192.168.101.22 directly as the authorities for that internal zone instead of performing public recursion or forwarding. Only queries under testlab.lab. are affected; public domains in your diagrams are unrelated.
+- stub-zone for testlab.lab. tells Unbound to contact 192.168.1.21 and 192.168.1.22 directly as the authorities for that internal zone instead of performing public recursion or forwarding. Only queries under testlab.lab. are affected; public domains in your diagrams are unrelated.
 - private-domain: "testlab.lab." and domain-insecure: "testlab.lab." together declare that testlab.lab. is an internal, unsigned zone: Unbound will accept RFC1918/ULA answers for it (no rebind filtering for that suffix) and will skip DNSSEC validation under that subtree.
