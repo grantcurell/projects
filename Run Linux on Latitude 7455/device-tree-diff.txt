@@ -1,0 +1,75 @@
+--- system-current.dts	2025-09-25 16:03:15.853105221 -0400
++++ our-custom.dts	2025-09-25 16:03:20.701678504 -0400
+@@ -9,14 +9,6 @@
+ 	compatible = "dell,latitude-7455", "qcom,x1e80100";
+ 
+ 	chosen {
+-		linux,uefi-secure-boot = <0x02>;
+-		kaslr-seed = <0x00 0x00>;
+-		linux,uefi-mmap-desc-ver = <0x01>;
+-		linux,uefi-mmap-desc-size = <0x30>;
+-		linux,uefi-mmap-size = <0x1080>;
+-		linux,uefi-mmap-start = <0x00 0xd5f3c040>;
+-		linux,uefi-system-table = <0x00 0xd5de1018>;
+-		bootargs = "BOOT_IMAGE=/boot/vmlinuz-6.17.0-8-qcom-x1e root=UUID=38fb7591-7ff3-4734-8533-f973f0f2b88a ro";
+ 	};
+ 
+ 	clocks {
+@@ -2679,7 +2671,16 @@
+ 			phys = <0x36>;
+ 			phy-names = "pciephy";
+ 			eq-presets-8gts = <0x55555555>;
+-			status = "disabled";
++			status = "okay";
++			vpcie3v3-supply = <0x1a3>;
++			pinctrl-names = "default";
++			pinctrl-0 = <0x300>;
++			perst-gpios = <0x60 0x9b 0x01>;
++			clkreq-gpios = <0x60 0x9c 0x01>;
++			wake-gpios = <0x60 0x9d 0x01>;
++			perst-delay-us = <0x2710>;
++			resume-delay-us = <0x2710>;
++			max-link-speed = <0x03>;
+ 			phandle = <0x250>;
+ 		};
+ 
+@@ -5946,6 +5947,31 @@
+ 				};
+ 			};
+ 
++			pcie5-default-state {
++				phandle = <0x300>;
++
++				perst-n-pins {
++					pins = "gpio155";
++					function = "gpio";
++					drive-strength = <0x02>;
++					bias-disable;
++				};
++
++				clkreq-n-pins {
++					pins = "gpio156";
++					function = "pcie5_clk";
++					drive-strength = <0x02>;
++					bias-pull-up;
++				};
++
++				wake-n-pins {
++					pins = "gpio157";
++					function = "gpio";
++					drive-strength = <0x02>;
++					bias-pull-up;
++				};
++			};
++
+ 			pcie6a-default-state {
+ 				phandle = <0xc6>;
+ 
+@@ -10407,6 +10433,7 @@
+ 		kybd_default = "/soc@0/pinctrl@f100000/kybd-default-state";
+ 		nvme_reg_en = "/soc@0/pinctrl@f100000/nvme-reg-en-state";
+ 		pcie4_default = "/soc@0/pinctrl@f100000/pcie4-default-state";
++		pcie5_default = "/soc@0/pinctrl@f100000/pcie5-default-state";
+ 		pcie6a_default = "/soc@0/pinctrl@f100000/pcie6a-default-state";
+ 		rtmr1_default = "/soc@0/pinctrl@f100000/rtmr1-reset-n-active-state";
+ 		sdc2_card_det_n = "/soc@0/pinctrl@f100000/sdc2-card-det-state";
