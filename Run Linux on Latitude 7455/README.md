@@ -1,138 +1,130 @@
-# Run Linux on Latitude 7455
+# Latitude 7455 – Enabling the WWAN Modem via Device Tree
 
-- [Run Linux on Latitude 7455](#run-linux-on-latitude-7455)
-  - [Build the Device Tree](#build-the-device-tree)
-  - [Boot Linux](#boot-linux)
-  - [TODO (Where this tutorial is stuck)](#todo-where-this-tutorial-is-stuck)
-    - [Regular Boot](#regular-boot)
-    - [Text Only Mode](#text-only-mode)
-    - [Text Only Mode and Blocking the `msm` Driver](#text-only-mode-and-blocking-the-msm-driver)
+This is the process I followed to get the Dell Latitude 7455’s cellular modem working under Linux by enabling the PCIe5 controller and wiring up its power and sideband signals in the device tree.
 
-## Build the Device Tree
+The Latitude 7455 uses **device tree**, not ACPI. If the PCIe5 controller is disabled or incorrectly wired, the modem will never enumerate. Everything here is specifically about getting the modem visible on PCIe domain 0005.
 
-- Download the Fedora ISO
-- Install the minimal toolchain to build the device tree blob
+---
 
-```bash
-sudo apt-get install -y git make device-tree-compiler gcc-aarch64-linux-gnu flex bison libelf-dev libssl-dev bc
+## 1. PCIe5 Root Port Changes
+
+First, I enabled the PCIe5 root complex in the device tree and wired up the power rail, GPIOs, and reset delays. Without these, the modem stays dark.
+
+Here’s the full node I edited under `/soc@0/pci@1c00000`:
+
+```dts
+status = "okay";                         // Enable PCIe5 controller so the kernel probes it.
+
+vpcie3v3-supply = <0x1a3>;               // 3.3V rail for the WWAN slot. This powers the modem card.
+
+pinctrl-names = "default";               // Tell the kernel to apply the default pin configuration at probe.
+pinctrl-0 = <0x300>;                     // Reference to the pin group defined below for PERST#, CLKREQ#, and WAKE#.
+
+perst-gpios = <0x60 0x9b 0x01>;          // PERST# reset signal on TLMM GPIO155 (active high in DT encoding).
+clkreq-gpios = <0x60 0x9c 0x01>;         // CLKREQ# signal on TLMM GPIO156, used for ASPM and clock management.
+wake-gpios   = <0x60 0x9d 0x01>;         // WAKE# signal on TLMM GPIO157, used for waking the system from low power.
+
+perst-delay-us  = <0x2710>;              // 10ms delay before releasing PERST# after power-up.
+resume-delay-us = <0x2710>;              // 10ms delay after resume before link training.
+
+max-link-speed = <0x03>;                 // Cap the PCIe link at Gen3 for stability with the modem.
 ```
 
-- Clone the current Linux-next kernel
-  - Most development happens in Linux-next
+### Why each piece matters
 
-```bash
-cd ~
-git clone https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-cd linux-next
-git fetch --tags origin
+* `status = "okay"`: Without this, PCIe5 is never even probed.
+* `vpcie3v3-supply`: Powers the slot; no 3.3V, no modem.
+* `perst-gpios`: Allows the host to reset and release the modem.
+* `clkreq-gpios`: Enables ASPM and clock request signaling so the link stays stable and power efficient.
+* `wake-gpios`: Lets the modem signal the host to wake up for things like SMS or paging.
+* `*delay-us`: Some modems need extra time to boot internally before link training.
+* `max-link-speed`: Prevents negotiation issues at higher speeds.
 
-# list July 2025 tags:
-git tag -l "next-202507*"
+---
 
-# pick one around 2025-07-17; this is the one that worked for me:
-git checkout -B bringup next-20250717
+## 2. Pinmux Group for PCIe5 Signals
+
+Next, I defined the pinmux group that configures those three GPIOs (PERST#, CLKREQ#, WAKE#). Without this, the pins won’t be mapped correctly to the PCIe5 controller.
+
+This goes under `/soc@0/pinctrl@f100000`:
+
+```dts
+pcie5-default-state {
+    phandle = <0x300>;                   // Referenced by pinctrl-0 above.
+
+    perst-n-pins {
+        pins = "gpio155";                // PERST# on GPIO155.
+        function = "gpio";               // Standard GPIO output.
+        drive-strength = <0x02>;         // 2mA drive is enough for reset.
+        bias-disable;                    // No internal pull resistor.
+    };
+
+    clkreq-n-pins {
+        pins = "gpio156";                // CLKREQ# on GPIO156.
+        function = "pcie5_clk";          // Dedicated CLKREQ# function for PCIe5.
+        drive-strength = <0x02>;         // Keep low drive strength.
+        bias-pull-up;                    // Pull-up so it defaults to inactive when idle.
+    };
+
+    wake-n-pins {
+        pins = "gpio157";                // WAKE# on GPIO157.
+        function = "gpio";               // Input GPIO for wake events.
+        drive-strength = <0x02>;         // Minimal drive.
+        bias-pull-up;                    // Pull-up so it's inactive unless driven by the modem.
+    };
+};
 ```
 
-- Set up `b4`
+### Why this is needed
 
-```bash
-sudo apt-get update
-sudo apt-get install -y b4 || sudo apt-get install -y python3-b4
+* The SoC has multiplexed pins. This block tells it:
+
+  * Use GPIO155 as a standard output for reset.
+  * Use GPIO156 as a special PCIe5 clock request pin.
+  * Use GPIO157 as a wake interrupt.
+* If this isn’t set, the sideband pins either float or do nothing, and the card never initializes properly.
+
+---
+
+## 3. Make the Group Discoverable
+
+I added an alias so other nodes and debugging tools can reference the group by path:
+
+```dts
+pcie5_default = "/soc@0/pinctrl@f100000/pcie5-default-state";
 ```
 
-- Pull the latest Dell "Thena" series mbox
-  - What we're doing here is grabbing a patch series from a mailbox file. A mailbox file contains the entire patch series as it was e-mailed in the Linux mailing list. The `git am` command applies mail - it reads the mbox and turns each email/patch into a commit on the local repo
-  - Patchew is a web service that mirrors the Linux mailing list patches and gives us a clean download option
-  - **You'll probably get little red Xs like this ✗.** You can ignore them. These are attestation checks for DKIM/signature verification but since mailing lists rewrite headers that breaks DKIM so you'll get these failed checks.
-  - These are the in-flight patches I'm working from: https://lkml.org/lkml/2025/5/25/119
+---
+
+## 4. Verifying After Boot
+
+Once these changes are in place and the device tree is loaded, I check that everything came up:
+
+1. Verify that PCIe5 shows as enabled in the live device tree:
 
 ```bash
-git config user.name "<YOUR NAME>"
-git config --global user.email "<YOUR EMAIL>"
-mkdir -p dell-7455-v4
-b4 am -o dell-7455-v4 20250716003139.18543-1-val@packett.cool
-git am dell-7455-v4/*.mbx 2>/dev/null || git am dell-7455-v4/*.mbox
+cat /proc/device-tree/soc@0/pci@1c00000/status
+# Expected: okay
 ```
 
-- Build only the device trees (we're not building the kernel here):
+2. Check for domain `0005` in `lspci`:
 
 ```bash
-make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig
-make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- dtbs -j"$(nproc)"
-ls arch/arm64/boot/dts/qcom/x1e80100-dell-latitude-7455.dtb
+sudo lspci -Dnn | grep '^0005:'
 ```
 
-- The above `ls` command s hould confirm the device tree blob is present. If it isn't... that is unfortunate. I haven't written much troubleshooting because we're truly out on the bleeding edge here.
-- If you haven't already, you will need to build a Fedora Live CD. You will need to build with the Partition Scheme set to GPT and the Target system UEFI (non CSM). When asked, do the write in DD mode.
-  - DD mode writes the image bit-for-bit exactly as Fedora built it (partitions, boot sectors, EFI files, etc). ISO mode will "help" by rearranging som efiles or portations for Windows.
+Expected output:
 
-![](images/2025-09-14-16-52-43.png)
+```
+0005:00:00.0 PCI bridge [0604]: Qualcomm Technologies, Inc Device [17cb:0111]
+0005:01:00.0 Network controller [0280]: Qualcomm Technologies, Inc Device [105b:???]
+```
 
-- Next go ahead and transfer your device tree file to the USB you just created. If Windows can't read it, then the way I solved this was to create a FAT32 partition in the unused space of my Fedora USB like this:
-
-![](images/2025-09-14-17-38-10.png)
-
-- Take note that I called the partition DTB! That's going to be important later.
-- I then copied the DTB file there and called it 7455.dtb
-
-## Boot Linux
-
-- Next insert the USB stick in the target and boot. The boot menu for me looked a bit weird, select the top Fedora entry:
-
-![](images/2025-09-14-22-25-48.png)
-
-- Once you see GRUB, hit `c` to enter the command prompt.
-- Run the below to load the modules you need:
+3. Confirm the PCIe5 controller probed:
 
 ```bash
-insmod part_gpt
-insmod fat
-insmod fdt
+dmesg -T | grep -i 'qcom.*pcie.*1c00000\|segment.*5'
 ```
 
-- Next we need to find our device tree blob. If you just run `ls` you're going to see a lot and it will take forever to find:
+You should see logs showing the controller powered up and trained the link.
 
-![](images/2025-09-14-17-40-58.png)
-
-- The way we get around this is running `search -l DTB -s dtb`. That will find the partition called DTB and put it in the variable `$dtb`. You can run `echo $dtb` to see the variable and from there can confirm:
-
-```bash
-ls ($dtb)/
-System Volume Information 7455.dtb
-```
-
-- Now go ahead and add your device tree with:
-  - If you named your dtb file you'll need to adjust the command below
-
-```bash
-devicetree ($dtb)/7455.dtb
-normal  # This will take us back to Fedora
-```
-
-## TODO (Where this tutorial is stuck)
-
-![](images/2025-09-14-22-06-09.png)
-
-This is where I got stuck and haven't continued. I was able to get everything to build with the regular build of Fedora 42-1.1 AARCH64. However, it dies at the graphics handoff. I tried forcing text and it just black screened.
-
-I also tried Rawhide, but Rawhide didn't even bring up GRUB. I didn't fiddle with it much though.
-
-On regular I tried the following kernel options with GRUB and booting:
-
-### Regular Boot
-
-```bash
-earlycon keep_bootcon ignore_loglevel
-```
-
-### Text Only Mode
-
-```bash
-earlycon keep_bootcon ignore_loglevel loglevel=8 systemd.log_level=debug systemd unit=multi-user.target nomodeset
-```
-
-### Text Only Mode and Blocking the `msm` Driver
-
-```bash
-earlycon keep_bootcon ignore_loglevel loglevel=8 systemd.log_level=debug systemd.unit=multi-user.target modprobe.blacklist=msm
-```
