@@ -246,7 +246,7 @@ ip link show <iface>
 
 ### Configure IP Addresses
 
-In this section, we create a **dedicated, point-to-point RDMA network link** between the Linux host and the PowerScale node using private IP addresses and a `/28` subnet. In my test scenario I hooked everything together directly to avoid complicating things with the network. Usually, you will need to work with flow control, make sure your switches can handle RDMA, etc.
+In this section, we create a **dedicated, point-to-point RDMA network link** between the Linux host and the PowerScale node using private IP addresses and a `/30` subnet. In my test scenario I hooked everything together directly to avoid complicating things with the network. Usually, you will need to work with flow control, make sure your switches can handle RDMA, etc.
 
 This configuration assumes:
 
@@ -255,7 +255,7 @@ This configuration assumes:
 * PowerScale node: `node 1`, port `25gige-2`
 * PowerScale IP: `10.99.99.98`
 * MTU: `9000` for jumbo frames
-* Subnet: `10.99.99.96/28`
+* Subnet: `10.99.99.96/30`
 * Groupnet: `groupnet0`
 * Subnet name: `grantsrdmasubnet`
 * Pool name: `grantsrdmapool`
@@ -266,7 +266,7 @@ Update these values as needed for your environment.
 
 ```bash
 # Replace 'ens6f1' with your RDMA NIC name if different
-sudo nmcli connection modify ens6f1 ipv4.addresses 10.99.99.97/28
+sudo nmcli connection modify ens6f1 ipv4.addresses 10.99.99.97/30
 sudo nmcli connection modify ens6f1 ipv4.method manual
 sudo nmcli connection modify ens6f1 ipv4.gateway ""      # no gateway for direct link
 sudo nmcli connection modify ens6f1 ipv4.dns ""          # no DNS needed
@@ -446,7 +446,7 @@ In my case, I also needed to update the networking on my PowerScale to support m
 # Modify the subnet 'grantsrdmasubnet' to expand it to a /29 prefix, allowing for 6 usable IPs
 # (from 10.99.99.97 to 10.99.99.102) and set the gateway to 0.0.0.0 (no gateway used).
 isi network subnets modify grantsrdmasubnet \
-  --prefixlen 28 \
+  --prefixlen 29 \
   --gateway 0.0.0.0
 
 # Assign the SmartConnect Service IP as 10.99.99.102 (reserved and not part of the pool's ranges).
@@ -539,6 +539,7 @@ interface ethernet 1/1/19
 description "Member of bond0 for Grant's NFS test"
 channel group 10
 no shut
+exit
 ```
 
 You will also need to create a LAG down to the PowerScale. If you need to find out what interfaces on the PowerScale have what MAC addresses you can run `sudo isi_for_array -s "ifconfig -a | awk '/^[a-z]/ { iface=\$1 } /ether/ { print iface, \$2 }'"`. Keep in mind you'll need to have sudo privileges. I tell you how to set that up in the section [PowerScale Requirements](#powerscale-requirements\).
@@ -571,8 +572,6 @@ bogus-priv
 # Optional: Act as DNS server for this zone only
 auth-server
 ```
-
-
 
 ## Swapping to NFSv4 (TODO)
 
