@@ -1,0 +1,18 @@
+port=0
+interface={{ deployer.network.interface }}
+bind-interfaces
+
+dhcp-range={{ deployer.network.dhcp_start }},{{ deployer.network.dhcp_end }},{{ deployer.network.netmask }},12h
+dhcp-option=6,{{ deployer.network.dns_server }}
+
+enable-tftp
+tftp-root={{ deployer.paths.tftp }}
+
+dhcp-match=set:bios,option:client-arch,0
+dhcp-match=set:efi-x86_64,option:client-arch,7
+dhcp-match=set:efi-x86_64,option:client-arch,9
+dhcp-userclass=set:ipxe,iPXE
+
+dhcp-boot=tag:ipxe,http://{{ deployer.network.server_ip }}/ipxe/autoexec.ipxe
+dhcp-boot=tag:!ipxe,tag:bios,undionly.kpxe
+dhcp-boot=tag:!ipxe,tag:efi-x86_64,{{ deployer.ipxe.secure_boot_shim }}

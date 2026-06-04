@@ -1,0 +1,159 @@
+---
+- name: Load deployment artifacts into deployer LXC
+  hosts: deployer_lxc
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Check local boot.wim exists
+      ansible.builtin.stat:
+        path: "{{ deployer.artifacts.boot_wim }}"
+      delegate_to: localhost
+      register: local_boot_wim
+
+    - name: Check local BCD exists
+      ansible.builtin.stat:
+        path: "{{ deployer.artifacts.boot_bcd }}"
+      delegate_to: localhost
+      register: local_boot_bcd
+
+    - name: Check local bootmgr exists
+      ansible.builtin.stat:
+        path: "{{ deployer.artifacts.bootmgr }}"
+      delegate_to: localhost
+      register: local_bootmgr
+
+    - name: Check local boot.sdi exists
+      ansible.builtin.stat:
+        path: "{{ deployer.artifacts.boot_sdi }}"
+      delegate_to: localhost
+      register: local_boot_sdi
+
+    - name: Check local UEFI BCD exists
+      ansible.builtin.stat:
+        path: "{{ deployer.artifacts.boot_bcd_efi }}"
+      delegate_to: localhost
+      register: local_boot_bcd_efi
+
+    - name: Check local bootx64.efi exists
+      ansible.builtin.stat:
+        path: "{{ deployer.artifacts.bootx64_efi }}"
+      delegate_to: localhost
+      register: local_bootx64_efi
+
+    - name: Fail if boot.wim is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.artifacts.boot_wim }}"
+      when: not local_boot_wim.stat.exists
+
+    - name: Fail if BCD is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.artifacts.boot_bcd }}"
+      when: not local_boot_bcd.stat.exists
+
+    - name: Fail if bootmgr is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.artifacts.bootmgr }}"
+      when: not local_bootmgr.stat.exists
+
+    - name: Fail if boot.sdi is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.artifacts.boot_sdi }}"
+      when: not local_boot_sdi.stat.exists
+
+    - name: Fail if UEFI BCD is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.artifacts.boot_bcd_efi }}"
+      when: not local_boot_bcd_efi.stat.exists
+
+    - name: Fail if bootx64.efi is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.artifacts.bootx64_efi }}"
+      when: not local_bootx64_efi.stat.exists
+
+    - name: Ensure artifact destination directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ deployer.paths.images }}"
+        - "{{ deployer.paths.winpe }}"
+        - "{{ deployer.paths.winpe }}/Boot"
+        - "{{ deployer.paths.winpe }}/EFI/Boot"
+        - "{{ deployer.paths.winpe }}/EFI/Microsoft/Boot"
+
+    - name: Ensure Secure Boot iPXE HTTP WinPE directory exists
+      ansible.builtin.file:
+        path: "{{ deployer.paths.ipxe }}/winpe"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Copy boot.wim into deployer LXC
+      ansible.builtin.copy:
+        src: "{{ deployer.artifacts.boot_wim }}"
+        dest: "{{ deployer.paths.boot_wim }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Link boot.wim for Secure Boot iPXE HTTP path
+      ansible.builtin.file:
+        src: "{{ deployer.paths.boot_wim }}"
+        dest: "{{ deployer.paths.ipxe_boot_wim }}"
+        state: link
+        force: true
+
+    - name: Copy BCD into deployer LXC
+      ansible.builtin.copy:
+        src: "{{ deployer.artifacts.boot_bcd }}"
+        dest: "{{ deployer.paths.boot_bcd }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Copy bootmgr into deployer LXC
+      ansible.builtin.copy:
+        src: "{{ deployer.artifacts.bootmgr }}"
+        dest: "{{ deployer.paths.bootmgr }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Copy boot.sdi into deployer LXC
+      ansible.builtin.copy:
+        src: "{{ deployer.artifacts.boot_sdi }}"
+        dest: "{{ deployer.paths.boot_sdi }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Copy UEFI BCD into deployer LXC
+      ansible.builtin.copy:
+        src: "{{ deployer.artifacts.boot_bcd_efi }}"
+        dest: "{{ deployer.paths.boot_bcd_efi }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Copy bootx64.efi into deployer LXC
+      ansible.builtin.copy:
+        src: "{{ deployer.artifacts.bootx64_efi }}"
+        dest: "{{ deployer.paths.bootx64_efi }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Stat deploy.wim in deployer images directory
+      ansible.builtin.stat:
+        path: "{{ deployer.paths.deploy_wim }}"
+      register: deploy_wim_on_lxc
+
+    - name: Fail if deploy.wim is missing on deployer LXC
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.paths.deploy_wim }} on deployer LXC. Run 06-capture-goldimage.yml first."
+      when: not deploy_wim_on_lxc.stat.exists

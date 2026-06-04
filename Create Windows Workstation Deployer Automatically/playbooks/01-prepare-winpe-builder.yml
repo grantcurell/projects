@@ -1,0 +1,190 @@
+---
+- name: Prepare Windows Server WinPE builder
+  hosts: winpe_builder
+  gather_facts: false
+  vars:
+    winpe_build_dir: "{{ windows.winpe_builder.build_dir }}"
+    winpe_scripts_dir: "{{ windows.winpe_builder.build_dir }}\\scripts"
+    winpe_drivers_dir: "{{ windows.winpe_builder.drivers_dir }}"
+    adk_deployment_tools_env: "{{ windows.winpe_builder.adk_dir }}\\Deployment Tools\\DandISetEnv.bat"
+    adk_winpe_ocs_dir: "{{ windows.winpe_builder.adk_dir }}\\Windows Preinstallation Environment\\amd64\\WinPE_OCs"
+
+  tasks:
+    - name: Create WinPE build directories
+      ansible.windows.win_file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ winpe_build_dir }}"
+        - "{{ winpe_scripts_dir }}"
+        - "{{ winpe_drivers_dir }}"
+
+    - name: Render inventory-driven WinPE scripts
+      ansible.windows.win_template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { src: "../files/deploy.ps1", dest: "{{ winpe_scripts_dir }}\\deploy.ps1" }
+        - { src: "../files/capture.ps1", dest: "{{ winpe_scripts_dir }}\\capture.ps1" }
+
+    - name: Render WinPE build script
+      ansible.windows.win_template:
+        src: ../files/build-winpe.cmd
+        dest: "{{ winpe_build_dir }}\\build-winpe.cmd"
+
+    - name: Copy static WinPE helper files
+      ansible.windows.win_copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { src: "../files/diskpart-uefi.txt", dest: "{{ winpe_scripts_dir }}\\diskpart-uefi.txt" }
+        - { src: "../files/WimScript.ini", dest: "{{ winpe_scripts_dir }}\\WimScript.ini" }
+
+    - name: Render WinPE startnet script
+      ansible.windows.win_template:
+        src: ../files/startnet.cmd
+        dest: "{{ winpe_scripts_dir }}\\startnet.cmd"
+
+    - name: Copy WinPE storage driver preparation script
+      ansible.windows.win_copy:
+        src: ../files/prepare-winpe-storage-driver.ps1
+        dest: "{{ winpe_scripts_dir }}\\prepare-winpe-storage-driver.ps1"
+
+    - name: Ensure local storage driver cache directory exists
+      ansible.builtin.file:
+        path: "{{ deployer.artifacts.local_dir }}/drivers"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+      when: windows.winpe_builder.storage_drivers | default([]) | length > 0
+
+    - name: Check cached storage driver packages on controller
+      ansible.builtin.stat:
+        path: "{{ deployer.artifacts.local_dir }}/drivers/{{ item.filename }}"
+      loop: "{{ windows.winpe_builder.storage_drivers | default([]) }}"
+      register: local_driver_cache_stats
+      delegate_to: localhost
+      when: windows.winpe_builder.storage_drivers | default([]) | length > 0
+
+    - name: Fail if a storage driver package is missing from local cache
+      ansible.builtin.fail:
+        msg: >-
+          Missing {{ item.item.filename }} in {{ deployer.artifacts.local_dir }}/drivers/.
+          Download manually from {{ item.item.url }} and re-run this playbook.
+      loop: "{{ local_driver_cache_stats.results | default([]) }}"
+      when:
+        - windows.winpe_builder.storage_drivers | default([]) | length > 0
+        - not item.stat.exists
+
+    - name: Upload storage driver packages to WinPE builder
+      ansible.windows.win_copy:
+        src: "{{ deployer.artifacts.local_dir }}/drivers/{{ item.filename }}"
+        dest: "{{ winpe_drivers_dir }}\\{{ item.filename }}"
+      loop: "{{ windows.winpe_builder.storage_drivers | default([]) }}"
+      when: windows.winpe_builder.storage_drivers | default([]) | length > 0
+
+    - name: Prepare WinPE storage drivers
+      ansible.windows.win_powershell:
+        script: |
+          & "{{ winpe_scripts_dir }}\prepare-winpe-storage-driver.ps1" `
+            -DriverUrl "{{ item.url }}" `
+            -DriversRoot "{{ winpe_drivers_dir }}" `
+            -Filename "{{ item.filename }}" `
+            -ExtractSubdir "{{ item.extract_subdir }}" `
+            -DriverVersion "{{ item.version }}"
+      loop: "{{ windows.winpe_builder.storage_drivers | default([]) }}"
+      register: winpe_driver_prep
+      when: windows.winpe_builder.storage_drivers | default([]) | length > 0
+
+    - name: Fail if storage driver preparation did not succeed
+      ansible.builtin.fail:
+        msg: "Storage driver preparation failed for {{ item.item.name | default('unknown') }}: {{ item.msg | default('see task output') }}"
+      when:
+        - windows.winpe_builder.storage_drivers | default([]) | length > 0
+        - item is failed
+      loop: "{{ winpe_driver_prep.results | default([]) }}"
+
+    - name: Check ADK deployment tools
+      ansible.windows.win_stat:
+        path: "{{ adk_deployment_tools_env }}"
+      register: adk_deployment_tools
+
+    - name: Check ADK WinPE add-on
+      ansible.windows.win_stat:
+        path: "{{ adk_winpe_ocs_dir }}"
+      register: adk_winpe_addon
+
+    - name: Download ADK installer
+      ansible.windows.win_shell: |
+        Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=2289980 -OutFile "{{ winpe_build_dir }}\adksetup.exe"
+      when: not adk_deployment_tools.stat.exists
+
+    - name: Download ADK WinPE add-on installer
+      ansible.windows.win_shell: |
+        Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=2289981 -OutFile "{{ winpe_build_dir }}\adkwinpesetup.exe"
+      when: not adk_winpe_addon.stat.exists
+
+    - name: Check downloaded ADK installer
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\adksetup.exe"
+      register: adksetup_exe
+      when: not adk_deployment_tools.stat.exists
+
+    - name: Check downloaded ADK WinPE add-on installer
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\adkwinpesetup.exe"
+      register: adkwinpesetup_exe
+      when: not adk_winpe_addon.stat.exists
+
+    - name: Fail if ADK installer download failed
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\adksetup.exe was not downloaded."
+      when:
+        - not adk_deployment_tools.stat.exists
+        - not adksetup_exe.stat.exists
+
+    - name: Fail if ADK WinPE add-on installer download failed
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\adkwinpesetup.exe was not downloaded."
+      when:
+        - not adk_winpe_addon.stat.exists
+        - not adkwinpesetup_exe.stat.exists
+
+    - name: Install ADK deployment tools
+      ansible.windows.win_command:
+        argv:
+          - "{{ winpe_build_dir }}\\adksetup.exe"
+          - /quiet
+          - /features
+          - OptionId.DeploymentTools
+      when: not adk_deployment_tools.stat.exists
+
+    - name: Install ADK WinPE add-on
+      ansible.windows.win_command:
+        argv:
+          - "{{ winpe_build_dir }}\\adkwinpesetup.exe"
+          - /quiet
+          - /features
+          - OptionId.WindowsPreinstallationEnvironment
+      when: not adk_winpe_addon.stat.exists
+
+    - name: Verify ADK deployment tools after install
+      ansible.windows.win_stat:
+        path: "{{ adk_deployment_tools_env }}"
+      register: adk_deployment_tools_after
+
+    - name: Verify ADK WinPE add-on after install
+      ansible.windows.win_stat:
+        path: "{{ adk_winpe_ocs_dir }}"
+      register: adk_winpe_addon_after
+
+    - name: Fail if ADK deployment tools are missing
+      ansible.builtin.fail:
+        msg: "ADK deployment tools are still missing on {{ windows.winpe_builder.name }}."
+      when: not adk_deployment_tools_after.stat.exists
+
+    - name: Fail if ADK WinPE add-on is missing
+      ansible.builtin.fail:
+        msg: "ADK WinPE add-on is still missing on {{ windows.winpe_builder.name }}."
+      when: not adk_winpe_addon_after.stat.exists

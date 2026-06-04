@@ -1,0 +1,12 @@
+---
+- import_playbook: 00-preflight.yml
+- import_playbook: 00b-ensure-proxmox-api-token.yml
+- import_playbook: 01-prepare-winpe-builder.yml
+- import_playbook: 02-build-winpe.yml
+- import_playbook: 03-create-deployer-lxc.yml
+- import_playbook: 04-configure-deployer-lxc.yml
+- import_playbook: 05-sysprep-goldimage.yml
+- import_playbook: 06-capture-goldimage.yml
+- import_playbook: 07-load-deployment-artifacts.yml
+- import_playbook: 08-validate-deployer-lxc.yml
+- import_playbook: 09-export-deployer-lxc.yml

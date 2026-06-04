@@ -1,0 +1,42 @@
+---
+- name: Build fresh minimal SeaBIOS WinPE baseline
+  hosts: winpe_builder
+  gather_facts: false
+  tasks:
+    - name: Recreate fresh WinPE_amd64 tree from ADK
+      ansible.windows.win_shell: |
+        $ErrorActionPreference = "Stop"
+        $envScript = "C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\DandISetEnv.bat"
+        if (Test-Path "C:\WinPE_amd64") {
+          Remove-Item "C:\WinPE_amd64" -Recurse -Force
+        }
+        cmd.exe /c "call ""$envScript"" && copype amd64 C:\WinPE_amd64"
+        if ($LASTEXITCODE -ne 0) {
+          throw "copype failed with exit code $LASTEXITCODE"
+        }
+
+    - name: Mount boot.wim and set minimal startnet.cmd
+      ansible.windows.win_shell: |
+        $ErrorActionPreference = "Stop"
+        $mount = "C:\WinPE_amd64\mount"
+        if (Test-Path $mount) {
+          cmd.exe /c "dism /Unmount-Image /MountDir:$mount /Discard" | Out-Null
+          Remove-Item $mount -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        New-Item -ItemType Directory -Path $mount -Force | Out-Null
+        cmd.exe /c "dism /Mount-Image /ImageFile:C:\WinPE_amd64\media\sources\boot.wim /Index:1 /MountDir:$mount" | Out-Null
+        Set-Content -Path "$mount\Windows\System32\startnet.cmd" -Encoding Ascii -Value @(
+          "wpeinit",
+          "echo WinPE started",
+          "pause"
+        )
+        cmd.exe /c "dism /Unmount-Image /MountDir:$mount /Commit" | Out-Null
+
+    - name: Stage SeaBIOS boot files from same fresh WinPE tree
+      ansible.windows.win_shell: |
+        $ErrorActionPreference = "Stop"
+        New-Item -ItemType Directory -Path "C:\DeployBuild\baseline\Boot" -Force | Out-Null
+        Copy-Item "C:\WinPE_amd64\media\Boot\BCD" "C:\DeployBuild\baseline\Boot\BCD" -Force
+        Copy-Item "C:\WinPE_amd64\media\Boot\boot.sdi" "C:\DeployBuild\baseline\Boot\boot.sdi" -Force
+        Copy-Item "C:\WinPE_amd64\media\sources\boot.wim" "C:\DeployBuild\baseline\boot.wim" -Force
+        Copy-Item "C:\WinPE_amd64\media\bootmgr" "C:\DeployBuild\baseline\bootmgr" -Force

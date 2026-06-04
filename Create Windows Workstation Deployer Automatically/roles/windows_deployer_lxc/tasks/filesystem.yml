@@ -1,0 +1,19 @@
+---
+- name: Create deployer directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ deployer.paths.root }}", mode: "0755" }
+    - { path: "{{ deployer.paths.images }}", mode: "0755" }
+    - { path: "{{ deployer.paths.winpe }}", mode: "0755" }
+    - { path: "{{ deployer.paths.ipxe }}", mode: "0755" }
+    - { path: "{{ deployer.paths.tftp }}", mode: "0755" }
+    - { path: "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}", mode: "0755" }
+    - { path: "{{ deployer.paths.ipxe }}/winpe", mode: "0755" }
+    - { path: "{{ deployer.ipxe.cache_dir }}", mode: "0755" }
+    - { path: "{{ deployer.paths.capture }}", mode: "0777" }
+    - { path: "{{ deployer.paths.logs }}", mode: "0777" }

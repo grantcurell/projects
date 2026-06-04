@@ -1,0 +1,114 @@
+---
+- name: Ensure Proxmox automation token exists (idempotent)
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_realm_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+    proxmox_token_name: "labtracker-setup"
+    proxmox_full_token_id: "{{ proxmox_realm_user }}!{{ proxmox_token_name }}"
+    proxmox_api_base: "https://{{ proxmox.host }}:8006/api2/json"
+  tasks:
+    - name: Authenticate to Proxmox API for token management
+      no_log: true
+      ansible.builtin.uri:
+        url: "{{ proxmox_api_base }}/access/ticket"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          username: "{{ proxmox_realm_user }}"
+          password: "{{ proxmox.root_password }}"
+        validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+        return_content: true
+      register: proxmox_ticket
+
+    - name: Query existing tokens for current Proxmox user
+      ansible.builtin.uri:
+        url: "{{ proxmox_api_base }}/access/users/{{ proxmox_realm_user | urlencode }}/token"
+        method: GET
+        headers:
+          Cookie: "PVEAuthCookie={{ proxmox_ticket.json.data.ticket }}"
+        validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+        return_content: true
+      register: proxmox_token_list
+
+    - name: Determine whether automation token already exists
+      ansible.builtin.set_fact:
+        proxmox_token_exists: >-
+          {{
+            (
+              proxmox_token_list.json.data | default([])
+              | selectattr('tokenid', 'defined')
+              | map(attribute='tokenid')
+              | select('equalto', proxmox_full_token_id)
+              | list
+              | length
+            ) > 0
+            or
+            (
+              proxmox_token_list.json.data | default([])
+              | selectattr('tokenid', 'defined')
+              | map(attribute='tokenid')
+              | select('equalto', proxmox_token_name)
+              | list
+              | length
+            ) > 0
+          }}
+
+    - name: Create automation token only when missing
+      no_log: true
+      ansible.builtin.uri:
+        url: "{{ proxmox_api_base }}/access/users/{{ proxmox_realm_user | urlencode }}/token/{{ proxmox_token_name | urlencode }}"
+        method: POST
+        headers:
+          Cookie: "PVEAuthCookie={{ proxmox_ticket.json.data.ticket }}"
+          CSRFPreventionToken: "{{ proxmox_ticket.json.data.CSRFPreventionToken }}"
+        body_format: form-urlencoded
+        body:
+          comment: "Created by labtracker deployment automation"
+          privsep: "0"
+        validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+        return_content: true
+      register: proxmox_token_create
+      when: not (proxmox_token_exists | bool)
+
+    - name: Extract created token secret
+      no_log: true
+      ansible.builtin.set_fact:
+        proxmox_created_token_secret: "{{ proxmox_token_create.json.data.value | default('') }}"
+      when: not (proxmox_token_exists | bool)
+
+    - name: Ensure created token returned a secret
+      ansible.builtin.assert:
+        that:
+          - proxmox_created_token_secret | length > 0
+        fail_msg: "Proxmox token creation succeeded but no token secret was returned."
+      when: not (proxmox_token_exists | bool)
+
+    - name: Build Authorization header for newly created token
+      no_log: true
+      ansible.builtin.set_fact:
+        proxmox_api_authorization: "PVEAPIToken={{ proxmox_full_token_id }}={{ proxmox_created_token_secret }}"
+      when: not (proxmox_token_exists | bool)
+
+    - name: Verify newly created token works against Proxmox API
+      ansible.builtin.uri:
+        url: "{{ proxmox_api_base }}/version"
+        method: GET
+        headers:
+          Authorization: "{{ proxmox_api_authorization }}"
+        validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+        status_code: 200
+      register: proxmox_token_verify
+      retries: 6
+      delay: 5
+      until: proxmox_token_verify.status == 200
+      when: not (proxmox_token_exists | bool)
+
+    - name: Report Proxmox token state
+      ansible.builtin.debug:
+        msg: >-
+          {{
+            "Reusing existing Proxmox token " ~ proxmox_full_token_id
+            if (proxmox_token_exists | bool)
+            else "Created Proxmox token " ~ proxmox_full_token_id
+          }}

@@ -1,0 +1,11 @@
+#!ipxe
+
+dhcp
+set deploy-server {{ deployer.network.server_ip }}
+set base-url http://${deploy-server}
+
+kernel ${base-url}/ipxe/wimboot {{ windows.deploy_debug.wimboot_args }}
+initrd ${base-url}/winpe/Boot/BCD BCD
+initrd ${base-url}/winpe/Boot/boot.sdi boot.sdi
+initrd ${base-url}/winpe/boot.wim boot.wim
+boot

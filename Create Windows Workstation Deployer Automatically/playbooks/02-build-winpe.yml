@@ -1,0 +1,479 @@
+---
+- name: Build WinPE artifacts on builder VM
+  hosts: winpe_builder
+  gather_facts: false
+  vars:
+    winpe_build_dir: "{{ windows.winpe_builder.build_dir }}"
+    winpe_build_drive: "{{ (winpe_build_dir | regex_search('^[A-Za-z]')) | default('C') }}"
+    winpe_build_subpath: "{{ winpe_build_dir | regex_replace('^[A-Za-z]:\\\\', '') | replace('\\\\', '/') }}"
+
+  tasks:
+    - name: Ensure local boot artifact directory exists
+      ansible.builtin.file:
+        path: "{{ deployer.artifacts.boot_bcd | dirname }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+
+    - name: Ensure local EFI artifact directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      loop:
+        - "{{ deployer.artifacts.boot_bcd_efi | dirname }}"
+        - "{{ deployer.artifacts.bootx64_efi | dirname }}"
+
+    - name: Check existing boot.wim on builder
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\boot.wim"
+      register: boot_wim_stat_before
+
+    - name: Check existing bootmgr on builder
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\bootmgr"
+      register: bootmgr_stat_before
+
+    - name: Check existing capture ISO on builder
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\winpe_capture.iso"
+      register: capture_iso_stat_before
+
+    - name: Determine whether WinPE inputs are newer than capture ISO
+      ansible.windows.win_powershell:
+        script: |
+          $ErrorActionPreference = "Stop"
+          $iso = "{{ winpe_build_dir }}\winpe_capture.iso"
+          $inputs = @(
+            "{{ winpe_build_dir }}\scripts\capture.ps1",
+            "{{ winpe_build_dir }}\scripts\deploy.ps1",
+            "{{ winpe_build_dir }}\scripts\startnet.cmd",
+            "{{ winpe_build_dir }}\build-winpe.cmd",
+            "{{ winpe_build_dir }}\scripts\WimScript.ini",
+            "{{ winpe_build_dir }}\scripts\prepare-winpe-storage-driver.ps1"
+          )
+
+          if (-not (Test-Path $iso)) {
+            Write-Output "true"
+            return
+          }
+
+          $isoUtc = (Get-Item $iso).LastWriteTimeUtc
+          $needsRebuild = $false
+          foreach ($inputPath in $inputs) {
+            if (-not (Test-Path $inputPath)) {
+              $needsRebuild = $true
+              break
+            }
+            if ((Get-Item $inputPath).LastWriteTimeUtc -gt $isoUtc) {
+              $needsRebuild = $true
+              break
+            }
+          }
+
+          if ($needsRebuild) {
+            Write-Output "true"
+          } else {
+            Write-Output "false"
+          }
+      register: winpe_inputs_newer_than_iso
+      changed_when: false
+
+    - name: Determine whether WinPE storage drivers are newer than boot.wim
+      ansible.windows.win_powershell:
+        script: |
+          $ErrorActionPreference = "Stop"
+          $bootWim = "{{ winpe_build_dir }}\boot.wim"
+          $driverMarkers = @(
+            {% for driver in windows.winpe_builder.storage_drivers | default([]) %}
+            "{{ windows.winpe_builder.drivers_dir }}\{{ driver.extract_subdir }}\.driver-prepared"{% if not loop.last %},{% endif %}
+            {% endfor %}
+          )
+
+          if (-not (Test-Path $bootWim)) {
+            Write-Output "true"
+            return
+          }
+
+          if ($driverMarkers.Count -eq 0) {
+            Write-Output "false"
+            return
+          }
+
+          $bootUtc = (Get-Item $bootWim).LastWriteTimeUtc
+          foreach ($markerPath in $driverMarkers) {
+            if (-not (Test-Path $markerPath)) {
+              Write-Output "true"
+              return
+            }
+            if ((Get-Item $markerPath).LastWriteTimeUtc -gt $bootUtc) {
+              Write-Output "true"
+              return
+            }
+          }
+
+          Write-Output "false"
+      register: winpe_drivers_newer_than_boot_wim
+      changed_when: false
+      when: windows.winpe_builder.storage_drivers | default([]) | length > 0
+
+    - name: Run WinPE build script
+      ansible.windows.win_command:
+        argv:
+          - "{{ winpe_build_dir }}\\build-winpe.cmd"
+      when:
+        - (winpe_force_rebuild | default(false) | bool)
+          or (windows.winpe_builder.force_rebuild | bool)
+          or not boot_wim_stat_before.stat.exists
+          or not bootmgr_stat_before.stat.exists
+          or not capture_iso_stat_before.stat.exists
+          or ((winpe_inputs_newer_than_iso.output | default([]) | join('') | trim | lower) == 'true')
+          or ((winpe_drivers_newer_than_boot_wim.output | default([]) | join('') | trim | lower) == 'true')
+
+    - name: Verify Intel RST storage drivers in deploy boot.wim
+      ansible.windows.win_powershell:
+        script: |
+          $ErrorActionPreference = "Stop"
+          $bootWim = "{{ winpe_build_dir }}\boot.wim"
+          $mountDir = "{{ winpe_build_dir }}\verify-mount"
+          $expectedPatterns = @("Intel", "iaStor", "RST", "VMD")
+
+          if (Test-Path $mountDir) {
+            dism /Unmount-Image /MountDir:$mountDir /Discard | Out-Null
+          }
+          New-Item -ItemType Directory -Force -Path $mountDir | Out-Null
+
+          try {
+            dism /Mount-Image /ImageFile:$bootWim /Index:1 /MountDir:$mountDir | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+              throw "DISM failed to mount $bootWim for driver verification."
+            }
+
+            $driverOutput = dism /Image:$mountDir /Get-Drivers
+            if ($LASTEXITCODE -ne 0) {
+              throw "DISM Get-Drivers failed."
+            }
+
+            $matched = @()
+            foreach ($pattern in $expectedPatterns) {
+              if ($driverOutput -match $pattern) {
+                $matched += $pattern
+              }
+            }
+
+            if ($matched.Count -eq 0) {
+              throw "No Intel RST/VMD storage driver signatures found in boot.wim. DISM driver list:`n$driverOutput"
+            }
+
+            Write-Host "Verified storage driver signatures in boot.wim: $($matched -join ', ')"
+          }
+          finally {
+            if (Test-Path $mountDir) {
+              dism /Unmount-Image /MountDir:$mountDir /Discard | Out-Null
+            }
+          }
+      when: windows.winpe_builder.storage_drivers | default([]) | length > 0
+
+    - name: Check generated boot.wim
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\boot.wim"
+      register: boot_wim_stat
+
+    - name: Check generated capture ISO
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\winpe_capture.iso"
+      register: capture_iso_stat
+
+    - name: Check generated bootmgr
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\bootmgr"
+      register: bootmgr_stat
+
+    - name: Ensure WinPE boot support files are staged in build_dir
+      ansible.windows.win_powershell:
+        script: |
+          $ErrorActionPreference = "Stop"
+          $bootSupportDir = "{{ winpe_build_dir }}\boot"
+          $efiBootDir = "{{ winpe_build_dir }}\efi\boot"
+          $efiMicrosoftBootDir = "{{ winpe_build_dir }}\efi\microsoft\boot"
+          New-Item -ItemType Directory -Path $bootSupportDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $efiBootDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $efiMicrosoftBootDir -Force | Out-Null
+          Copy-Item -Path "{{ windows.winpe_builder.adk_dir }}\Windows Preinstallation Environment\amd64\Media\Boot\BCD" -Destination "$bootSupportDir\BCD" -Force
+          Copy-Item -Path "{{ windows.winpe_builder.adk_dir }}\Windows Preinstallation Environment\amd64\Media\Boot\boot.sdi" -Destination "$bootSupportDir\boot.sdi" -Force
+          Copy-Item -Path "{{ windows.winpe_builder.adk_dir }}\Windows Preinstallation Environment\amd64\Media\bootmgr" -Destination "{{ winpe_build_dir }}\bootmgr" -Force
+          Copy-Item -Path "{{ windows.winpe_builder.adk_dir }}\Windows Preinstallation Environment\amd64\Media\EFI\Microsoft\Boot\BCD" -Destination "$efiMicrosoftBootDir\BCD" -Force
+          Copy-Item -Path "{{ windows.winpe_builder.adk_dir }}\Windows Preinstallation Environment\amd64\Media\EFI\Boot\bootx64.efi" -Destination "$efiBootDir\bootx64.efi" -Force
+
+    - name: Check generated BCD
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\boot\\BCD"
+      register: boot_bcd_stat
+
+    - name: Check generated boot.sdi
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\boot\\boot.sdi"
+      register: boot_sdi_stat
+
+    - name: Check generated UEFI BCD
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\efi\\microsoft\\boot\\BCD"
+      register: boot_bcd_efi_stat
+
+    - name: Check generated bootx64.efi
+      ansible.windows.win_stat:
+        path: "{{ winpe_build_dir }}\\efi\\boot\\bootx64.efi"
+      register: bootx64_efi_stat
+
+    - name: Fail if boot.wim was not created
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\boot.wim was not created."
+      when: not boot_wim_stat.stat.exists
+
+    - name: Fail if winpe_capture.iso was not created
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\winpe_capture.iso was not created."
+      when: not capture_iso_stat.stat.exists
+
+    - name: Fail if bootmgr was not created
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\bootmgr was not created."
+      when: not bootmgr_stat.stat.exists
+
+    - name: Fail if BCD was not created
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\boot\\BCD was not created."
+      when: not boot_bcd_stat.stat.exists
+
+    - name: Fail if boot.sdi was not created
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\boot\\boot.sdi was not created."
+      when: not boot_sdi_stat.stat.exists
+
+    - name: Fail if UEFI BCD was not created
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\efi\\microsoft\\boot\\BCD was not created."
+      when: not boot_bcd_efi_stat.stat.exists
+
+    - name: Fail if bootx64.efi was not created
+      ansible.builtin.fail:
+        msg: "{{ winpe_build_dir }}\\efi\\boot\\bootx64.efi was not created."
+      when: not bootx64_efi_stat.stat.exists
+
+    - name: Read remote boot.wim SHA256
+      ansible.windows.win_shell: |
+        (Get-FileHash -Path '{{ winpe_build_dir }}\boot.wim' -Algorithm SHA256).Hash.Trim().ToLower()
+      register: remote_boot_hash
+      changed_when: false
+
+    - name: Read remote BCD SHA256
+      ansible.windows.win_shell: |
+        (Get-FileHash -Path '{{ winpe_build_dir }}\boot\BCD' -Algorithm SHA256).Hash.Trim().ToLower()
+      register: remote_bcd_hash
+      changed_when: false
+
+    - name: Read remote bootmgr SHA256
+      ansible.windows.win_shell: |
+        (Get-FileHash -Path '{{ winpe_build_dir }}\bootmgr' -Algorithm SHA256).Hash.Trim().ToLower()
+      register: remote_bootmgr_hash
+      changed_when: false
+
+    - name: Read remote boot.sdi SHA256
+      ansible.windows.win_shell: |
+        (Get-FileHash -Path '{{ winpe_build_dir }}\boot\boot.sdi' -Algorithm SHA256).Hash.Trim().ToLower()
+      register: remote_sdi_hash
+      changed_when: false
+
+    - name: Read remote UEFI BCD SHA256
+      ansible.windows.win_shell: |
+        (Get-FileHash -Path '{{ winpe_build_dir }}\efi\microsoft\boot\BCD' -Algorithm SHA256).Hash.Trim().ToLower()
+      register: remote_bcd_efi_hash
+      changed_when: false
+
+    - name: Read remote bootx64.efi SHA256
+      ansible.windows.win_shell: |
+        (Get-FileHash -Path '{{ winpe_build_dir }}\efi\boot\bootx64.efi' -Algorithm SHA256).Hash.Trim().ToLower()
+      register: remote_bootx64_efi_hash
+      changed_when: false
+
+    - name: Read remote winpe_capture.iso SHA256
+      ansible.windows.win_shell: |
+        (Get-FileHash -Path '{{ winpe_build_dir }}\winpe_capture.iso' -Algorithm SHA256).Hash.Trim().ToLower()
+      register: remote_capture_hash
+      changed_when: false
+
+    - name: Read local boot.wim SHA256 if present
+      ansible.builtin.shell: |
+        if [ -f "{{ deployer.artifacts.boot_wim }}" ]; then
+          sha256sum "{{ deployer.artifacts.boot_wim }}" | awk '{print $1}'
+        fi
+      args:
+        executable: /bin/bash
+      register: local_boot_hash
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Read local winpe_capture.iso SHA256 if present
+      ansible.builtin.shell: |
+        if [ -f "{{ deployer.artifacts.capture_iso }}" ]; then
+          sha256sum "{{ deployer.artifacts.capture_iso }}" | awk '{print $1}'
+        fi
+      args:
+        executable: /bin/bash
+      register: local_capture_hash
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Read local BCD SHA256 if present
+      ansible.builtin.shell: |
+        if [ -f "{{ deployer.artifacts.boot_bcd }}" ]; then
+          sha256sum "{{ deployer.artifacts.boot_bcd }}" | awk '{print $1}'
+        fi
+      args:
+        executable: /bin/bash
+      register: local_bcd_hash
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Read local boot.sdi SHA256 if present
+      ansible.builtin.shell: |
+        if [ -f "{{ deployer.artifacts.boot_sdi }}" ]; then
+          sha256sum "{{ deployer.artifacts.boot_sdi }}" | awk '{print $1}'
+        fi
+      args:
+        executable: /bin/bash
+      register: local_sdi_hash
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Read local bootmgr SHA256 if present
+      ansible.builtin.shell: |
+        if [ -f "{{ deployer.artifacts.bootmgr }}" ]; then
+          sha256sum "{{ deployer.artifacts.bootmgr }}" | awk '{print $1}'
+        fi
+      args:
+        executable: /bin/bash
+      register: local_bootmgr_hash
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Read local UEFI BCD SHA256 if present
+      ansible.builtin.shell: |
+        if [ -f "{{ deployer.artifacts.boot_bcd_efi }}" ]; then
+          sha256sum "{{ deployer.artifacts.boot_bcd_efi }}" | awk '{print $1}'
+        fi
+      args:
+        executable: /bin/bash
+      register: local_bcd_efi_hash
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Read local bootx64.efi SHA256 if present
+      ansible.builtin.shell: |
+        if [ -f "{{ deployer.artifacts.bootx64_efi }}" ]; then
+          sha256sum "{{ deployer.artifacts.bootx64_efi }}" | awk '{print $1}'
+        fi
+      args:
+        executable: /bin/bash
+      register: local_bootx64_efi_hash
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Pull boot.wim to controller over SMB when changed
+      ansible.builtin.command:
+        argv:
+          - smbclient
+          - "//{{ ansible_host }}/{{ winpe_build_drive }}$"
+          - -U
+          - "{{ ansible_user }}%{{ ansible_password }}"
+          - -c
+          - "get {{ winpe_build_subpath }}/boot.wim {{ deployer.artifacts.boot_wim }}"
+      delegate_to: localhost
+      no_log: true
+      when:
+        - (winpe_force_rebuild | default(false) | bool) or (windows.winpe_builder.force_rebuild | bool) or (local_boot_hash.stdout | trim) != (remote_boot_hash.stdout | trim)
+
+    - name: Pull winpe_capture.iso to controller over SMB when changed
+      ansible.builtin.command:
+        argv:
+          - smbclient
+          - "//{{ ansible_host }}/{{ winpe_build_drive }}$"
+          - -U
+          - "{{ ansible_user }}%{{ ansible_password }}"
+          - -c
+          - "get {{ winpe_build_subpath }}/winpe_capture.iso {{ deployer.artifacts.capture_iso }}"
+      delegate_to: localhost
+      no_log: true
+      when:
+        - (winpe_force_rebuild | default(false) | bool) or (windows.winpe_builder.force_rebuild | bool) or (local_capture_hash.stdout | trim) != (remote_capture_hash.stdout | trim)
+
+    - name: Pull BCD to controller over SMB when changed
+      ansible.builtin.command:
+        argv:
+          - smbclient
+          - "//{{ ansible_host }}/{{ winpe_build_drive }}$"
+          - -U
+          - "{{ ansible_user }}%{{ ansible_password }}"
+          - -c
+          - "get {{ winpe_build_subpath }}/boot/BCD {{ deployer.artifacts.boot_bcd }}"
+      delegate_to: localhost
+      no_log: true
+      when:
+        - (winpe_force_rebuild | default(false) | bool) or (windows.winpe_builder.force_rebuild | bool) or (local_bcd_hash.stdout | trim) != (remote_bcd_hash.stdout | trim)
+
+    - name: Pull boot.sdi to controller over SMB when changed
+      ansible.builtin.command:
+        argv:
+          - smbclient
+          - "//{{ ansible_host }}/{{ winpe_build_drive }}$"
+          - -U
+          - "{{ ansible_user }}%{{ ansible_password }}"
+          - -c
+          - "get {{ winpe_build_subpath }}/boot/boot.sdi {{ deployer.artifacts.boot_sdi }}"
+      delegate_to: localhost
+      no_log: true
+      when:
+        - (winpe_force_rebuild | default(false) | bool) or (windows.winpe_builder.force_rebuild | bool) or (local_sdi_hash.stdout | trim) != (remote_sdi_hash.stdout | trim)
+
+    - name: Pull bootmgr to controller over SMB when changed
+      ansible.builtin.command:
+        argv:
+          - smbclient
+          - "//{{ ansible_host }}/{{ winpe_build_drive }}$"
+          - -U
+          - "{{ ansible_user }}%{{ ansible_password }}"
+          - -c
+          - "get {{ winpe_build_subpath }}/bootmgr {{ deployer.artifacts.bootmgr }}"
+      delegate_to: localhost
+      no_log: true
+      when:
+        - (winpe_force_rebuild | default(false) | bool) or (windows.winpe_builder.force_rebuild | bool) or (local_bootmgr_hash.stdout | trim) != (remote_bootmgr_hash.stdout | trim)
+
+    - name: Pull UEFI BCD to controller over SMB when changed
+      ansible.builtin.command:
+        argv:
+          - smbclient
+          - "//{{ ansible_host }}/{{ winpe_build_drive }}$"
+          - -U
+          - "{{ ansible_user }}%{{ ansible_password }}"
+          - -c
+          - "get {{ winpe_build_subpath }}/efi/microsoft/boot/BCD {{ deployer.artifacts.boot_bcd_efi }}"
+      delegate_to: localhost
+      no_log: true
+      when:
+        - (winpe_force_rebuild | default(false) | bool) or (windows.winpe_builder.force_rebuild | bool) or (local_bcd_efi_hash.stdout | trim) != (remote_bcd_efi_hash.stdout | trim)
+
+    - name: Pull bootx64.efi to controller over SMB when changed
+      ansible.builtin.command:
+        argv:
+          - smbclient
+          - "//{{ ansible_host }}/{{ winpe_build_drive }}$"
+          - -U
+          - "{{ ansible_user }}%{{ ansible_password }}"
+          - -c
+          - "get {{ winpe_build_subpath }}/efi/boot/bootx64.efi {{ deployer.artifacts.bootx64_efi }}"
+      delegate_to: localhost
+      no_log: true
+      when:
+        - (winpe_force_rebuild | default(false) | bool) or (windows.winpe_builder.force_rebuild | bool) or (local_bootx64_efi_hash.stdout | trim) != (remote_bootx64_efi_hash.stdout | trim)

@@ -1,0 +1,156 @@
+---
+- name: Ensure golden image VM is running before Sysprep
+  hosts: proxmox_nodes
+  gather_facts: false
+  vars:
+    goldimage_vmid: "{{ windows.goldimage.vmid | string }}"
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Get current golden image VM state
+      community.proxmox.proxmox_kvm:
+        node: "{{ proxmox.node }}"
+        vmid: "{{ goldimage_vmid }}"
+        state: current
+      delegate_to: localhost
+      register: goldimage_vm_state
+
+    - name: Start golden image VM if currently stopped
+      community.proxmox.proxmox_kvm:
+        node: "{{ proxmox.node }}"
+        vmid: "{{ goldimage_vmid }}"
+        state: started
+      delegate_to: localhost
+      when: goldimage_vm_state.status != "running"
+
+- name: Sysprep Windows golden image VM
+  hosts: goldimage
+  gather_facts: false
+
+  tasks:
+    - name: Check WinRM port reachability to golden image VM
+      ansible.builtin.wait_for:
+        host: "{{ windows.goldimage.ip }}"
+        port: 5985
+        timeout: 5
+      delegate_to: localhost
+      register: golden_image_winrm_check
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if golden image VM WinRM port is not open
+      ansible.builtin.fail:
+        msg: "WinRM port 5985 is not open on golden image VM at {{ windows.goldimage.ip }}."
+      when: golden_image_winrm_check.failed | default(false)
+
+    - name: Wait for golden image WinRM to become available
+      ansible.builtin.wait_for:
+        host: "{{ windows.goldimage.ip }}"
+        port: 5985
+        timeout: 300
+        sleep: 5
+      delegate_to: localhost
+      changed_when: false
+
+    - name: Ensure Panther directory exists
+      ansible.windows.win_file:
+        path: C:\Windows\Panther
+        state: directory
+
+    - name: Copy unattend file
+      ansible.windows.win_copy:
+        src: ../files/Unattend.xml
+        dest: C:\Windows\Panther\Unattend.xml
+
+    - name: Remove AppX packages known to block Sysprep generalize
+      ansible.windows.win_powershell:
+        script: |
+          $ErrorActionPreference = "Stop"
+          $targets = @(
+            "Microsoft.MicrosoftEdge.Stable",
+            "Microsoft.Copilot"
+          )
+          $changed = $false
+          $removedPackages = @()
+          $removedProvisioned = @()
+
+          foreach ($target in $targets) {
+            $packages = Get-AppxPackage -AllUsers | Where-Object {
+              $_.Name -like "$target*" -or $_.PackageFullName -like "$target*"
+            }
+            foreach ($pkg in $packages) {
+              try {
+                Remove-AppxPackage -Package $pkg.PackageFullName -AllUsers -ErrorAction Stop
+                $changed = $true
+                $removedPackages += $pkg.PackageFullName
+              } catch {
+                # Keep going; some packages may already be in a removable/pending state.
+              }
+            }
+
+            $provisioned = Get-AppxProvisionedPackage -Online | Where-Object {
+              $_.DisplayName -like "$target*" -or $_.PackageName -like "$target*"
+            }
+            foreach ($prov in $provisioned) {
+              try {
+                Remove-AppxProvisionedPackage -Online -PackageName $prov.PackageName -ErrorAction Stop | Out-Null
+                $changed = $true
+                $removedProvisioned += $prov.PackageName
+              } catch {
+                # Keep going; package may already be deprovisioned.
+              }
+            }
+          }
+
+          [PSCustomObject]@{
+            changed = $changed
+            removed_packages = $removedPackages
+            removed_provisioned = $removedProvisioned
+          } | ConvertTo-Json -Compress
+      register: sysprep_appx_cleanup
+      changed_when: >
+        (sysprep_appx_cleanup.stdout | from_json).changed | default(false)
+
+    - name: Reboot golden image when AppX cleanup changed package state
+      ansible.windows.win_reboot:
+        reboot_timeout: 1200
+        post_reboot_delay: 30
+      when: >
+        (sysprep_appx_cleanup.stdout | from_json).changed | default(false)
+
+    - name: Run Sysprep generalize oobe shutdown
+      ansible.windows.win_command:
+        argv:
+          - C:\Windows\System32\Sysprep\Sysprep.exe
+          - /generalize
+          - /oobe
+          - /shutdown
+          - /unattend:C:\Windows\Panther\Unattend.xml
+      async: 45
+      poll: 0
+
+- name: Wait for golden image VM to stop
+  hosts: proxmox_nodes
+  gather_facts: false
+  vars:
+    goldimage_vmid: "{{ windows.goldimage.vmid | string }}"
+
+  tasks:
+    # Approved command exception:
+    # qm status is a Proxmox VM state check.
+    - name: Wait until golden image VM is stopped
+      ansible.builtin.command:
+        argv:
+          - qm
+          - status
+          - "{{ goldimage_vmid }}"
+      register: goldimage_status
+      until: "'status: stopped' in goldimage_status.stdout"
+      retries: 60
+      delay: 10
+      changed_when: false

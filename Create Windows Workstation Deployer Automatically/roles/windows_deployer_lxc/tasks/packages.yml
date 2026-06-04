@@ -1,0 +1,16 @@
+---
+- name: Install deployer packages
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - dnsmasq
+      - samba
+      - tftpd-hpa
+      - curl
+      - wget
+      - tar
+      - ipxe
+      - iproute2
+      - net-tools
+    state: present
+    update_cache: true

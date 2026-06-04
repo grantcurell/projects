@@ -1,0 +1,28 @@
+---
+- name: Deploy nginx site config
+  ansible.builtin.template:
+    src: nginx-deploy.conf.j2
+    dest: /etc/nginx/sites-available/deploy
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart nginx
+
+- name: Disable default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Restart nginx
+
+- name: Enable deploy nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/deploy
+    dest: /etc/nginx/sites-enabled/deploy
+    state: link
+  notify: Restart nginx
+
+- name: Ensure nginx is enabled and started
+  ansible.builtin.systemd_service:
+    name: nginx
+    enabled: true
+    state: started

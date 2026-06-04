@@ -1,0 +1,25 @@
+---
+- name: Inspect capture WinPE boot.wim contents
+  hosts: winpe_builder
+  gather_facts: false
+  tasks:
+    - name: Mount capture boot.wim and print marker lines
+      ansible.windows.win_shell: |
+        $ErrorActionPreference = 'Stop'
+        $mount = 'C:\DeployBuild\inspect-mount'
+        $wim = 'C:\winpe_capture\media\sources\boot.wim'
+        if (Test-Path $mount) {
+          dism /Unmount-Image /MountDir:$mount /Discard | Out-Null
+          Remove-Item -Path $mount -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $mount | Out-Null
+        dism /Mount-Image /ImageFile:$wim /Index:1 /MountDir:$mount
+        if ($LASTEXITCODE -ne 0) { throw "DISM mount failed: $LASTEXITCODE" }
+        Write-Host '---STARTNET---'
+        Get-Content -Path "$mount\Windows\System32\startnet.cmd" -TotalCount 4
+        Write-Host '---MARKERS---'
+        Select-String -Path "$mount\Deploy\capture.ps1" -Pattern 'Connecting SMB share|mapping capture share|explicit SMB credentials|Failed to map capture share|Capturing image to|Capturing image locally|ImageFile:' -CaseSensitive:$false | ForEach-Object { $_.Line }
+        Write-Host '---CAPTURE FULL---'
+        Get-Content -Path "$mount\Deploy\capture.ps1"
+        dism /Unmount-Image /MountDir:$mount /Discard | Out-Null
+        Remove-Item -Path $mount -Recurse -Force

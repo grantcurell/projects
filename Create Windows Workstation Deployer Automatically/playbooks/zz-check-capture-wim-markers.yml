@@ -1,0 +1,32 @@
+---
+- name: Check capture WinPE boot.wim marker strings
+  hosts: winpe_builder
+  gather_facts: false
+  tasks:
+    - name: Mount capture boot.wim and print marker strings
+      ansible.windows.win_powershell:
+        script: |
+          $ErrorActionPreference = 'Stop'
+          $mount = 'C:\DeployBuild\inspect-mount'
+          $wim = 'C:\winpe_capture\media\sources\boot.wim'
+
+          if (Test-Path $mount) {
+            dism /Unmount-Image /MountDir:$mount /Discard | Out-Null
+            Remove-Item -Path $mount -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Path $mount | Out-Null
+          dism /Mount-Image /ImageFile:$wim /Index:1 /MountDir:$mount | Out-Null
+
+          Write-Host '---CAPTURE MARKERS---'
+          Select-String -Path "$mount\Deploy\capture.ps1" -Pattern 'Preparing dedicated local staging disk|No alternate local volume found|publish-success.json|robocopy-deploy-wim.log' | ForEach-Object { $_.Line }
+          Write-Host '---WIMSCRIPT---'
+          Write-Host (Test-Path "$mount\Deploy\WimScript.ini")
+
+          dism /Unmount-Image /MountDir:$mount /Discard | Out-Null
+          Remove-Item -Path $mount -Recurse -Force
+      register: inspect_wim_markers
+
+    - name: Print marker output
+      ansible.builtin.debug:
+        var: inspect_wim_markers.output

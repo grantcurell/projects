@@ -1,0 +1,10 @@
+#!ipxe
+
+set base http://{{ deployer.network.server_ip }}
+
+echo Starting Secure Boot iPXE WinPE boot
+kernel ${base}/ipxe/wimboot pause {{ windows.deploy_debug.wimboot_args }}
+initrd ${base}/winpe/EFI/Microsoft/Boot/BCD BCD
+initrd ${base}/winpe/Boot/boot.sdi boot.sdi
+initrd ${base}/winpe/boot.wim boot.wim
+boot

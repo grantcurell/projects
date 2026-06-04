@@ -1,0 +1,55 @@
+---
+- name: Ensure Ubuntu LXC template exists on Proxmox
+  hosts: proxmox_nodes
+  gather_facts: false
+
+  tasks:
+    - name: Check whether Ubuntu LXC template exists
+      ansible.builtin.stat:
+        path: "/var/lib/vz/template/cache/{{ proxmox.defaults.ostemplate }}"
+      register: ubuntu_lxc_template
+
+    # Approved command exception:
+    # pveam template download is a Proxmox host operation not covered by the imported create_lxc_container role.
+    - name: Download Ubuntu LXC template if missing
+      ansible.builtin.command:
+        argv:
+          - pveam
+          - download
+          - "{{ proxmox.defaults.template_storage }}"
+          - "{{ proxmox.defaults.ostemplate }}"
+      when: not ubuntu_lxc_template.stat.exists
+      changed_when: true
+
+- name: Create Windows deployer LXC using imported role
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Build lxc_container object for imported create_lxc_container role
+      ansible.builtin.set_fact:
+        windows_deployer_lxc_container:
+          vmid: "{{ deployer.lxc.vmid }}"
+          hostname: "{{ deployer.lxc.hostname }}"
+          ostemplate: "{{ deployer.lxc.ostemplate }}"
+          cores: "{{ deployer.lxc.cores }}"
+          memory_mb: "{{ deployer.lxc.memory_mb }}"
+          swap_mb: "{{ deployer.lxc.swap_mb }}"
+          rootfs_gb: "{{ deployer.lxc.rootfs_gb }}"
+          unprivileged: "{{ deployer.lxc.unprivileged }}"
+          nesting: "{{ deployer.lxc.nesting }}"
+          bridge: "{{ deployer.lxc.bridge }}"
+          vlan_tag: "{{ deployer.lxc.vlan_tag }}"
+          hwaddr: "{{ deployer.lxc.hwaddr }}"
+          ip: "{{ deployer.lxc.ip }}"
+          cidr: "{{ deployer.lxc.cidr_prefix }}"
+          gateway: "{{ deployer.lxc.gateway }}"
+          onboot: "{{ deployer.lxc.onboot }}"
+          password: "{{ deployer.lxc.password }}"
+
+    - name: Create deployer LXC with imported create_lxc_container role
+      ansible.builtin.include_role:
+        name: create_lxc_container
+      vars:
+        lxc_container: "{{ windows_deployer_lxc_container }}"

@@ -1,0 +1,310 @@
+---
+# Create LXC Container Role
+# =================================================================
+# PURPOSE:
+#   Reusable role for creating Proxmox LXC containers with consistent configuration
+#   This role can be used for PowerDNS, Traefik, Authentik, and other services
+#
+# VARIABLES REQUIRED:
+#   lxc_container:
+#     vmid: <VMID number>
+#     hostname: <hostname>
+#     ostemplate: <template name>
+#     cores: <number of cores>
+#     memory_mb: <memory in MB>
+#     swap_mb: <swap in MB>
+#     rootfs_gb: <root filesystem size in GB>
+#     unprivileged: <true/false>
+#     nesting: <true/false>
+#     bridge: <bridge name>
+#     vlan_tag: <VLAN tag number>
+#     hwaddr: <MAC address>
+#     ip: <IP address>
+#     cidr: <CIDR notation>
+#     gateway: <gateway IP>
+#   Optional:
+#     onboot: <true|false> — start container on Proxmox boot (default true)
+#
+# =================================================================
+
+- name: Set fact for Proxmox API user and token ID
+  ansible.builtin.set_fact:
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+    proxmox_api_password: "{{ proxmox.root_password }}"
+
+- name: Get Proxmox node info
+  community.proxmox.proxmox_node_info:
+    api_host: "{{ proxmox.host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password }}"
+    validate_certs: "{{ not proxmox.insecure_skip_tls_verify }}"
+  register: node_info
+  delegate_to: localhost
+
+- name: Assert node exists
+  ansible.builtin.assert:
+    that:
+      - node_info.proxmox_nodes | map(attribute='node') | list | length > 0
+      - (node_info.proxmox_nodes | map(attribute='node') | list) is search(proxmox.node)
+    fail_msg: "Proxmox node '{{ proxmox.node }}' not found or token lacks access."
+
+- name: Check if LXC container already exists via Proxmox API
+  ansible.builtin.uri:
+    url: "https://{{ proxmox.host }}:8006/api2/json/nodes/{{ proxmox.node }}/lxc/{{ lxc_container.vmid }}/config"
+    method: GET
+    url_username: "{{ proxmox_api_user }}"
+    url_password: "{{ proxmox_api_password }}"
+    force_basic_auth: true
+    validate_certs: "{{ not proxmox.insecure_skip_tls_verify }}"
+    status_code: [200, 404]
+  register: lxc_exists_check
+  delegate_to: localhost
+  failed_when: false
+  changed_when: false
+
+- name: Set fact for container existence
+  ansible.builtin.set_fact:
+    container_exists: "{{ (lxc_exists_check.status | default(404)) == 200 }}"
+
+- name: Build netif dictionary from networks list (if provided)
+  ansible.builtin.set_fact:
+    netif_dict: >-
+      {{
+        netif_dict | default({}) | combine(
+          {
+            ('net' + (ansible_loop.index0 | string)): 'name=' + item.name + ',bridge=' + item.bridge + ',hwaddr=' + item.hwaddr + (',tag=' + (item.vlan_tag | string) if (item.vlan_tag is defined and item.vlan_tag | string | length > 0) else '') + ',ip=' + item.ip + '/' + (item.cidr | string) + (',gw=' + item.gateway if (item.gateway is defined and item.gateway | string | length > 0) else '')
+          }
+        )
+      }}
+  loop: "{{ lxc_container.networks }}"
+  when: lxc_container.networks is defined
+  loop_control:
+    label: "{{ item.name }}"
+    extended: true
+
+- name: Build netif dictionary from single interface (backward compatibility)
+  ansible.builtin.set_fact:
+    netif_dict:
+      net0: "{{ 'name=eth0,bridge=' ~ lxc_container.bridge ~ ',hwaddr=' ~ lxc_container.hwaddr ~ ((',tag=' ~ (lxc_container.vlan_tag | string)) if (lxc_container.vlan_tag is defined and (lxc_container.vlan_tag | string | length > 0)) else '') ~ ',ip=' ~ lxc_container.ip ~ '/' ~ (lxc_container.cidr | string) ~ ',gw=' ~ lxc_container.gateway }}"
+  when: lxc_container.networks is not defined
+
+- name: Create or update LXC container
+  community.proxmox.proxmox:
+    api_host: "{{ proxmox.host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password }}"
+    validate_certs: "{{ not proxmox.insecure_skip_tls_verify }}"
+    node: "{{ proxmox.node }}"
+    vmid: "{{ lxc_container.vmid }}"
+    hostname: "{{ lxc_container.hostname }}"
+    ostemplate: "{{ lxc_container.ostemplate }}"
+    storage: "{{ proxmox.defaults.storage_pool }}"
+    disk: "{{ proxmox.defaults.storage_pool }}:{{ lxc_container.rootfs_gb }}"
+    cores: "{{ lxc_container.cores }}"
+    memory: "{{ lxc_container.memory_mb }}"
+    swap: "{{ lxc_container.swap_mb }}"
+    unprivileged: "{{ lxc_container.unprivileged }}"
+    password: "{{ lxc_container.password | default(deployer.lxc.password) }}"
+    features:
+      - "nesting={{ 1 if lxc_container.nesting else 0 }}"
+    netif: "{{ netif_dict }}"
+    onboot: "{{ lxc_container.onboot }}"
+    update: true
+    state: present
+    timeout: 120
+  delegate_to: localhost
+  when: not container_exists | bool
+
+- name: Ensure existing LXC starts on boot when onboot requested
+  community.proxmox.proxmox:
+    api_host: "{{ proxmox.host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password }}"
+    validate_certs: "{{ not proxmox.insecure_skip_tls_verify }}"
+    node: "{{ proxmox.node }}"
+    vmid: "{{ lxc_container.vmid }}"
+    hostname: "{{ lxc_container.hostname }}"
+    onboot: "{{ lxc_container.onboot }}"
+    update: true
+    state: present
+  delegate_to: localhost
+  when: container_exists | bool and lxc_container.onboot
+
+- name: Wait for container to be fully registered in Proxmox API
+  ansible.builtin.pause:
+    seconds: 5
+  delegate_to: localhost
+  when: not container_exists | bool
+
+- name: Start the LXC container
+  community.proxmox.proxmox:
+    api_host: "{{ proxmox.host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password }}"
+    validate_certs: "{{ not proxmox.insecure_skip_tls_verify }}"
+    node: "{{ proxmox.node }}"
+    vmid: "{{ lxc_container.vmid }}"
+    hostname: "{{ lxc_container.hostname }}"
+    state: started
+  delegate_to: localhost
+
+- name: Wait for container to be running
+  ansible.builtin.pause:
+    seconds: 5
+  delegate_to: localhost
+
+- name: Set container IP for SSH operations
+  ansible.builtin.set_fact:
+    container_ip: "{{ lxc_container.networks[0].ip if (lxc_container.networks is defined and lxc_container.networks | length > 0) else lxc_container.ip }}"
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+
+- name: Remove old known_hosts entries for container IP
+  ansible.builtin.shell: |
+      if [ -f ~/.ssh/known_hosts ]; then
+        sed -i '/{{ container_ip }}/d' ~/.ssh/known_hosts
+      fi
+  delegate_to: localhost
+  changed_when: true
+  failed_when: false
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+
+- name: Set root password via pct exec
+  ansible.builtin.command:
+    cmd: >
+      /usr/sbin/pct exec {{ lxc_container.vmid }} --
+      bash -c "echo 'root:{{ lxc_container.password | default(deployer.lxc.password) }}' | chpasswd"
+  delegate_to: "{{ groups['proxmox_nodes'] | first }}"
+  register: set_password_result
+  failed_when: false
+  changed_when: true
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+  no_log: true
+
+- name: Wait for cloud-init to finish (if present) to avoid config race
+  ansible.builtin.command:
+    cmd: >
+      /usr/sbin/pct exec {{ lxc_container.vmid }} --
+      bash -c "if command -v cloud-init >/dev/null 2>&1; then cloud-init status --wait 2>/dev/null || true; fi"
+  delegate_to: "{{ groups['proxmox_nodes'] | first }}"
+  register: cloudinit_wait_result
+  failed_when: false
+  changed_when: false
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+  no_log: true
+
+- name: Ensure openssh-server installed and host keys exist
+  ansible.builtin.command:
+    cmd: >
+      /usr/sbin/pct exec {{ lxc_container.vmid }} --
+      bash -lc '
+        set -euo pipefail
+        export DEBIAN_FRONTEND=noninteractive
+        if [ -f /etc/os-release ]; then
+          . /etc/os-release
+          OS_ID="$ID"
+        else
+          OS_ID="unknown"
+        fi
+        if [ "$OS_ID" = "ubuntu" ] || [ "$OS_ID" = "debian" ]; then
+          apt-get update -y
+          apt-get install -y openssh-server
+        elif [ "$OS_ID" = "rocky" ] || [ "$OS_ID" = "rhel" ] || [ "$OS_ID" = "centos" ]; then
+          if command -v dnf >/dev/null 2>&1; then
+            dnf install -y openssh-server
+          elif command -v yum >/dev/null 2>&1; then
+            yum install -y openssh-server
+          fi
+        fi
+        if [ ! -f /etc/ssh/sshd_config ]; then
+          echo "ERROR: openssh-server installation failed - /etc/ssh/sshd_config not found"
+          exit 1
+        fi
+        mkdir -p /run/sshd
+        ssh-keygen -A
+      '
+  delegate_to: "{{ groups['proxmox_nodes'] | first }}"
+  register: ssh_prereq
+  changed_when: true
+  failed_when: false
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+  no_log: true
+  timeout: 600
+
+- name: Configure SSH PermitRootLogin
+  ansible.builtin.command:
+    cmd: >
+      /usr/sbin/pct exec {{ lxc_container.vmid }} --
+      bash -c "grep -q '^PermitRootLogin yes' /etc/ssh/sshd_config || echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config"
+  delegate_to: "{{ groups['proxmox_nodes'] | first }}"
+  register: ssh_config_permitroot
+  changed_when: true
+  failed_when: false
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+
+- name: Configure SSH PasswordAuthentication
+  ansible.builtin.command:
+    cmd: >
+      /usr/sbin/pct exec {{ lxc_container.vmid }} --
+      bash -c "grep -q '^PasswordAuthentication yes' /etc/ssh/sshd_config || echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config"
+  delegate_to: "{{ groups['proxmox_nodes'] | first }}"
+  register: ssh_config_passwordauth
+  changed_when: true
+  failed_when: false
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+
+
+- name: Restart sshd and wait until active inside LXC
+  ansible.builtin.shell: >
+    /usr/sbin/pct exec {{ lxc_container.vmid }} -- bash -c
+    'systemctl restart sshd &&
+     until systemctl is-active --quiet sshd; do sleep 1; done'
+  delegate_to: "{{ groups['proxmox_nodes'] | first }}"
+  vars:
+    ansible_connection: ssh
+  register: ssh_restart_result
+  changed_when: true
+  failed_when: ssh_restart_result.rc != 0
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+
+- name: Wait until sshd is active and listening on port 22
+  ansible.builtin.command:
+    cmd: >
+      /usr/sbin/pct exec {{ lxc_container.vmid }} --
+      bash -c "systemctl is-active --quiet sshd && ss -tln | grep -q ':22'"
+  delegate_to: "{{ groups['proxmox_nodes'] | first }}"
+  vars:
+    ansible_connection: ssh
+  register: sshd_ready
+  changed_when: false
+  failed_when: false
+  until: sshd_ready.rc == 0
+  retries: 30
+  delay: 2
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+  no_log: true
+
+- name: Test SSH connection with password (retry until it works)
+  ansible.builtin.command:
+    cmd: >
+      sshpass -p '{{ lxc_container.password | default(deployer.lxc.password) }}' ssh
+      -o StrictHostKeyChecking=no
+      -o UserKnownHostsFile=/dev/null
+      -o PreferredAuthentications=password
+      -o PubkeyAuthentication=no
+      -o ConnectTimeout=5
+      -o ConnectionAttempts=1
+      root@{{ container_ip }} "echo SSH test successful"
+  delegate_to: localhost
+  register: ssh_test
+  changed_when: false
+  failed_when: false
+  until: ssh_test.rc == 0
+  retries: 30
+  delay: 3
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool)
+  no_log: true
+
+- name: Fail if SSH password auth never became usable
+  ansible.builtin.fail:
+    msg: "SSH password auth did not become ready in time. Last rc={{ ssh_test.rc }}"
+  when: not container_exists | bool and (lxc_container.verify_ssh_password | default(false) | bool) and ssh_test.rc != 0

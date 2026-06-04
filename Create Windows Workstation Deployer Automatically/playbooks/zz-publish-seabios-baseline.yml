@@ -1,0 +1,72 @@
+---
+- name: Publish SeaBIOS baseline artifacts and iPXE script
+  hosts: deployer_lxc
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Ensure baseline directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - /srv/deploy/winpe
+        - /srv/deploy/winpe/Boot
+        - /srv/deploy/ipxe
+
+    - name: Copy baseline BCD
+      ansible.builtin.copy:
+        src: ../artifacts/baseline/Boot/BCD
+        dest: /srv/deploy/winpe/Boot/BCD
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Copy baseline boot.sdi
+      ansible.builtin.copy:
+        src: ../artifacts/baseline/Boot/boot.sdi
+        dest: /srv/deploy/winpe/Boot/boot.sdi
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Copy baseline boot.wim
+      ansible.builtin.copy:
+        src: ../artifacts/baseline/boot.wim
+        dest: /srv/deploy/winpe/boot.wim
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Copy baseline bootmgr
+      ansible.builtin.copy:
+        src: ../artifacts/baseline/bootmgr
+        dest: /srv/deploy/winpe/bootmgr
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Write SeaBIOS-only iPXE script
+      ansible.builtin.copy:
+        dest: /srv/deploy/ipxe/boot.ipxe
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          #!ipxe
+          dhcp
+          set base http://{{ deployer.network.server_ip }}
+          kernel ${base}/ipxe/wimboot pause
+          initrd ${base}/winpe/bootmgr bootmgr
+          initrd ${base}/winpe/Boot/BCD BCD
+          initrd ${base}/winpe/Boot/boot.sdi boot.sdi
+          initrd ${base}/winpe/boot.wim boot.wim
+          boot
+
+    - name: Ensure nginx is running
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: started
+        enabled: true
