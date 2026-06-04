@@ -1,4 +1,4 @@
-# SEED_AI.md - Current Agent Handoff for `Create Windows Workstation Deployer Automatically`
+# SEED_AI.md - Current Agent Handoff for `Windows Workstation Deployer for Offline Environments`
 
 ## Purpose
 
@@ -9,7 +9,7 @@ This is the continuity file for future AI edits. It reflects the current known-g
 ## Project roots and entrypoint
 
 - Repo root: `/home/gcurell/labtracker/projects`
-- Project root: `/home/gcurell/labtracker/projects/Create Windows Workstation Deployer Automatically`
+- Project root: `/home/gcurell/labtracker/Windows Workstation Deployer for Offline Environments`
 - Main orchestration: `playbooks/site.yml`
 
 ---
