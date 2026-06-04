@@ -24,7 +24,7 @@ Before running the setup you will need:
   - This is the thing from which the Ansible will run. You'll pull your code down onto the controller and it will then orchestrate everything. Doesn't matter where or what it is as long as it has IP connectivity to Proxmox, Windows Server, the Golden Image VM, and it's running Ubuntu.
 - **Intel RST/NVMe driver package** pre-cached on the controller for first run:
   - Put `Intel-RST-7WNN0.exe` in `artifacts/drivers/` before running the pipeline.
-  - Source URL is defined in `inventories/windows-deployer/group_vars/all.yml` under `windows.winpe_builder.storage_drivers`.
+  - Download URL: [Intel Rapid Storage Technology Driver and Application 7WNN0 (Dell)](https://dl.dell.com/FOLDER12407846M/2/Intel-Rapid-Storage-Technology-Driver-and-Application_7WNN0_WIN64_20.2.1.1016_A01.EXE)
 
 
 This project builds for you:
