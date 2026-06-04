@@ -1,0 +1,4 @@
+artifacts/**
+!artifacts/.gitkeep
+*.retry
+.vault_pass

@@ -1,0 +1,28 @@
+---
+- name: Ensure services are running
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - nginx
+    - dnsmasq
+    - smbd
+
+- name: Validate Secure Boot autoexec script over HTTP
+  ansible.builtin.uri:
+    url: "http://127.0.0.1/ipxe/autoexec.ipxe"
+    method: HEAD
+    status_code: 200
+
+- name: Validate legacy boot.ipxe over HTTP
+  ansible.builtin.uri:
+    url: "http://127.0.0.1/ipxe/boot.ipxe"
+    method: HEAD
+    status_code: 200
+
+- name: Validate wimboot over HTTP
+  ansible.builtin.uri:
+    url: "http://127.0.0.1/ipxe/wimboot"
+    method: HEAD
+    status_code: 200

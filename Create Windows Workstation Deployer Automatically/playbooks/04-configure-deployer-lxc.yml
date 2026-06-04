@@ -1,0 +1,8 @@
+---
+- name: Configure Windows deployer LXC
+  hosts: deployer_lxc
+  gather_facts: false
+  become: true
+
+  roles:
+    - windows_deployer_lxc

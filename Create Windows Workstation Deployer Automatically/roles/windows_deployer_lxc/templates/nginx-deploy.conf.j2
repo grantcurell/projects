@@ -1,0 +1,13 @@
+server {
+    listen 80 default_server;
+    server_name _;
+
+    root {{ deployer.paths.root }};
+    autoindex on;
+
+    client_max_body_size 50M;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

@@ -1,0 +1,75 @@
+---
+- name: Write valid capture success markers from promoted WIM
+  hosts: deployer_lxc
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Stat promoted deploy.wim
+      ansible.builtin.stat:
+        path: "{{ deployer.paths.deploy_wim }}"
+        checksum_algorithm: sha256
+      register: promoted_wim
+
+    - name: Fail if promoted deploy.wim is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.paths.deploy_wim }}"
+      when: not promoted_wim.stat.exists
+
+    - name: Ensure capture path points at promoted WIM
+      ansible.builtin.file:
+        src: "{{ deployer.paths.deploy_wim }}"
+        dest: "{{ deployer.paths.capture }}/deploy.wim"
+        state: hard
+        force: true
+
+    - name: Build marker payloads
+      ansible.builtin.set_fact:
+        marker_completed_utc: "{{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+        capture_success_marker:
+          schema: 1
+          phase: local_capture
+          status: success
+          image: deploy.wim
+          bytes: "{{ promoted_wim.stat.size | int }}"
+          sha256: "{{ promoted_wim.stat.checksum }}"
+          dism_exit_code: 0
+          robocopy_exit_code: -1
+          completed_utc: "{{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+        publish_success_marker:
+          schema: 1
+          phase: publish
+          status: success
+          image: deploy.wim
+          bytes: "{{ promoted_wim.stat.size | int }}"
+          sha256: "{{ promoted_wim.stat.checksum }}"
+          dism_exit_code: 0
+          robocopy_exit_code: 1
+          completed_utc: "{{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+
+    - name: Write capture marker temp file
+      ansible.builtin.copy:
+        content: "{{ capture_success_marker | to_json }}"
+        dest: "{{ deployer.paths.capture }}/capture-success.json.tmp"
+        mode: "0644"
+
+    - name: Atomically move capture marker temp file into place
+      ansible.builtin.command:
+        argv:
+          - mv
+          - -f
+          - "{{ deployer.paths.capture }}/capture-success.json.tmp"
+          - "{{ deployer.paths.capture }}/capture-success.json"
+
+    - name: Write publish marker temp file
+      ansible.builtin.copy:
+        content: "{{ publish_success_marker | to_json }}"
+        dest: "{{ deployer.paths.capture }}/{{ deployer.capture.success_marker_file }}.tmp"
+        mode: "0644"
+
+    - name: Atomically move publish marker temp file into place
+      ansible.builtin.command:
+        argv:
+          - mv
+          - -f
+          - "{{ deployer.paths.capture }}/{{ deployer.capture.success_marker_file }}.tmp"
+          - "{{ deployer.paths.capture }}/{{ deployer.capture.success_marker_file }}"

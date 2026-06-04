@@ -1,0 +1,163 @@
+proxmox:
+  host: 192.168.5.2
+  user: root
+  root_password: CHANGEME_PROXMOX_ROOT_PASSWORD
+  node: proxmox1
+  token: ''
+  automation_token_id: ''
+  insecure_skip_tls_verify: true
+  defaults:
+    network_bridge: vmbr0
+    storage: local-lvm
+    storage_pool: local-lvm
+    template_storage: local
+    ostemplate: ubuntu-24.04-standard_24.04-2_amd64.tar.zst
+windows:
+  deploy_debug:
+    wimboot_args: ''
+    startup_pause: false
+  deploy:
+    stop_after_stage: none
+    pause_between_stages: false
+    auto_reboot: true
+    target_disk_number: 0
+    minimum_target_disk_size_bytes: 85899345920
+  goldimage:
+    vmid: 114
+    name: goldimage
+    ip: 192.168.5.172
+    username: Admin
+    password: CHANGEME_GOLDIMAGE_PASSWORD
+    unattend_path: C:\Windows\Panther\Unattend.xml
+    capture_boot_order: order=ide2
+    normal_boot_order: order=sata1;ide2
+  winpe_builder:
+    vmid: 110
+    name: WinServ2025
+    ip: 192.168.5.171
+    username: Administrator
+    password: CHANGEME_WINPE_BUILDER_PASSWORD
+    force_rebuild: false
+    build_dir: C:\DeployBuild
+    drivers_dir: C:\Drivers
+    storage_drivers:
+      - name: dell-pro-max-t2-intel-rst
+        models:
+          - Dell Pro Max Tower T2 FCT2250
+        release_id: 7WNN0
+        version: 20.2.1.1016, A01
+        url: https://dl.dell.com/FOLDER12407846M/2/Intel-Rapid-Storage-Technology-Driver-and-Application_7WNN0_WIN64_20.2.1.1016_A01.EXE
+        filename: Intel-RST-7WNN0.exe
+        extract_subdir: IntelRST
+    winpe_deploy_dir: C:\winpe_deploy
+    winpe_capture_dir: C:\winpe_capture
+    adk_dir: C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit
+  capture:
+    staging_label: CAPTURE
+    staging_drive_letter: S
+    staging_min_size_bytes: 42949672960
+    dism_compress: fast
+    dism_verify: false
+  test_workstation:
+    node: proxmox2
+    vmid: 199
+    name: windows-install-test
+    memory_mb: 4096
+    cores: 4
+    sockets: 1
+    cpu: host
+    disk_gb: 100
+    disk_bus: sata
+    nic_model: e1000
+    machine: q35
+    bios: ovmf
+    recreate: true
+    boot_order: order=net0
+    post_deploy_boot_order: order=sata0;net0
+    expect_winrm: true
+deployer:
+  lxc:
+    vmid: 131
+    hostname: win-deploy-lxc
+    ip: 192.168.5.219
+    cidr: 192.168.5.219/24
+    cidr_prefix: 24
+    netmask: 255.255.255.0
+    gateway: 192.168.5.1
+    password: CHANGEME_DEPLOYER_LXC_PASSWORD
+    cores: 2
+    memory: 4096
+    memory_mb: 4096
+    swap: 1024
+    swap_mb: 1024
+    rootfs_gb: 120
+    disk: local-lvm:120
+    storage: local-lvm
+    template_storage: local
+    ostemplate: local:vztmpl/ubuntu-24.04-standard_24.04-2_amd64.tar.zst
+    bridge: vmbr0
+    vlan_tag: ''
+    hwaddr: BC:24:11:60:1A:1B
+    onboot: true
+    unprivileged: false
+    nesting: true
+    features:
+    - nesting=1
+    - keyctl=1
+  network:
+    interface: eth0
+    server_ip: 192.168.5.219
+    subnet_cidr: 192.168.5.0/24
+    netmask: 255.255.255.0
+    dhcp_start: 192.168.5.220
+    dhcp_end: 192.168.5.230
+    dns_server: 1.1.1.1
+  samba:
+    username: deployer
+    password: CHANGEME_DEPLOY_SMB_PASSWORD
+  capture:
+    wait_retries: 120
+    wait_delay_seconds: 30
+    min_wim_size_bytes: 1073741824
+    stable_check_seconds: 20
+    success_marker_file: publish-success.json
+  ipxe:
+    release_url: https://github.com/ipxe/ipxe/releases/latest/download/ipxeboot.tar.gz
+    wimboot_url: https://github.com/ipxe/wimboot/releases/latest/download/wimboot
+    cache_dir: /var/cache/windows-deployer/ipxe
+    secure_boot_arch: x86_64-sb
+    secure_boot_subdir: ipxeboot/x86_64-sb
+    secure_boot_shim: ipxeboot/x86_64-sb/ipxe-shim.efi
+    secure_boot_binaries:
+      - ipxe-shim.efi
+      - ipxe.efi
+      - snponly-shim.efi
+      - snponly.efi
+  paths:
+    root: /srv/deploy
+    images: /srv/deploy/images
+    winpe: /srv/deploy/winpe
+    ipxe: /srv/deploy/ipxe
+    tftp: /srv/tftp
+    capture: /srv/deploy/capture
+    logs: /srv/deploy/logs
+    boot_wim: /srv/deploy/winpe/boot.wim
+    ipxe_boot_wim: /srv/deploy/ipxe/winpe/boot.wim
+    bootmgr: /srv/deploy/winpe/bootmgr
+    boot_bcd: /srv/deploy/winpe/Boot/BCD
+    boot_sdi: /srv/deploy/winpe/Boot/boot.sdi
+    boot_bcd_efi: /srv/deploy/winpe/EFI/Microsoft/Boot/BCD
+    bootx64_efi: /srv/deploy/winpe/EFI/Boot/bootx64.efi
+    deploy_wim: /srv/deploy/images/deploy.wim
+  artifacts:
+    local_dir: '{{ inventory_dir }}/../../artifacts'
+    boot_wim: '{{ inventory_dir }}/../../artifacts/boot.wim'
+    bootmgr: '{{ inventory_dir }}/../../artifacts/bootmgr'
+    boot_bcd: '{{ inventory_dir }}/../../artifacts/boot/BCD'
+    boot_sdi: '{{ inventory_dir }}/../../artifacts/boot/boot.sdi'
+    boot_bcd_efi: '{{ inventory_dir }}/../../artifacts/efi/microsoft/boot/BCD'
+    bootx64_efi: '{{ inventory_dir }}/../../artifacts/efi/boot/bootx64.efi'
+    capture_iso: '{{ inventory_dir }}/../../artifacts/winpe_capture.iso'
+    deploy_wim: '{{ inventory_dir }}/../../artifacts/deploy.wim'
+    final_backup_glob: '{{ inventory_dir }}/../../artifacts/vzdump-lxc-{{ deployer.lxc.vmid
+      }}-*.tar.zst'

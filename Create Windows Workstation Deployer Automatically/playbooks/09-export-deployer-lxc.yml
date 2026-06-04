@@ -1,0 +1,99 @@
+---
+- name: Export deployer LXC
+  hosts: proxmox_nodes
+  gather_facts: false
+
+  tasks:
+    - name: Estimate deployer root filesystem used bytes
+      ansible.builtin.command:
+        argv:
+          - pct
+          - exec
+          - "{{ deployer.lxc.vmid | string }}"
+          - --
+          - df
+          - -B1
+          - --output=used
+          - /
+      register: deployer_rootfs_used
+      changed_when: false
+      failed_when: false
+
+    - name: Read available bytes in vzdump target filesystem
+      ansible.builtin.command:
+        argv:
+          - df
+          - -B1
+          - --output=avail
+          - /var/lib/vz/dump
+      register: dumpdir_avail
+      changed_when: false
+
+    - name: Compute export space requirement
+      ansible.builtin.set_fact:
+        deployer_rootfs_used_bytes: >-
+          {{
+            (
+              (deployer_rootfs_used.stdout_lines[1] | trim | int)
+              if (deployer_rootfs_used.stdout_lines is defined and (deployer_rootfs_used.stdout_lines | length) > 1)
+              else 0
+            )
+          }}
+        dumpdir_available_bytes: "{{ (dumpdir_avail.stdout_lines[1] | trim | int) if (dumpdir_avail.stdout_lines | length) > 1 else 0 }}"
+        dumpdir_required_bytes: "{{ [21474836480, (deployer_rootfs_used_bytes | int) + 5368709120] | max }}"
+
+    - name: Fail early when dump target does not have enough free space
+      ansible.builtin.fail:
+        msg: >-
+          Not enough free space in /var/lib/vz/dump for vzdump of LXC {{ deployer.lxc.vmid }}.
+          Available={{ dumpdir_available_bytes }} bytes, Required(min)= {{ dumpdir_required_bytes }} bytes.
+          Free up old vzdump archives in /var/lib/vz/dump or change --dumpdir to a larger filesystem, then retry.
+      when: (dumpdir_available_bytes | int) < (dumpdir_required_bytes | int)
+
+    # Approved command exception:
+    # pct shutdown is a Proxmox LXC lifecycle operation.
+    - name: Stop deployer LXC before export
+      ansible.builtin.command:
+        argv:
+          - pct
+          - shutdown
+          - "{{ deployer.lxc.vmid | string }}"
+      changed_when: true
+      failed_when: false
+
+    # Approved command exception:
+    # vzdump has no dedicated module in this workflow.
+    - name: Create vzdump backup
+      ansible.builtin.command:
+        argv:
+          - vzdump
+          - "{{ deployer.lxc.vmid | string }}"
+          - --mode
+          - stop
+          - --compress
+          - zstd
+          - --dumpdir
+          - /var/lib/vz/dump
+      changed_when: true
+
+    - name: Find deployer LXC backups
+      ansible.builtin.find:
+        paths: /var/lib/vz/dump
+        patterns: "vzdump-lxc-{{ deployer.lxc.vmid }}-*.tar.zst"
+        file_type: file
+      register: deployer_backups
+
+    - name: Fail if no backup was created
+      ansible.builtin.fail:
+        msg: "No vzdump backup found for LXC {{ deployer.lxc.vmid }}"
+      when: deployer_backups.files | length == 0
+
+    - name: Select newest deployer backup
+      ansible.builtin.set_fact:
+        newest_deployer_backup: "{{ (deployer_backups.files | sort(attribute='mtime'))[-1].path }}"
+
+    - name: Fetch backup to local artifacts directory
+      ansible.builtin.fetch:
+        src: "{{ newest_deployer_backup }}"
+        dest: "{{ deployer.artifacts.local_dir }}/"
+        flat: true

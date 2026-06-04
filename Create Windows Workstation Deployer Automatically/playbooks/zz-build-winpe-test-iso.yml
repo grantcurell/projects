@@ -1,0 +1,48 @@
+---
+- name: Build fresh minimal WinPE test ISO
+  hosts: winpe_builder
+  gather_facts: false
+  tasks:
+    - name: Recreate clean WinPE_test tree
+      ansible.windows.win_shell: |
+        $ErrorActionPreference = "Stop"
+        $envScript = "C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\DandISetEnv.bat"
+        if (Test-Path "C:\WinPE_test\mount") {
+          cmd.exe /c "dism /Unmount-Image /MountDir:C:\WinPE_test\mount /Discard" | Out-Null
+        }
+        if (Test-Path "C:\WinPE_test") {
+          Remove-Item "C:\WinPE_test" -Recurse -Force
+        }
+        cmd.exe /c "call ""$envScript"" && copype amd64 C:\WinPE_test"
+        if ($LASTEXITCODE -ne 0) {
+          throw "copype failed with exit code $LASTEXITCODE"
+        }
+
+    - name: Set minimal startnet.cmd in WinPE_test boot.wim
+      ansible.windows.win_shell: |
+        $ErrorActionPreference = "Stop"
+        $mount = "C:\WinPE_test\mount"
+        if (Test-Path $mount) {
+          cmd.exe /c "dism /Unmount-Image /MountDir:$mount /Discard" | Out-Null
+          Remove-Item $mount -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        New-Item -ItemType Directory -Path $mount -Force | Out-Null
+        cmd.exe /c "dism /Mount-Image /ImageFile:C:\WinPE_test\media\sources\boot.wim /Index:1 /MountDir:$mount" | Out-Null
+        Set-Content -Path "$mount\Windows\System32\startnet.cmd" -Encoding Ascii -Value @(
+          "wpeinit",
+          "echo WinPE started",
+          "pause"
+        )
+        cmd.exe /c "dism /Unmount-Image /MountDir:$mount /Commit" | Out-Null
+
+    - name: Build WinPE_test ISO
+      ansible.windows.win_shell: |
+        $ErrorActionPreference = "Stop"
+        $envScript = "C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\DandISetEnv.bat"
+        if (Test-Path "C:\DeployBuild\winpe_test.iso") {
+          Remove-Item "C:\DeployBuild\winpe_test.iso" -Force
+        }
+        cmd.exe /c "call ""$envScript"" && MakeWinPEMedia /ISO C:\WinPE_test C:\DeployBuild\winpe_test.iso"
+        if ($LASTEXITCODE -ne 0) {
+          throw "MakeWinPEMedia failed with exit code $LASTEXITCODE"
+        }

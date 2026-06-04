@@ -1,0 +1,14 @@
+[capture]
+   path = {{ deployer.paths.capture }}
+   browseable = yes
+   read only = no
+   guest ok = yes
+   force user = nobody
+
+[deploy]
+   path = {{ deployer.paths.root }}
+   browseable = yes
+   read only = no
+   guest ok = no
+   valid users = {{ deployer.samba.username }}
+   force user = nobody

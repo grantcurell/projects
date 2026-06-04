@@ -1,0 +1,117 @@
+---
+- name: Ensure Secure Boot iPXE TFTP directory exists
+  ansible.builtin.file:
+    path: "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Secure Boot iPXE HTTP WinPE directory exists
+  ansible.builtin.file:
+    path: "{{ deployer.paths.ipxe }}/winpe"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download official iPXE Secure Boot bundle
+  ansible.builtin.get_url:
+    url: "{{ deployer.ipxe.release_url }}"
+    dest: "{{ deployer.ipxe.cache_dir }}/ipxeboot.tar.gz"
+    mode: "0644"
+    force: false
+
+- name: Extract official iPXE Secure Boot bundle
+  ansible.builtin.unarchive:
+    src: "{{ deployer.ipxe.cache_dir }}/ipxeboot.tar.gz"
+    dest: "{{ deployer.ipxe.cache_dir }}"
+    remote_src: true
+    creates: "{{ deployer.ipxe.cache_dir }}/ipxeboot/{{ deployer.ipxe.secure_boot_arch }}/ipxe-shim.efi"
+
+- name: Install signed UEFI iPXE binaries to TFTP
+  ansible.builtin.command:
+    argv:
+      - cp
+      - -a
+      - "{{ deployer.ipxe.cache_dir }}/ipxeboot/{{ deployer.ipxe.secure_boot_arch }}/."
+      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/"
+  args:
+    creates: "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe.efi"
+
+- name: Materialize ipxe-shim.efi as regular file for firmware compatibility
+  ansible.builtin.command:
+    argv:
+      - cp
+      - -f
+      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/shimx64.efi"
+      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe-shim.efi"
+
+- name: Materialize snponly-shim.efi as regular file for firmware compatibility
+  ansible.builtin.command:
+    argv:
+      - cp
+      - -f
+      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/shimx64.efi"
+      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/snponly-shim.efi"
+
+- name: Render Secure Boot autoexec script for TFTP
+  ansible.builtin.template:
+    src: autoexec.ipxe.j2
+    dest: "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/autoexec.ipxe"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render Secure Boot autoexec script for HTTP fallback
+  ansible.builtin.template:
+    src: autoexec.ipxe.j2
+    dest: "{{ deployer.paths.ipxe }}/autoexec.ipxe"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Copy BIOS iPXE binary
+  ansible.builtin.copy:
+    src: /usr/lib/ipxe/undionly.kpxe
+    dest: "{{ deployer.paths.tftp }}/undionly.kpxe"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Download wimboot
+  ansible.builtin.get_url:
+    url: "{{ deployer.ipxe.wimboot_url }}"
+    dest: "{{ deployer.paths.ipxe }}/wimboot"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render legacy BIOS iPXE boot script
+  ansible.builtin.template:
+    src: boot.ipxe.j2
+    dest: "{{ deployer.paths.ipxe }}/boot.ipxe"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Point TFTP root ipxe.efi to signed Secure Boot binary
+  ansible.builtin.file:
+    src: "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe.efi"
+    dest: "{{ deployer.paths.tftp }}/ipxe.efi"
+    state: link
+    force: true
+
+- name: Check deploy WinPE image exists for Secure Boot HTTP path
+  ansible.builtin.stat:
+    path: "{{ deployer.paths.boot_wim }}"
+  register: deploy_boot_wim_stat
+
+- name: Link boot.wim for Secure Boot iPXE HTTP path
+  ansible.builtin.file:
+    src: "{{ deployer.paths.boot_wim }}"
+    dest: "{{ deployer.paths.ipxe_boot_wim }}"
+    state: link
+    force: true
+  when: deploy_boot_wim_stat.stat.exists

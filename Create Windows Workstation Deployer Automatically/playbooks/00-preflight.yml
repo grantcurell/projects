@@ -1,0 +1,107 @@
+---
+- name: Validate Windows deployer inventory and network settings
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Assert required top-level sections exist
+      ansible.builtin.assert:
+        that:
+          - proxmox is mapping
+          - proxmox.defaults is mapping
+          - windows is mapping
+          - deployer is mapping
+          - deployer.lxc is mapping
+          - deployer.network is mapping
+          - deployer.paths is mapping
+          - deployer.artifacts is mapping
+        fail_msg: "Missing required top-level inventory sections."
+
+    - name: Assert required Proxmox variables
+      ansible.builtin.assert:
+        that:
+          - proxmox.host is string
+          - proxmox.host | length > 0
+          - proxmox.user is string
+          - proxmox.user | length > 0
+          - proxmox.root_password is string
+          - proxmox.root_password | length > 0
+          - proxmox.node is string
+          - proxmox.node | length > 0
+          # Token fields are intentionally allowed to be blank at preflight time.
+          # Token lifecycle is handled by Ansible runtime playbooks.
+          - (proxmox.token | default('')) is string
+          - (proxmox.automation_token_id | default('')) is string
+          - proxmox.defaults.storage_pool is string
+          - proxmox.defaults.storage_pool | length > 0
+        fail_msg: "Proxmox variables are incomplete."
+
+    - name: Assert WinPE builder variables
+      ansible.builtin.assert:
+        that:
+          - windows.winpe_builder.ip is string
+          - windows.winpe_builder.ip | length > 0
+          - windows.winpe_builder.ip != "PUT_WINPE_BUILDER_IP_HERE"
+          - windows.winpe_builder.username is string
+          - windows.winpe_builder.username | length > 0
+          - windows.winpe_builder.password is string
+          - windows.winpe_builder.password | length > 0
+          - windows.winpe_builder.password != "PUT_WINPE_BUILDER_PASSWORD_HERE"
+        fail_msg: "windows.winpe_builder.ip, username, and password are required."
+
+    - name: Assert goldimage variables
+      ansible.builtin.assert:
+        that:
+          - windows.goldimage.vmid | int > 0
+          - windows.goldimage.name is string
+          - windows.goldimage.name | length > 0
+          - windows.goldimage.ip is string
+          - windows.goldimage.ip | length > 0
+          - windows.goldimage.username is string
+          - windows.goldimage.username | length > 0
+          - windows.goldimage.password is string
+          - windows.goldimage.password | length > 0
+        fail_msg: "Goldimage variables are incomplete."
+
+    - name: Assert deployer LXC variables required by imported role
+      ansible.builtin.assert:
+        that:
+          - deployer.lxc.vmid | int > 0
+          - deployer.lxc.hostname is string
+          - deployer.lxc.hostname | length > 0
+          - deployer.lxc.ip is string
+          - deployer.lxc.ip | length > 0
+          - deployer.lxc.cidr_prefix | int > 0
+          - deployer.lxc.bridge is string
+          - deployer.lxc.bridge | length > 0
+          - deployer.lxc.hwaddr is string
+          - deployer.lxc.hwaddr | length > 0
+          - deployer.lxc.gateway is string
+          - deployer.lxc.gateway | length > 0
+          - deployer.lxc.memory_mb | int > 0
+          - deployer.lxc.swap_mb | int >= 0
+          - deployer.lxc.rootfs_gb | int > 0
+        fail_msg: "Deployer LXC variables are incomplete for create_lxc_container."
+
+    - name: Assert DHCP and DNS settings are exactly approved
+      ansible.builtin.assert:
+        that:
+          - deployer.network.server_ip is string
+          - deployer.network.server_ip | length > 0
+          - deployer.network.subnet_cidr is string
+          - deployer.network.subnet_cidr | length > 0
+          - deployer.network.netmask is string
+          - deployer.network.netmask | length > 0
+          - deployer.network.dhcp_start is string
+          - deployer.network.dhcp_start | length > 0
+          - deployer.network.dhcp_end is string
+          - deployer.network.dhcp_end | length > 0
+          - deployer.network.dns_server is string
+          - deployer.network.dns_server | length > 0
+        fail_msg: "Network settings must be explicitly declared in inventory."
+
+    - name: Ensure artifact directory exists
+      ansible.builtin.file:
+        path: "{{ deployer.artifacts.local_dir }}"
+        state: directory
+        mode: "0755"

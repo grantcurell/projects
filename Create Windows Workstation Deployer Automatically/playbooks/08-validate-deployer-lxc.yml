@@ -1,0 +1,124 @@
+---
+- name: Validate deployer LXC
+  hosts: deployer_lxc
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Check required files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ deployer.paths.deploy_wim }}"
+        - "{{ deployer.paths.boot_wim }}"
+        - "{{ deployer.paths.ipxe_boot_wim }}"
+        - "{{ deployer.paths.bootmgr }}"
+        - "{{ deployer.paths.boot_bcd }}"
+        - "{{ deployer.paths.boot_sdi }}"
+        - "{{ deployer.paths.boot_bcd_efi }}"
+        - "{{ deployer.paths.bootx64_efi }}"
+        - "{{ deployer.paths.ipxe }}/wimboot"
+        - "{{ deployer.paths.ipxe }}/autoexec.ipxe"
+        - "{{ deployer.paths.ipxe }}/boot.ipxe"
+        - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe-shim.efi"
+        - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe.efi"
+        - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/autoexec.ipxe"
+        - "{{ deployer.paths.tftp }}/undionly.kpxe"
+      register: deployer_required_files
+
+    - name: Fail if any deployer file is missing
+      ansible.builtin.fail:
+        msg: "Missing required deployer file: {{ item.item }}"
+      loop: "{{ deployer_required_files.results }}"
+      when: not item.stat.exists
+
+    - name: Ensure deployer services are running
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - nginx
+        - dnsmasq
+        - smbd
+
+    - name: Validate Secure Boot autoexec script over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/ipxe/autoexec.ipxe"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate legacy boot.ipxe over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/ipxe/boot.ipxe"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate wimboot over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/ipxe/wimboot"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate Secure Boot WinPE image over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/ipxe/winpe/boot.wim"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate boot.wim over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/winpe/boot.wim"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate bootmgr over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/winpe/bootmgr"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate BCD over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/winpe/Boot/BCD"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate boot.sdi over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/winpe/Boot/boot.sdi"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate UEFI BCD over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/winpe/EFI/Microsoft/Boot/BCD"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate bootx64.efi over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/winpe/EFI/Boot/bootx64.efi"
+        method: HEAD
+        status_code: 200
+
+    - name: Validate deploy.wim over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/images/deploy.wim"
+        method: HEAD
+        status_code: 200
+
+    - name: Read dnsmasq config
+      ansible.builtin.slurp:
+        src: /etc/dnsmasq.d/deploy-pxe.conf
+      register: dnsmasq_config_raw
+
+    - name: Assert dnsmasq config uses approved DHCP and DNS only
+      ansible.builtin.assert:
+        that:
+          - deployer.network.dhcp_start in (dnsmasq_config_raw.content | b64decode)
+          - deployer.network.dhcp_end in (dnsmasq_config_raw.content | b64decode)
+          - deployer.network.netmask in (dnsmasq_config_raw.content | b64decode)
+          - deployer.network.dns_server in (dnsmasq_config_raw.content | b64decode)
+          - deployer.ipxe.secure_boot_shim in (dnsmasq_config_raw.content | b64decode)
+        fail_msg: "dnsmasq config contains an invalid DHCP/DNS setting."

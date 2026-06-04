@@ -1,0 +1,401 @@
+---
+- name: Preflight capture-share credential test from Windows builder
+  hosts: winpe_builder
+  gather_facts: false
+  tags:
+    - precheck
+  tasks:
+    - name: Test SMB access to capture share from Windows builder
+      ansible.windows.win_powershell:
+        script: |
+          $ErrorActionPreference = 'Stop'
+          $share = "\\{{ deployer.network.server_ip }}\capture"
+          $password = ConvertTo-SecureString "{{ deployer.samba.password }}" -AsPlainText -Force
+          $qualifiedUser = "{{ deployer.network.server_ip }}\{{ deployer.samba.username }}"
+          $plainUser = "{{ deployer.samba.username }}"
+
+          function Test-CaptureShareCredential {
+            param([string] $UserName)
+            $credential = New-Object System.Management.Automation.PSCredential($UserName, $password)
+            try {
+              New-PSDrive -Name Z -PSProvider FileSystem -Root $share -Credential $credential | Out-Null
+              if (-not (Test-Path "Z:\")) { throw "Mapped drive path check failed." }
+              return $true
+            } catch {
+              return $false
+            } finally {
+              Remove-PSDrive -Name Z -Force -ErrorAction SilentlyContinue
+            }
+          }
+
+          if (Test-CaptureShareCredential -UserName $qualifiedUser) { exit 0 }
+          if (Test-CaptureShareCredential -UserName $plainUser) { exit 0 }
+          throw "Capture SMB precheck failed from winpe_builder."
+      no_log: true
+      changed_when: false
+
+- name: Assess reusable capture state on deployer LXC
+  hosts: deployer_lxc
+  gather_facts: false
+  become: true
+  tags:
+    - capture
+  tasks:
+    - name: Check existing capture marker
+      ansible.builtin.stat:
+        path: "{{ deployer.paths.capture }}/{{ deployer.capture.success_marker_file }}"
+      register: existing_marker_stat
+
+    - name: Default capture readiness to false
+      ansible.builtin.set_fact:
+        capture_marker_ready: false
+
+    - name: Read existing capture marker
+      ansible.builtin.slurp:
+        src: "{{ deployer.paths.capture }}/{{ deployer.capture.success_marker_file }}"
+      register: existing_marker_raw
+      when: existing_marker_stat.stat.exists
+
+    - name: Parse and validate existing capture marker
+      block:
+        - name: Parse existing capture marker JSON
+          ansible.builtin.set_fact:
+            existing_capture_marker: "{{ existing_marker_raw.content | b64decode | from_json }}"
+
+        - name: Stat existing captured deploy.wim
+          ansible.builtin.stat:
+            path: "{{ deployer.paths.capture }}/deploy.wim"
+            follow: true
+            checksum_algorithm: sha256
+          register: existing_capture_wim
+
+        - name: Determine whether existing capture is reusable
+          ansible.builtin.set_fact:
+            capture_marker_ready: >-
+              {{
+                ((existing_capture_marker.schema | default(0) | int) == 1)
+                and ((existing_capture_marker.status | default('')) == 'success')
+                and ((existing_capture_marker.phase | default('')) == 'publish')
+                and ((existing_capture_marker.image | default('')) == 'deploy.wim')
+                and ((existing_capture_marker.bytes | default(0) | int) > 0)
+                and ((existing_capture_marker.sha256 | default('')) is match('^[0-9a-fA-F]{64}$'))
+                and (existing_capture_wim.stat.exists | default(false))
+                and ((existing_capture_wim.stat.size | int) == (existing_capture_marker.bytes | int))
+                and ((existing_capture_wim.stat.checksum | lower) == (existing_capture_marker.sha256 | lower))
+              }}
+      rescue:
+        - name: Mark existing capture as unusable when marker parsing/validation fails
+          ansible.builtin.set_fact:
+            capture_marker_ready: false
+      when: existing_marker_stat.stat.exists
+
+    - name: Normalize reusable existing marker
+      ansible.builtin.set_fact:
+        capture_marker: "{{ existing_capture_marker }}"
+      when: (capture_marker_ready | bool)
+
+    - name: Set capture-needed fact
+      ansible.builtin.set_fact:
+        capture_needed: "{{ not (capture_marker_ready | bool) }}"
+
+    - name: Remove incomplete or invalid capture artifacts before retry
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ deployer.paths.capture }}/deploy.wim"
+        - "{{ deployer.paths.capture }}/deploy.wim.sha256"
+        - "{{ deployer.paths.capture }}/capture-success.json"
+        - "{{ deployer.paths.capture }}/{{ deployer.capture.success_marker_file }}"
+      when: not (capture_marker_ready | bool)
+
+- name: Boot golden image VM into capture environment only when needed
+  hosts: proxmox_nodes
+  gather_facts: false
+  tags:
+    - capture
+  vars:
+    goldimage_vmid: "{{ windows.goldimage.vmid | string }}"
+    deployer_capture_needed: "{{ hostvars[groups['deployer_lxc'][0]].capture_needed | default(true) }}"
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+    community.proxmox.proxmox_vm_info:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Get golden image VM current state
+      community.proxmox.proxmox_kvm:
+        node: "{{ proxmox.node }}"
+        vmid: "{{ goldimage_vmid }}"
+        state: current
+      delegate_to: localhost
+      register: goldimage_vm_state
+
+    - name: Read current golden image VM config from Proxmox API
+      community.proxmox.proxmox_vm_info:
+        node: "{{ proxmox.node }}"
+        vmid: "{{ goldimage_vmid | int }}"
+        config: current
+      delegate_to: localhost
+      register: goldimage_vm_info
+      changed_when: false
+      when: deployer_capture_needed | bool
+
+    - name: Snapshot pre-capture boot configuration
+      ansible.builtin.set_fact:
+        goldimage_pre_capture_boot_order: >-
+          {{
+            (
+              (
+                (
+                  goldimage_vm_info.proxmox_vms
+                  | default([])
+                  | first
+                  | default({})
+                ).config
+                | default({})
+              ).boot
+              | default('')
+            )
+            | default(windows.goldimage.normal_boot_order, true)
+          }}
+        goldimage_pre_capture_ide2: >-
+          {{
+            (
+              (
+                (
+                  goldimage_vm_info.proxmox_vms
+                  | default([])
+                  | first
+                  | default({})
+                ).config
+                | default({})
+              ).ide2
+              | default('')
+            )
+            | default('none,media=cdrom', true)
+          }}
+      when: deployer_capture_needed | bool
+
+    - name: Build dynamic capture boot order from current VM config
+      ansible.builtin.set_fact:
+        goldimage_capture_boot_order: >-
+          order={{
+            (
+              ['ide2']
+              + (
+                goldimage_pre_capture_boot_order
+                | regex_replace('^order=', '')
+                | split(';')
+                | reject('equalto', 'ide2')
+                | reject('equalto', '')
+                | list
+              )
+            ) | join(';')
+          }}
+      when: deployer_capture_needed | bool
+
+    - name: Check local capture ISO exists on controller
+      ansible.builtin.stat:
+        path: "{{ deployer.artifacts.capture_iso }}"
+      delegate_to: localhost
+      register: local_capture_iso
+      when: deployer_capture_needed | bool
+
+    - name: Fail if capture ISO is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ deployer.artifacts.capture_iso }}. Run 02-build-winpe.yml first."
+      when:
+        - deployer_capture_needed | bool
+        - not local_capture_iso.stat.exists
+
+    - name: Build versioned capture ISO filename from checksum
+      ansible.builtin.set_fact:
+        proxmox_capture_iso_name: "winpe_capture_{{ local_capture_iso.stat.checksum[0:12] }}.iso"
+      when: deployer_capture_needed | bool
+
+    - name: Copy capture ISO to Proxmox ISO storage
+      ansible.builtin.copy:
+        src: "{{ deployer.artifacts.capture_iso }}"
+        dest: "/var/lib/vz/template/iso/{{ proxmox_capture_iso_name }}"
+        owner: root
+        group: root
+        mode: "0644"
+      when: deployer_capture_needed | bool
+
+    - name: Attach WinPE capture ISO and set boot order to CD-ROM
+      community.proxmox.proxmox_kvm:
+        node: "{{ proxmox.node }}"
+        vmid: "{{ goldimage_vmid }}"
+        ide:
+          ide2: "local:iso/{{ proxmox_capture_iso_name }},media=cdrom"
+        boot: "{{ goldimage_capture_boot_order }}"
+        update: true
+        update_unsafe: true
+      delegate_to: localhost
+      when: deployer_capture_needed | bool
+
+    - name: Reboot golden image VM into ISO path when already running
+      community.proxmox.proxmox_kvm:
+        node: "{{ proxmox.node }}"
+        vmid: "{{ goldimage_vmid }}"
+        state: restarted
+        force: true
+        timeout: 45
+      delegate_to: localhost
+      failed_when: false
+      when:
+        - deployer_capture_needed | bool
+        - goldimage_vm_state.status == "running"
+
+    - name: Start golden image VM into WinPE capture ISO
+      community.proxmox.proxmox_kvm:
+        node: "{{ proxmox.node }}"
+        vmid: "{{ goldimage_vmid }}"
+        state: started
+      delegate_to: localhost
+      when:
+        - deployer_capture_needed | bool
+        - goldimage_vm_state.status != "running"
+
+    # Approved command exception:
+    # qm sendkey is the only command escape hatch for firmware-level boot prompts.
+    - name: Send keypresses to satisfy CD boot prompt
+      ansible.builtin.shell: |
+        for _ in $(seq 1 15); do
+          qm sendkey {{ goldimage_vmid }} spc || true
+          sleep 1
+        done
+      args:
+        executable: /bin/bash
+      changed_when: false
+      when: deployer_capture_needed | bool
+
+- name: Validate capture marker and promote deploy.wim
+  hosts: deployer_lxc
+  gather_facts: false
+  become: true
+  tags:
+    - capture
+  tasks:
+    - name: Wait for successful capture publish marker
+      ansible.builtin.wait_for:
+        path: "{{ deployer.paths.capture }}/{{ deployer.capture.success_marker_file }}"
+        state: present
+        timeout: "{{ deployer.capture.wait_retries | int * deployer.capture.wait_delay_seconds | int }}"
+        sleep: "{{ deployer.capture.wait_delay_seconds | int }}"
+      when: capture_needed | bool
+
+    - name: Read capture publish marker
+      ansible.builtin.slurp:
+        src: "{{ deployer.paths.capture }}/{{ deployer.capture.success_marker_file }}"
+      register: capture_marker_raw
+      when: capture_needed | bool
+
+    - name: Parse capture publish marker
+      ansible.builtin.set_fact:
+        capture_marker: "{{ capture_marker_raw.content | b64decode | from_json }}"
+      when: capture_needed | bool
+
+    - name: Validate capture publish marker
+      ansible.builtin.assert:
+        that:
+          - capture_marker.schema | int == 1
+          - capture_marker.status == 'success'
+          - capture_marker.phase == 'publish'
+          - capture_marker.image == 'deploy.wim'
+          - capture_marker.bytes | int > 0
+          - capture_marker.sha256 is match('^[0-9a-fA-F]{64}$')
+          - capture_marker.dism_exit_code | int == 0
+          - capture_marker.robocopy_exit_code | int < 8
+        fail_msg: "Capture marker exists but is not a valid successful publish marker: {{ capture_marker }}"
+
+    - name: Stat captured deploy.wim
+      ansible.builtin.stat:
+        path: "{{ deployer.paths.capture }}/deploy.wim"
+        checksum_algorithm: sha256
+      register: capture_deploy_wim
+
+    - name: Validate captured deploy.wim against marker
+      ansible.builtin.assert:
+        that:
+          - capture_deploy_wim.stat.exists
+          - capture_deploy_wim.stat.size | int == capture_marker.bytes | int
+          - capture_deploy_wim.stat.checksum | lower == capture_marker.sha256 | lower
+
+    - name: Stat promoted deploy.wim before hardlink promotion
+      ansible.builtin.stat:
+        path: "{{ deployer.paths.deploy_wim }}"
+        checksum_algorithm: sha256
+      register: current_promoted_wim
+
+    - name: Determine whether hardlink promotion update is needed
+      ansible.builtin.set_fact:
+        promote_needs_update: >-
+          {{
+            (not (current_promoted_wim.stat.exists | default(false)))
+            or ((current_promoted_wim.stat.checksum | default('') | lower) != (capture_marker.sha256 | lower))
+          }}
+
+    - name: Remove existing promoted deploy.wim if present
+      ansible.builtin.file:
+        path: "{{ deployer.paths.deploy_wim }}"
+        state: absent
+      when: promote_needs_update | bool
+
+    - name: Promote deploy.wim into nginx images directory using hardlink
+      ansible.builtin.file:
+        src: "{{ deployer.paths.capture }}/deploy.wim"
+        dest: "{{ deployer.paths.deploy_wim }}"
+        state: hard
+      when: promote_needs_update | bool
+
+    - name: Stat promoted deploy.wim
+      ansible.builtin.stat:
+        path: "{{ deployer.paths.deploy_wim }}"
+        checksum_algorithm: sha256
+      register: promoted_deploy_wim
+
+    - name: Validate promoted deploy.wim
+      ansible.builtin.assert:
+        that:
+          - promoted_deploy_wim.stat.exists
+          - promoted_deploy_wim.stat.size | int == capture_marker.bytes | int
+          - promoted_deploy_wim.stat.checksum | lower == capture_marker.sha256 | lower
+
+- name: Restore gold image VM boot settings after real capture run
+  hosts: proxmox_nodes
+  gather_facts: false
+  tags:
+    - capture
+  vars:
+    goldimage_vmid: "{{ windows.goldimage.vmid | string }}"
+    deployer_capture_needed: "{{ hostvars[groups['deployer_lxc'][0]].capture_needed | default(true) }}"
+    goldimage_restore_boot_order: "{{ hostvars[groups['proxmox_nodes'][0]].goldimage_pre_capture_boot_order | default(windows.goldimage.normal_boot_order) }}"
+    goldimage_restore_ide2: "{{ hostvars[groups['proxmox_nodes'][0]].goldimage_pre_capture_ide2 | default('none,media=cdrom') }}"
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Restore original boot order and IDE2 attachment
+      community.proxmox.proxmox_kvm:
+        node: "{{ proxmox.node }}"
+        vmid: "{{ goldimage_vmid }}"
+        ide:
+          ide2: "{{ goldimage_restore_ide2 }}"
+        boot: "{{ goldimage_restore_boot_order }}"
+        update: true
+        update_unsafe: true
+      delegate_to: localhost
+      when: deployer_capture_needed | bool

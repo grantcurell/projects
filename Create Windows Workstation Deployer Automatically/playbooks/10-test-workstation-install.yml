@@ -1,0 +1,430 @@
+---
+- name: Create and boot PXE test workstation VM
+  hosts: proxmox_nodes
+  gather_facts: false
+  vars:
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+    test_workstation_node: "{{ windows.test_workstation.node }}"
+    test_workstation_vmid: "{{ windows.test_workstation.vmid | int }}"
+    test_workstation_name: "{{ windows.test_workstation.name }}"
+    test_workstation_memory_mb: "{{ windows.test_workstation.memory_mb | int }}"
+    test_workstation_cores: "{{ windows.test_workstation.cores | int }}"
+    test_workstation_sockets: "{{ windows.test_workstation.sockets | int }}"
+    test_workstation_disk_gb: "{{ windows.test_workstation.disk_gb | int }}"
+    test_workstation_nic_model: "{{ windows.test_workstation.nic_model }}"
+    test_workstation_cpu: "{{ windows.test_workstation.cpu | default('') }}"
+    test_workstation_disk_bus: "{{ windows.test_workstation.disk_bus | default('sata') }}"
+    test_workstation_machine: "{{ windows.test_workstation.machine }}"
+    test_workstation_bios: "{{ windows.test_workstation.bios }}"
+    test_workstation_recreate: "{{ windows.test_workstation.recreate | bool }}"
+    test_workstation_boot_order: "{{ windows.test_workstation.boot_order }}"
+    test_workstation_post_deploy_boot_order: "{{ windows.test_workstation.post_deploy_boot_order }}"
+    test_workstation_expect_winrm: "{{ windows.test_workstation.expect_winrm | bool }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+    community.proxmox.proxmox_vm_info:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Validate required test workstation inventory fields
+      ansible.builtin.assert:
+        that:
+          - windows.test_workstation is mapping
+          - test_workstation_node | length > 0
+          - test_workstation_vmid > 0
+          - test_workstation_name | length > 0
+          - test_workstation_memory_mb > 0
+          - test_workstation_cores > 0
+          - test_workstation_sockets > 0
+          - test_workstation_disk_gb > 0
+          - test_workstation_nic_model | length > 0
+          - test_workstation_machine | length > 0
+          - test_workstation_bios | length > 0
+          - test_workstation_boot_order | length > 0
+          - test_workstation_post_deploy_boot_order | length > 0
+        fail_msg: "Populate windows.test_workstation.* in inventory before running this playbook."
+
+    - name: Read current node VM inventory
+      community.proxmox.proxmox_vm_info:
+        node: "{{ test_workstation_node }}"
+        type: qemu
+        config: current
+      delegate_to: localhost
+      register: proxmox_node_vms
+      changed_when: false
+
+    - name: Determine whether test workstation VM already exists
+      ansible.builtin.set_fact:
+        test_workstation_exists: >-
+          {{
+            (
+              proxmox_node_vms.proxmox_vms
+              | default([])
+              | selectattr('vmid', 'equalto', test_workstation_vmid)
+              | list
+              | length
+            ) > 0
+          }}
+
+    - name: Stop existing test workstation VM when recreating
+      community.proxmox.proxmox_kvm:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        state: stopped
+        force: true
+        timeout: 60
+      delegate_to: localhost
+      failed_when: false
+      when:
+        - test_workstation_recreate
+        - test_workstation_exists
+
+    - name: Remove existing test workstation VM when recreating
+      community.proxmox.proxmox_kvm:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        state: absent
+        purge: true
+      delegate_to: localhost
+      when:
+        - test_workstation_recreate
+        - test_workstation_exists
+
+    - name: Create test workstation VM definition (SATA)
+      community.proxmox.proxmox_kvm:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        name: "{{ test_workstation_name }}"
+        memory: "{{ test_workstation_memory_mb }}"
+        cores: "{{ test_workstation_cores }}"
+        sockets: "{{ test_workstation_sockets }}"
+        machine: "{{ test_workstation_machine }}"
+        bios: "{{ test_workstation_bios }}"
+        ostype: win11
+        cpu: "{{ test_workstation_cpu if (test_workstation_cpu | length > 0) else omit }}"
+        net:
+          net0: "{{ test_workstation_nic_model }},bridge={{ proxmox.defaults.network_bridge }},firewall=1"
+        boot: "{{ test_workstation_boot_order }}"
+        agent: "enabled=1"
+        efidisk0: >-
+          {{
+            {
+              'storage': proxmox.defaults.storage_pool,
+              'format': 'raw',
+              'efitype': '4m',
+              'pre_enrolled_keys': 1
+            }
+            if (test_workstation_bios | lower) == 'ovmf'
+            else omit
+          }}
+        sata:
+          sata0: "{{ proxmox.defaults.storage_pool }}:{{ test_workstation_disk_gb }},format=raw"
+        state: present
+      delegate_to: localhost
+      when:
+        - (not test_workstation_exists) or (test_workstation_recreate and test_workstation_exists)
+        - (test_workstation_disk_bus | lower) == 'sata'
+
+    - name: Create test workstation VM definition (SCSI)
+      community.proxmox.proxmox_kvm:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        name: "{{ test_workstation_name }}"
+        memory: "{{ test_workstation_memory_mb }}"
+        cores: "{{ test_workstation_cores }}"
+        sockets: "{{ test_workstation_sockets }}"
+        machine: "{{ test_workstation_machine }}"
+        bios: "{{ test_workstation_bios }}"
+        ostype: win11
+        cpu: "{{ test_workstation_cpu if (test_workstation_cpu | length > 0) else omit }}"
+        net:
+          net0: "{{ test_workstation_nic_model }},bridge={{ proxmox.defaults.network_bridge }},firewall=1"
+        boot: "{{ test_workstation_boot_order }}"
+        agent: "enabled=1"
+        efidisk0: >-
+          {{
+            {
+              'storage': proxmox.defaults.storage_pool,
+              'format': 'raw',
+              'efitype': '4m',
+              'pre_enrolled_keys': 1
+            }
+            if (test_workstation_bios | lower) == 'ovmf'
+            else omit
+          }}
+        scsihw: virtio-scsi-single
+        scsi:
+          scsi0: "{{ proxmox.defaults.storage_pool }}:{{ test_workstation_disk_gb }},format=raw"
+        state: present
+      delegate_to: localhost
+      when:
+        - (not test_workstation_exists) or (test_workstation_recreate and test_workstation_exists)
+        - (test_workstation_disk_bus | lower) != 'sata'
+
+    - name: Update existing test workstation VM definition (SATA)
+      community.proxmox.proxmox_kvm:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        name: "{{ test_workstation_name }}"
+        memory: "{{ test_workstation_memory_mb }}"
+        cores: "{{ test_workstation_cores }}"
+        sockets: "{{ test_workstation_sockets }}"
+        machine: "{{ test_workstation_machine }}"
+        bios: "{{ test_workstation_bios }}"
+        ostype: win11
+        cpu: "{{ test_workstation_cpu if (test_workstation_cpu | length > 0) else omit }}"
+        net:
+          net0: "{{ test_workstation_nic_model }},bridge={{ proxmox.defaults.network_bridge }},firewall=1"
+        boot: "{{ test_workstation_boot_order }}"
+        agent: "enabled=1"
+        efidisk0: >-
+          {{
+            {
+              'storage': proxmox.defaults.storage_pool,
+              'format': 'raw',
+              'efitype': '4m',
+              'pre_enrolled_keys': 1
+            }
+            if (test_workstation_bios | lower) == 'ovmf'
+            else omit
+          }}
+        sata:
+          sata0: "{{ proxmox.defaults.storage_pool }}:{{ test_workstation_disk_gb }},format=raw"
+        update: true
+        update_unsafe: true
+        state: present
+      delegate_to: localhost
+      when:
+        - test_workstation_exists and (not test_workstation_recreate)
+        - (test_workstation_disk_bus | lower) == 'sata'
+
+    - name: Update existing test workstation VM definition (SCSI)
+      community.proxmox.proxmox_kvm:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        name: "{{ test_workstation_name }}"
+        memory: "{{ test_workstation_memory_mb }}"
+        cores: "{{ test_workstation_cores }}"
+        sockets: "{{ test_workstation_sockets }}"
+        machine: "{{ test_workstation_machine }}"
+        bios: "{{ test_workstation_bios }}"
+        ostype: win11
+        cpu: "{{ test_workstation_cpu if (test_workstation_cpu | length > 0) else omit }}"
+        net:
+          net0: "{{ test_workstation_nic_model }},bridge={{ proxmox.defaults.network_bridge }},firewall=1"
+        boot: "{{ test_workstation_boot_order }}"
+        agent: "enabled=1"
+        efidisk0: >-
+          {{
+            {
+              'storage': proxmox.defaults.storage_pool,
+              'format': 'raw',
+              'efitype': '4m',
+              'pre_enrolled_keys': 1
+            }
+            if (test_workstation_bios | lower) == 'ovmf'
+            else omit
+          }}
+        scsihw: virtio-scsi-single
+        scsi:
+          scsi0: "{{ proxmox.defaults.storage_pool }}:{{ test_workstation_disk_gb }},format=raw"
+        update: true
+        update_unsafe: true
+        state: present
+      delegate_to: localhost
+      when:
+        - test_workstation_exists and (not test_workstation_recreate)
+        - (test_workstation_disk_bus | lower) != 'sata'
+
+    - name: Start test workstation VM
+      community.proxmox.proxmox_kvm:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        state: started
+      delegate_to: localhost
+
+    - name: Read test workstation VM config for generated MAC
+      community.proxmox.proxmox_vm_info:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        type: qemu
+        config: current
+      delegate_to: localhost
+      register: test_workstation_vm_info
+      changed_when: false
+
+    - name: Extract test workstation MAC address from net0 config
+      ansible.builtin.set_fact:
+        test_workstation_mac: >-
+          {{
+            (
+              (
+                (
+                  test_workstation_vm_info.proxmox_vms
+                  | default([])
+                  | first
+                  | default({})
+                ).config
+                | default({})
+              ).net0
+              | default('')
+              | regex_findall('([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})')
+              | first
+              | default('')
+            ) | lower
+          }}
+
+    - name: Fail if test workstation MAC could not be determined
+      ansible.builtin.assert:
+        that:
+          - test_workstation_mac | length == 17
+        fail_msg: "Failed to parse net0 MAC from VM {{ test_workstation_vmid }} config."
+
+    - name: Persist test workstation vmid and mac for downstream plays
+      ansible.builtin.set_fact:
+        test_workstation_vmid_runtime: "{{ test_workstation_vmid }}"
+        test_workstation_node_runtime: "{{ test_workstation_node }}"
+        test_workstation_mac_runtime: "{{ test_workstation_mac }}"
+        test_workstation_post_deploy_boot_order_runtime: "{{ test_workstation_post_deploy_boot_order }}"
+        test_workstation_expect_winrm_runtime: "{{ test_workstation_expect_winrm }}"
+
+- name: Wait for DHCP lease from deployer dnsmasq
+  hosts: deployer_lxc
+  gather_facts: false
+  become: true
+  vars:
+    test_workstation_mac: "{{ hostvars[groups['proxmox_nodes'][0]].test_workstation_mac_runtime }}"
+  tasks:
+    - name: Wait until dnsmasq lease appears for test workstation MAC
+      ansible.builtin.slurp:
+        src: /var/lib/misc/dnsmasq.leases
+      register: dnsmasq_leases_raw
+      until: >-
+        (
+          (dnsmasq_leases_raw.content | b64decode | lower)
+          is search(test_workstation_mac)
+        )
+      retries: 180
+      delay: 10
+      changed_when: false
+
+    - name: Parse test workstation lease line
+      ansible.builtin.set_fact:
+        dnsmasq_leases_text: "{{ dnsmasq_leases_raw.content | b64decode | lower }}"
+        test_workstation_lease_line: >-
+          {{
+            (
+              (dnsmasq_leases_raw.content | b64decode | lower).splitlines()
+              | select('search', ' ' ~ test_workstation_mac ~ ' ')
+              | list
+              | first
+              | default('')
+            )
+          }}
+    - name: Parse test workstation lease IP
+      ansible.builtin.set_fact:
+        test_workstation_lease_ip: >-
+          {{
+            (test_workstation_lease_line.split()[2])
+            if (test_workstation_lease_line | length > 0 and (test_workstation_lease_line.split() | length) >= 3)
+            else ''
+          }}
+
+    - name: Assert test workstation lease IP was parsed
+      ansible.builtin.assert:
+        that:
+          - test_workstation_lease_ip | length > 0
+        fail_msg: "MAC {{ test_workstation_mac }} obtained a lease entry, but IP parsing failed."
+
+    - name: Persist test workstation lease IP for WinRM verification
+      ansible.builtin.set_fact:
+        test_workstation_ip_runtime: "{{ test_workstation_lease_ip }}"
+
+- name: Wait for installed workstation WinRM endpoint
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_workstation_ip: "{{ hostvars[groups['deployer_lxc'][0]].test_workstation_ip_runtime }}"
+    test_workstation_expect_winrm: "{{ hostvars[groups['proxmox_nodes'][0]].test_workstation_expect_winrm_runtime | bool }}"
+  tasks:
+    - name: Wait for workstation WinRM to become reachable
+      ansible.builtin.wait_for:
+        host: "{{ test_workstation_ip }}"
+        port: 5985
+        timeout: 7200
+        sleep: 10
+      changed_when: false
+      when: test_workstation_expect_winrm
+
+    - name: Register dynamic host for WinRM validation
+      ansible.builtin.add_host:
+        name: deployed_test_workstation
+        groups: deployed_test_workstation
+        ansible_host: "{{ test_workstation_ip }}"
+        ansible_connection: winrm
+        ansible_user: "{{ windows.goldimage.username }}"
+        ansible_password: "{{ windows.goldimage.password }}"
+        ansible_port: 5985
+        ansible_winrm_transport: ntlm
+        ansible_winrm_server_cert_validation: ignore
+      when: test_workstation_expect_winrm
+
+    - name: Print debug-mode completion status when WinRM validation is disabled
+      ansible.builtin.debug:
+        msg:
+          - "Workstation PXE boot + DHCP validation completed."
+          - "WinRM validation skipped because windows.test_workstation.expect_winrm=false."
+      when: not test_workstation_expect_winrm
+
+- name: Validate installed workstation over WinRM
+  hosts: deployed_test_workstation
+  gather_facts: false
+  tasks:
+    - name: Confirm WinRM authentication on deployed workstation
+      ansible.windows.win_ping:
+
+    - name: Print deployed workstation identity
+      ansible.builtin.debug:
+        msg:
+          - "Deployed workstation is reachable over WinRM."
+          - "Host: {{ ansible_host }}"
+          - "WinRM validation succeeded."
+
+- name: Switch test workstation boot order to local disk after successful deployment
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+    test_workstation_vmid: "{{ hostvars[groups['proxmox_nodes'][0]].test_workstation_vmid_runtime }}"
+    test_workstation_node: "{{ hostvars[groups['proxmox_nodes'][0]].test_workstation_node_runtime }}"
+    test_workstation_post_deploy_boot_order: "{{ hostvars[groups['proxmox_nodes'][0]].test_workstation_post_deploy_boot_order_runtime }}"
+    test_workstation_expect_winrm: "{{ hostvars[groups['proxmox_nodes'][0]].test_workstation_expect_winrm_runtime | bool }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Update VM boot order to local disk first
+      community.proxmox.proxmox_kvm:
+        node: "{{ test_workstation_node }}"
+        vmid: "{{ test_workstation_vmid }}"
+        boot: "{{ test_workstation_post_deploy_boot_order }}"
+        update: true
+        update_unsafe: true
+        state: present
+      when: test_workstation_expect_winrm
+
+    - name: Confirm post-deploy boot order update
+      ansible.builtin.debug:
+        msg:
+          - "Set test workstation boot order for next restart."
+          - "VMID {{ test_workstation_vmid }} on {{ test_workstation_node }} now uses {{ test_workstation_post_deploy_boot_order }}."
+      when: test_workstation_expect_winrm

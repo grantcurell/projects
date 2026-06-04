@@ -1,0 +1,100 @@
+---
+- name: Ensure Samba include directory exists
+  ansible.builtin.file:
+    path: /etc/samba/smb.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Remove misplaced Samba include directives
+  ansible.builtin.lineinfile:
+    path: /etc/samba/smb.conf
+    regexp: '^\s*include = /etc/samba/smb\.conf\.d/.*$'
+    state: absent
+  notify: Restart smbd
+
+- name: Ensure Samba includes smb.conf.d from global section
+  ansible.builtin.lineinfile:
+    path: /etc/samba/smb.conf
+    line: "   include = /etc/samba/smb.conf.d/deploy.conf"
+    insertafter: '^\[global\]'
+    state: present
+  notify: Restart smbd
+
+- name: Ensure Samba maps unknown users to guest
+  ansible.builtin.lineinfile:
+    path: /etc/samba/smb.conf
+    regexp: '^\s*map to guest\s*='
+    line: "   map to guest = Bad Password"
+    insertafter: '^\[global\]'
+    state: present
+  notify: Restart smbd
+
+- name: Ensure Samba guest account is nobody
+  ansible.builtin.lineinfile:
+    path: /etc/samba/smb.conf
+    regexp: '^\s*guest account\s*='
+    line: "   guest account = nobody"
+    insertafter: '^\[global\]'
+    state: present
+  notify: Restart smbd
+
+- name: Ensure Samba allows NTLM auth for WinPE compatibility
+  ansible.builtin.lineinfile:
+    path: /etc/samba/smb.conf
+    regexp: '^\s*ntlm auth\s*='
+    line: "   ntlm auth = yes"
+    insertafter: '^\[global\]'
+    state: present
+  notify: Restart smbd
+
+- name: Deploy Samba share config
+  ansible.builtin.template:
+    src: smb-deploy.conf.j2
+    dest: /etc/samba/smb.conf.d/deploy.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart smbd
+
+- name: Ensure Samba share directories are writable
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: nobody
+    group: nogroup
+    mode: "0777"
+  loop:
+    - "{{ deployer.paths.capture }}"
+    - "{{ deployer.paths.logs }}"
+
+- name: Ensure Samba capture account exists on Linux
+  ansible.builtin.user:
+    name: "{{ deployer.samba.username }}"
+    create_home: false
+    shell: /usr/sbin/nologin
+    system: true
+
+- name: Check if Samba capture account already exists
+  ansible.builtin.command:
+    argv:
+      - pdbedit
+      - -L
+  register: samba_accounts
+  changed_when: false
+
+- name: Create Samba capture account when missing
+  ansible.builtin.shell: |
+    printf '%s\n%s\n' "{{ deployer.samba.password }}" "{{ deployer.samba.password }}" | smbpasswd -a -s "{{ deployer.samba.username }}"
+  args:
+    executable: /bin/bash
+  no_log: true
+  when: (deployer.samba.username ~ ':') not in samba_accounts.stdout
+  notify: Restart smbd
+
+- name: Ensure smbd is enabled and started
+  ansible.builtin.systemd_service:
+    name: smbd
+    enabled: true
+    state: started
