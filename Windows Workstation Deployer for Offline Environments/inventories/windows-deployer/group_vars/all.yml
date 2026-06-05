@@ -159,5 +159,3 @@ deployer:
     bootx64_efi: '{{ inventory_dir }}/../../artifacts/efi/boot/bootx64.efi'
     capture_iso: '{{ inventory_dir }}/../../artifacts/winpe_capture.iso'
     deploy_wim: '{{ inventory_dir }}/../../artifacts/deploy.wim'
-    final_backup_glob: '{{ inventory_dir }}/../../artifacts/vzdump-lxc-{{ deployer.lxc.vmid
-      }}-*.tar.zst'
