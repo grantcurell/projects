@@ -27,7 +27,7 @@
     src: "{{ deployer.ipxe.cache_dir }}/ipxeboot.tar.gz"
     dest: "{{ deployer.ipxe.cache_dir }}"
     remote_src: true
-    creates: "{{ deployer.ipxe.cache_dir }}/ipxeboot/{{ deployer.ipxe.secure_boot_arch }}/ipxe-shim.efi"
+    creates: "{{ deployer.ipxe.cache_dir }}/ipxeboot/{{ deployer.ipxe.secure_boot_arch }}/shimx64.efi"
 
 - name: Install signed UEFI iPXE binaries to TFTP
   ansible.builtin.command:
@@ -38,22 +38,6 @@
       - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/"
   args:
     creates: "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe.efi"
-
-- name: Materialize ipxe-shim.efi as regular file for firmware compatibility
-  ansible.builtin.command:
-    argv:
-      - cp
-      - -f
-      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/shimx64.efi"
-      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe-shim.efi"
-
-- name: Materialize snponly-shim.efi as regular file for firmware compatibility
-  ansible.builtin.command:
-    argv:
-      - cp
-      - -f
-      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/shimx64.efi"
-      - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/snponly-shim.efi"
 
 - name: Render Secure Boot autoexec script for TFTP
   ansible.builtin.template:
