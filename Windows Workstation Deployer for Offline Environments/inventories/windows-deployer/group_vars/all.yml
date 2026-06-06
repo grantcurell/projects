@@ -1,3 +1,5 @@
+controller_artifacts_dir: "{{ inventory_dir | dirname | dirname }}/artifacts"
+
 proxmox:
   host: 192.168.5.2
   user: root
@@ -127,11 +129,10 @@ deployer:
     cache_dir: /var/cache/windows-deployer/ipxe
     secure_boot_arch: x86_64-sb
     secure_boot_subdir: ipxeboot/x86_64-sb
-    secure_boot_shim: ipxeboot/x86_64-sb/ipxe-shim.efi
+    secure_boot_shim: ipxeboot/x86_64-sb/shimx64.efi
     secure_boot_binaries:
-      - ipxe-shim.efi
+      - shimx64.efi
       - ipxe.efi
-      - snponly-shim.efi
       - snponly.efi
   paths:
     root: /srv/deploy
@@ -150,12 +151,12 @@ deployer:
     bootx64_efi: /srv/deploy/winpe/EFI/Boot/bootx64.efi
     deploy_wim: /srv/deploy/images/deploy.wim
   artifacts:
-    local_dir: '{{ inventory_dir }}/../../artifacts'
-    boot_wim: '{{ inventory_dir }}/../../artifacts/boot.wim'
-    bootmgr: '{{ inventory_dir }}/../../artifacts/bootmgr'
-    boot_bcd: '{{ inventory_dir }}/../../artifacts/boot/BCD'
-    boot_sdi: '{{ inventory_dir }}/../../artifacts/boot/boot.sdi'
-    boot_bcd_efi: '{{ inventory_dir }}/../../artifacts/efi/microsoft/boot/BCD'
-    bootx64_efi: '{{ inventory_dir }}/../../artifacts/efi/boot/bootx64.efi'
-    capture_iso: '{{ inventory_dir }}/../../artifacts/winpe_capture.iso'
-    deploy_wim: '{{ inventory_dir }}/../../artifacts/deploy.wim'
+    local_dir: "{{ controller_artifacts_dir }}"
+    boot_wim: "{{ controller_artifacts_dir }}/boot.wim"
+    bootmgr: "{{ controller_artifacts_dir }}/bootmgr"
+    boot_bcd: "{{ controller_artifacts_dir }}/boot/BCD"
+    boot_sdi: "{{ controller_artifacts_dir }}/boot/boot.sdi"
+    boot_bcd_efi: "{{ controller_artifacts_dir }}/efi/microsoft/boot/BCD"
+    bootx64_efi: "{{ controller_artifacts_dir }}/efi/boot/bootx64.efi"
+    capture_iso: "{{ controller_artifacts_dir }}/winpe_capture.iso"
+    deploy_wim: "{{ controller_artifacts_dir }}/deploy.wim"

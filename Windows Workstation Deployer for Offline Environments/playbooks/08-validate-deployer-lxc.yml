@@ -20,7 +20,7 @@
         - "{{ deployer.paths.ipxe }}/wimboot"
         - "{{ deployer.paths.ipxe }}/autoexec.ipxe"
         - "{{ deployer.paths.ipxe }}/boot.ipxe"
-        - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe-shim.efi"
+        - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_shim }}"
         - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/ipxe.efi"
         - "{{ deployer.paths.tftp }}/{{ deployer.ipxe.secure_boot_subdir }}/autoexec.ipxe"
         - "{{ deployer.paths.tftp }}/undionly.kpxe"
