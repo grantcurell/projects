@@ -16,6 +16,7 @@ Dism /Mount-Image /ImageFile:{{ windows.winpe_builder.winpe_deploy_dir }}\media\
 mkdir {{ windows.winpe_builder.winpe_deploy_dir }}\mount\Deploy
 
 copy {{ windows.winpe_builder.build_dir }}\scripts\deploy.ps1 {{ windows.winpe_builder.winpe_deploy_dir }}\mount\Deploy\deploy.ps1
+copy {{ windows.winpe_builder.build_dir }}\scripts\first-boot-join.ps1 {{ windows.winpe_builder.winpe_deploy_dir }}\mount\Deploy\first-boot-join.ps1
 copy {{ windows.winpe_builder.build_dir }}\scripts\diskpart-uefi.txt {{ windows.winpe_builder.winpe_deploy_dir }}\mount\Deploy\diskpart-uefi.txt
 copy {{ windows.winpe_builder.build_dir }}\scripts\startnet.cmd {{ windows.winpe_builder.winpe_deploy_dir }}\mount\Windows\System32\startnet.cmd
 

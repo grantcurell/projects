@@ -39,6 +39,7 @@
       loop:
         - { src: "../files/diskpart-uefi.txt", dest: "{{ winpe_scripts_dir }}\\diskpart-uefi.txt" }
         - { src: "../files/WimScript.ini", dest: "{{ winpe_scripts_dir }}\\WimScript.ini" }
+        - { src: "../files/domain-join/first-boot-join.ps1", dest: "{{ winpe_scripts_dir }}\\first-boot-join.ps1" }
 
     - name: Render WinPE startnet script
       ansible.windows.win_template:

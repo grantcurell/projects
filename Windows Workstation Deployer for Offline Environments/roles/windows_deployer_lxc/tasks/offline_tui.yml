@@ -1,0 +1,71 @@
+---
+- name: Install offline TUI OS packages on the deployer
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-yaml
+      - python3-dnspython
+      - python3-ldap3
+      - ansible-core
+    state: present
+    update_cache: true
+
+- name: Install offline TUI Python deps not packaged in apt
+  ansible.builtin.pip:
+    name:
+      - textual
+    extra_args: --break-system-packages
+    state: present
+
+- name: Create offline TUI install directory
+  ansible.builtin.file:
+    path: "{{ deployer.offline_tui.install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create offline TUI config directory (holds non-secret config + vault files)
+  ansible.builtin.file:
+    path: "{{ deployer.offline_tui.local_config | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Install offline TUI application + helpers
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../scripts/{{ item }}"
+    dest: "{{ deployer.offline_tui.install_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - offline-deployer-tui.py
+    - ad_discovery.py
+
+- name: Install offline-setup wrapper
+  ansible.builtin.template:
+    src: offline-setup.j2
+    dest: "{{ deployer.offline_tui.entrypoint }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Seed non-secret offline config if absent
+  ansible.builtin.copy:
+    dest: "{{ deployer.offline_tui.local_config }}"
+    owner: root
+    group: root
+    mode: "0640"
+    force: false
+    content: |
+      # Non-secret offline deployer settings (managed by offline-setup).
+      # Secrets live ONLY in {{ deployer.offline_tui.vault.secrets_file }} (ansible-vault encrypted).
+      offline_hostname: {{ deployer.offline.hostname }}
+      offline_hostname_fqdn: {{ deployer.offline.hostname_fqdn }}
+      site_path: {{ deployer.paths.site }}
+      join_secret_path: {{ deployer.paths.join_secret }}
+      vault_password_file: {{ deployer.offline_tui.vault.password_file }}
+      vault_secrets_file: {{ deployer.offline_tui.vault.secrets_file }}

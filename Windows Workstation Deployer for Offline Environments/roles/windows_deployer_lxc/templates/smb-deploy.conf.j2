@@ -12,3 +12,11 @@
    guest ok = no
    valid users = {{ deployer.samba.username }}
    force user = nobody
+
+[join]
+   path = {{ deployer.paths.join_secret }}
+   browseable = no
+   read only = yes
+   guest ok = no
+   valid users = {{ deployer.samba.username }}
+   force user = root

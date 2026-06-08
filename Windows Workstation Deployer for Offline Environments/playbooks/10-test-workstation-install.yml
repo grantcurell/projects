@@ -389,12 +389,60 @@
     - name: Confirm WinRM authentication on deployed workstation
       ansible.windows.win_ping:
 
+    - name: Gather post-deploy identity, domain membership, and credential-scrub state
+      ansible.windows.win_powershell:
+        script: |
+          $ErrorActionPreference = "Stop"
+          $bios = Get-CimInstance -ClassName Win32_BIOS
+          $cs = Get-CimInstance -ClassName Win32_ComputerSystem
+          $scriptsDir = Join-Path $env:SystemRoot "Setup\Scripts"
+          [pscustomobject]@{
+            ServiceTag       = ($bios.SerialNumber | Out-String).Trim()
+            ComputerName     = $env:COMPUTERNAME
+            PartOfDomain     = [bool]$cs.PartOfDomain
+            DomainOrWorkgroup = $cs.Domain
+            ResidualCredential = (Test-Path (Join-Path $scriptsDir "join.cred"))
+            ResidualJoinScript = (Test-Path (Join-Path $scriptsDir "first-boot-join.ps1"))
+          } | ConvertTo-Json -Compress
+      register: post_deploy_identity
+      changed_when: false
+
+    - name: Parse post-deploy identity
+      ansible.builtin.set_fact:
+        post_deploy: "{{ (post_deploy_identity.output | join('') | trim) | from_json }}"
+
+    - name: Assert workstation name matches the BIOS service tag
+      ansible.builtin.assert:
+        that:
+          - (post_deploy.ComputerName | upper) == (post_deploy.ServiceTag | upper)
+        fail_msg: >-
+          Computer name {{ post_deploy.ComputerName }} does not match service tag {{ post_deploy.ServiceTag }}.
+
+    - name: Assert the transient domain-join credential was scrubbed
+      ansible.builtin.assert:
+        that:
+          - not post_deploy.ResidualCredential
+          - not post_deploy.ResidualJoinScript
+        fail_msg: "A residual domain-join credential or first-boot script remains on the deployed workstation."
+
+    - name: Assert domain membership when domain join is enabled at the site
+      ansible.builtin.assert:
+        that:
+          - post_deploy.PartOfDomain
+          - (post_deploy.DomainOrWorkgroup | lower) == (deployer.site.domain.domain_fqdn | lower)
+        fail_msg: >-
+          Expected the workstation to be joined to {{ deployer.site.domain.domain_fqdn }},
+          but it reports domain/workgroup '{{ post_deploy.DomainOrWorkgroup }}'.
+      when: deployer.site.domain.enabled | bool
+
     - name: Print deployed workstation identity
       ansible.builtin.debug:
         msg:
           - "Deployed workstation is reachable over WinRM."
           - "Host: {{ ansible_host }}"
-          - "WinRM validation succeeded."
+          - "Computer name: {{ post_deploy.ComputerName }} (service tag {{ post_deploy.ServiceTag }})"
+          - "PartOfDomain: {{ post_deploy.PartOfDomain }} ({{ post_deploy.DomainOrWorkgroup }})"
+          - "Credential scrub OK: {{ not post_deploy.ResidualCredential and not post_deploy.ResidualJoinScript }}"
 
 - name: Switch test workstation boot order to local disk after successful deployment
   hosts: localhost

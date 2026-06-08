@@ -1,0 +1,21 @@
+# Ansible Vault secrets — TEMPLATE (committed for reference only).
+#
+# The real file is group_vars/all/vault.yml, which is:
+#   * ansible-vault ENCRYPTED
+#   * git-ignored (never committed)
+#   * generated/updated by scripts/environment-wizard.py (prompt-then-store)
+#
+# Every secret in the project lives here. main.yml references these via
+# {{ vault_* }}. Per the no-defaults policy there are no fallbacks: if a
+# vault_* variable is missing, the run fails loudly.
+#
+# To create the encrypted file by hand instead of the wizard:
+#   cp vault.yml.example vault.yml
+#   # edit real values into vault.yml
+#   ansible-vault encrypt vault.yml --vault-password-file ../../../../.vault_pass
+
+vault_proxmox_root_password: "REPLACE_WITH_PROXMOX_ROOT_PASSWORD"
+vault_goldimage_password: "REPLACE_WITH_GOLDIMAGE_ADMIN_PASSWORD"
+vault_winpe_builder_password: "REPLACE_WITH_WINPE_BUILDER_PASSWORD"
+vault_deployer_lxc_password: "REPLACE_WITH_DEPLOYER_LXC_ROOT_PASSWORD"
+vault_deploy_smb_password: "REPLACE_WITH_DEPLOY_SHARE_SMB_PASSWORD"

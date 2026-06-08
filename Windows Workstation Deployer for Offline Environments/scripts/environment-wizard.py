@@ -5,11 +5,19 @@ from datetime import datetime
 from pathlib import Path
 import ipaddress
 import json
+import secrets as secrets_lib
 import socket
 import shutil
 import subprocess
 import sys
 from typing import Any
+
+
+# Labeled vault id used for CLI encrypt/decrypt so the explicit password file is
+# unambiguous even when ansible.cfg also defines a default vault_password_file
+# (otherwise ansible-vault errors with 'vault-ids default,default'). The label is
+# advisory; runtime ansible-playbook still decrypts via ansible.cfg's password file.
+VAULT_ID = "windeploy"
 
 import winrm
 import yaml
@@ -22,7 +30,9 @@ from textual.widgets import Footer, Input as TextInput, Button, Static, Log, Sel
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GROUP_VARS_PATH = ROOT / "inventories" / "windows-deployer" / "group_vars" / "all.yml"
+GROUP_VARS_PATH = ROOT / "inventories" / "windows-deployer" / "group_vars" / "all" / "main.yml"
+VAULT_FILE_PATH = ROOT / "inventories" / "windows-deployer" / "group_vars" / "all" / "vault.yml"
+VAULT_PASS_PATH = ROOT / ".vault_pass"
 HOSTS_PATH = ROOT / "inventories" / "windows-deployer" / "hosts.yml"
 BOOTSTRAP_PATH = ROOT / "scripts" / "bootstrap-controller.sh"
 RUN_FULL_DEPLOY_PATH = ROOT / "scripts" / "run-full-deploy.sh"
@@ -37,6 +47,55 @@ def load_yaml(path: Path) -> dict[str, Any]:
 
 def dump_yaml(path: Path, data: dict[str, Any]) -> None:
     path.write_text(yaml.safe_dump(data, sort_keys=False, default_flow_style=False), encoding="utf-8")
+
+
+def ensure_vault_pass(pass_file: Path = VAULT_PASS_PATH) -> None:
+    """Create the managed vault password file (chmod 600) once if absent."""
+    if pass_file.exists() and pass_file.read_text(encoding="utf-8").strip():
+        return
+    pass_file.write_text(secrets_lib.token_urlsafe(48) + "\n", encoding="utf-8")
+    pass_file.chmod(0o600)
+
+
+def load_vault(vault_file: Path = VAULT_FILE_PATH, pass_file: Path = VAULT_PASS_PATH) -> dict[str, Any]:
+    """Decrypt and return the vault contents for prefill; empty dict if unavailable."""
+    if not vault_file.exists() or not pass_file.exists():
+        return {}
+    try:
+        proc = subprocess.run(
+            ["ansible-vault", "view", str(vault_file), "--vault-id", f"{VAULT_ID}@{pass_file}"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except Exception:  # noqa: BLE001
+        return {}
+    data = yaml.safe_load(proc.stdout)
+    return data if isinstance(data, dict) else {}
+
+
+def write_vault(secrets: dict[str, str], vault_file: Path = VAULT_FILE_PATH, pass_file: Path = VAULT_PASS_PATH) -> None:
+    """Encrypt secrets into the ansible-vault file using the managed password file."""
+    ensure_vault_pass(pass_file)
+    vault_file.parent.mkdir(parents=True, exist_ok=True)
+    tmp = vault_file.with_suffix(".plain.tmp")
+    tmp.write_text(yaml.safe_dump(secrets, sort_keys=True, default_flow_style=False), encoding="utf-8")
+    try:
+        proc = subprocess.run(
+            [
+                "ansible-vault", "encrypt", str(tmp), "--output", str(vault_file),
+                "--vault-id", f"{VAULT_ID}@{pass_file}", "--encrypt-vault-id", VAULT_ID,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(f"ansible-vault encrypt failed: {proc.stderr.strip() or proc.stdout.strip()}")
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+    vault_file.chmod(0o600)
 
 
 def get_in(obj: dict[str, Any], path: list[str]) -> Any:
@@ -199,6 +258,9 @@ class SetupApp(App[None]):
         super().__init__()
         self.group_vars = load_yaml(GROUP_VARS_PATH)
         self.hosts = load_yaml(HOSTS_PATH)
+        # Secrets are never read back from inventory (they are {{ vault_* }} refs).
+        # Prefill password fields from the decrypted vault when one already exists.
+        self.vault = load_vault()
         self.bridges: list[str] = [str(get_in(self.group_vars, ["deployer", "lxc", "bridge"]) or "vmbr0")]
         self.selected_template_name: str | None = None
         node_default = str(get_in(self.group_vars, ["proxmox", "node"]) or "")
@@ -223,7 +285,7 @@ class SetupApp(App[None]):
                 yield Static("Proxmox SSH User (usually root)")
                 yield Input(str(get_in(self.hosts, ["all", "children", "proxmox_nodes", "hosts", "pve", "ansible_user"]) or "root"), id="px_ssh_user", classes="field")
                 yield Static("Proxmox SSH Password")
-                yield Input(str(get_in(self.hosts, ["all", "children", "proxmox_nodes", "hosts", "pve", "ansible_ssh_pass"]) or ""), password=True, id="px_ssh_pass", classes="field")
+                yield Input(str(self.vault.get("vault_proxmox_root_password") or ""), password=True, id="px_ssh_pass", classes="field")
                 yield Static("Skip TLS verify for Proxmox API?")
                 yield PersistentSelect(options=[("Yes (lab/self-signed)", "true"), ("No (strict cert validation)", "false")], value="true" if bool(get_in(self.group_vars, ["proxmox", "insecure_skip_tls_verify"])) else "false", id="px_skip_tls", classes="field")
                 with Horizontal(classes="stage-nav"):
@@ -268,7 +330,7 @@ class SetupApp(App[None]):
                 yield Static("Golden Image Username (WinRM)")
                 yield Input(str(get_in(self.group_vars, ["windows", "goldimage", "username"]) or ""), id="gold_user", classes="field")
                 yield Static("Golden Image Password")
-                yield Input(str(get_in(self.group_vars, ["windows", "goldimage", "password"]) or ""), password=True, id="gold_pass", classes="field")
+                yield Input(str(self.vault.get("vault_goldimage_password") or ""), password=True, id="gold_pass", classes="field")
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_golden", classes="nav-button")
                     yield Button("Next", id="next_golden", variant="primary", classes="nav-button")
@@ -294,7 +356,7 @@ class SetupApp(App[None]):
                 yield Static("WinPE Builder Username (WinRM)")
                 yield Input(str(get_in(self.group_vars, ["windows", "winpe_builder", "username"]) or ""), id="builder_user", classes="field")
                 yield Static("WinPE Builder Password")
-                yield Input(str(get_in(self.group_vars, ["windows", "winpe_builder", "password"]) or ""), password=True, id="builder_pass", classes="field")
+                yield Input(str(self.vault.get("vault_winpe_builder_password") or ""), password=True, id="builder_pass", classes="field")
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_builder", classes="nav-button")
                     yield Button("Next", id="next_builder", variant="primary", classes="nav-button")
@@ -316,7 +378,9 @@ class SetupApp(App[None]):
                 yield Static("Deployer MAC Address")
                 yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "hwaddr"]) or ""), id="dep_mac", classes="field")
                 yield Static("Deployer LXC password (used for LXC root access and helper automation)")
-                yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "password"]) or ""), password=True, id="dep_password", classes="field")
+                yield Input(str(self.vault.get("vault_deployer_lxc_password") or ""), password=True, id="dep_password", classes="field")
+                yield Static("Deploy share SMB password (low-priv account WinPE uses to fetch deploy.wim)")
+                yield Input(str(self.vault.get("vault_deploy_smb_password") or ""), password=True, id="dep_smb_password", classes="field")
                 yield Static("Deployer Disk Size (GB) - must fit your deploy.wim plus growth margin")
                 yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "rootfs_gb"]) or ""), id="dep_disk_gb", classes="field")
                 yield Static("DHCP Range Start")
@@ -966,6 +1030,7 @@ class SetupApp(App[None]):
             dep_bridge = self._select("dep_bridge")
             dep_mac = self._input("dep_mac")
             dep_password = self._input("dep_password")
+            dep_smb_password = self._input("dep_smb_password")
             dep_disk_gb = int(self._input("dep_disk_gb"))
             dep_dhcp_start = self._input("dep_dhcp_start")
             dep_dhcp_end = self._input("dep_dhcp_end")
@@ -992,6 +1057,17 @@ class SetupApp(App[None]):
                 self._must_ipv4(ip, label)
             if not dep_host or not dep_bridge or not dep_mac or not dep_password:
                 raise RuntimeError("All deployer fields are required.")
+            if not dep_smb_password:
+                raise RuntimeError("Deploy share SMB password is required (vaulted, used by WinPE).")
+            for secret_label, secret_value in [
+                ("Proxmox SSH password", ssh_pass),
+                ("Golden image password", gold_pass),
+                ("WinPE builder password", builder_pass),
+                ("Deployer LXC password", dep_password),
+                ("Deploy share SMB password", dep_smb_password),
+            ]:
+                if not secret_value:
+                    raise RuntimeError(f"{secret_label} is required and cannot be empty (it is stored in Ansible Vault).")
 
             if dep_disk_gb < 80:
                 raise RuntimeError("Deployer disk size is too small. Use at least 80 GB so deploy.wim and logs fit safely.")
@@ -1018,10 +1094,10 @@ class SetupApp(App[None]):
 
             template_name = self.selected_template_name or self._ensure_ubuntu_template(api, node, template_storage, str(get_in(self.group_vars, ["proxmox", "defaults", "ostemplate"]) or ""))
 
-            # Write all updates.
+            # Write non-secret updates to main.yml. Secrets go ONLY to the vault below;
+            # main.yml keeps its {{ vault_* }} references untouched.
             set_in(self.group_vars, ["proxmox", "host"], host)
             set_in(self.group_vars, ["proxmox", "user"], ssh_user)
-            set_in(self.group_vars, ["proxmox", "root_password"], ssh_pass)
             set_in(self.group_vars, ["proxmox", "node"], node)
             set_in(self.group_vars, ["proxmox", "insecure_skip_tls_verify"], skip_tls)
             # Token fields are intentionally left unchanged here.
@@ -1032,11 +1108,9 @@ class SetupApp(App[None]):
             set_in(self.group_vars, ["windows", "goldimage", "vmid"], gold_vmid)
             set_in(self.group_vars, ["windows", "goldimage", "ip"], gold_ip)
             set_in(self.group_vars, ["windows", "goldimage", "username"], gold_user)
-            set_in(self.group_vars, ["windows", "goldimage", "password"], gold_pass)
             set_in(self.group_vars, ["windows", "winpe_builder", "vmid"], builder_vmid)
             set_in(self.group_vars, ["windows", "winpe_builder", "ip"], builder_ip)
             set_in(self.group_vars, ["windows", "winpe_builder", "username"], builder_user)
-            set_in(self.group_vars, ["windows", "winpe_builder", "password"], builder_pass)
             set_in(self.group_vars, ["deployer", "lxc", "vmid"], dep_vmid)
             set_in(self.group_vars, ["deployer", "lxc", "hostname"], dep_host)
             set_in(self.group_vars, ["deployer", "lxc", "ip"], dep_ip)
@@ -1045,7 +1119,6 @@ class SetupApp(App[None]):
             set_in(self.group_vars, ["deployer", "lxc", "gateway"], dep_gateway)
             set_in(self.group_vars, ["deployer", "lxc", "bridge"], dep_bridge)
             set_in(self.group_vars, ["deployer", "lxc", "hwaddr"], dep_mac)
-            set_in(self.group_vars, ["deployer", "lxc", "password"], dep_password)
             set_in(self.group_vars, ["deployer", "lxc", "rootfs_gb"], dep_disk_gb)
             set_in(self.group_vars, ["deployer", "lxc", "disk"], f"{storage_pool}:{dep_disk_gb}")
             set_in(self.group_vars, ["deployer", "lxc", "storage"], storage_pool)
@@ -1055,19 +1128,28 @@ class SetupApp(App[None]):
             set_in(self.group_vars, ["deployer", "network", "dns_server"], dep_dns)
             set_in(self.group_vars, ["windows", "deploy", "auto_reboot"], auto_reboot)
 
+            # Only non-secret connection facts go into hosts.yml; passwords stay as
+            # {{ vault_* }} references that resolve from the encrypted vault at runtime.
             set_in(self.hosts, ["all", "children", "proxmox_nodes", "hosts", "pve", "ansible_host"], host)
             set_in(self.hosts, ["all", "children", "proxmox_nodes", "hosts", "pve", "ansible_user"], ssh_user)
-            set_in(self.hosts, ["all", "children", "proxmox_nodes", "hosts", "pve", "ansible_ssh_pass"], ssh_pass)
             set_in(self.hosts, ["all", "children", "goldimage", "hosts", "goldimage_vm", "ansible_host"], gold_ip)
             set_in(self.hosts, ["all", "children", "goldimage", "hosts", "goldimage_vm", "ansible_user"], gold_user)
-            set_in(self.hosts, ["all", "children", "goldimage", "hosts", "goldimage_vm", "ansible_password"], gold_pass)
             set_in(self.hosts, ["all", "children", "winpe_builder", "hosts", "winserv2025", "ansible_host"], builder_ip)
             set_in(self.hosts, ["all", "children", "winpe_builder", "hosts", "winserv2025", "ansible_user"], builder_user)
-            set_in(self.hosts, ["all", "children", "winpe_builder", "hosts", "winserv2025", "ansible_password"], builder_pass)
             set_in(self.hosts, ["all", "children", "deployer_lxc", "hosts", "win-deploy-lxc", "ansible_host"], host)
             set_in(self.hosts, ["all", "children", "deployer_lxc", "hosts", "win-deploy-lxc", "ansible_user"], ssh_user)
-            set_in(self.hosts, ["all", "children", "deployer_lxc", "hosts", "win-deploy-lxc", "ansible_password"], ssh_pass)
             set_in(self.hosts, ["all", "children", "deployer_lxc", "hosts", "win-deploy-lxc", "proxmox_vmid"], dep_vmid)
+
+            # Prompt-then-store: encrypt all collected secrets into the managed vault.
+            ensure_vault_pass()
+            write_vault({
+                "vault_proxmox_root_password": ssh_pass,
+                "vault_goldimage_password": gold_pass,
+                "vault_winpe_builder_password": builder_pass,
+                "vault_deployer_lxc_password": dep_password,
+                "vault_deploy_smb_password": dep_smb_password,
+            })
+            self.append_log(f"Secrets encrypted into {VAULT_FILE_PATH.name} (vault password file: {VAULT_PASS_PATH.name}).")
 
             self._persist_and_bootstrap()
         except Exception as exc:  # noqa: BLE001

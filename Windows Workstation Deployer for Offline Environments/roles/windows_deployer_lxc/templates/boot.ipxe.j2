@@ -1,7 +1,7 @@
 #!ipxe
 
 dhcp
-set deploy-server {{ deployer.network.server_ip }}
+set deploy-server ${next-server}
 set base-url http://${deploy-server}
 
 kernel ${base-url}/ipxe/wimboot {{ windows.deploy_debug.wimboot_args }}

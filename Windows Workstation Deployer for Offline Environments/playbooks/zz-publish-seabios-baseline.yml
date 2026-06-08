@@ -57,7 +57,7 @@
         content: |
           #!ipxe
           dhcp
-          set base http://{{ deployer.network.server_ip }}
+          set base http://${next-server}
           kernel ${base}/ipxe/wimboot pause
           initrd ${base}/winpe/bootmgr bootmgr
           initrd ${base}/winpe/Boot/BCD BCD

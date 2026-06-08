@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$Server = "{{ deployer.network.server_ip }}"
+$Server = "{{ deployer.offline.hostname }}"
 $CaptureShare = "\\$Server\capture"
 $QualifiedUser = "$Server\{{ deployer.samba.username }}"
 $PlainUser = "{{ deployer.samba.username }}"

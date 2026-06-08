@@ -1,4 +1,37 @@
 ---
+- name: Verify first-boot domain-join staging is wired into WinPE inputs
+  hosts: localhost
+  gather_facts: false
+  vars:
+    deploy_ps1_text: "{{ lookup('file', playbook_dir + '/../files/deploy.ps1') }}"
+  tasks:
+    - name: Assert deploy.ps1 stages the first-boot join and uses no djoin / offline registry edits
+      ansible.builtin.assert:
+        that:
+          - "'Invoke-StageJoin' in deploy_ps1_text"
+          - "'stagejoin' in deploy_ps1_text"
+          - "'first-boot-join.ps1' in deploy_ps1_text"
+          - "'djoin' not in deploy_ps1_text"
+          - "'reg load' not in deploy_ps1_text"
+        fail_msg: "deploy.ps1 must stage the first-boot join (no djoin, no offline registry editing)."
+
+    - name: Assert first-boot join script exists in repo
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../files/domain-join/first-boot-join.ps1"
+      register: first_boot_join_stat
+
+    - name: Fail if first-boot join script is missing
+      ansible.builtin.fail:
+        msg: "files/domain-join/first-boot-join.ps1 is required for the stagejoin step."
+      when: not first_boot_join_stat.stat.exists
+
+    - name: Assert WinPE scripts use the stable hostname, not the build IP
+      ansible.builtin.assert:
+        that:
+          - "deployer.offline.hostname in deploy_ps1_text"
+          - "deployer.network.server_ip not in deploy_ps1_text"
+        fail_msg: "deploy.ps1 must address the deployer by hostname; the build IP must not be baked in."
+
 - name: Build WinPE artifacts on builder VM
   hosts: winpe_builder
   gather_facts: false
@@ -48,6 +81,7 @@
           $inputs = @(
             "{{ winpe_build_dir }}\scripts\capture.ps1",
             "{{ winpe_build_dir }}\scripts\deploy.ps1",
+            "{{ winpe_build_dir }}\scripts\first-boot-join.ps1",
             "{{ winpe_build_dir }}\scripts\startnet.cmd",
             "{{ winpe_build_dir }}\build-winpe.cmd",
             "{{ winpe_build_dir }}\scripts\WimScript.ini",

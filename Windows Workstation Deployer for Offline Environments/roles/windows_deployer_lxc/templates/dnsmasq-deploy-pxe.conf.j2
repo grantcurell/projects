@@ -1,9 +1,25 @@
-port=0
 interface={{ deployer.network.interface }}
 bind-interfaces
 
+# DNS is enabled so the deployer is the clients' resolver and can answer the
+# stable appliance hostname. The offline TUI re-renders the IP side on move.
+no-resolv
+address=/{{ deployer.offline.hostname }}/{{ deployer.network.server_ip }}
+address=/{{ deployer.offline.hostname_fqdn }}/{{ deployer.network.server_ip }}
+
+# General upstream resolver for everything the deployer cannot answer locally.
+server={{ deployer.network.dns_server }}
+{% if deployer.site.domain.enabled | bool %}
+# Domain join enabled: forward AD/domain queries to the site DNS server(s)
+# (deployer is the only client DNS; clients never talk to the site DNS directly).
+{% for ip in deployer.site.domain.dns_servers %}
+server=/{{ deployer.site.domain.domain_fqdn }}/{{ ip }}
+{% endfor %}
+{% endif %}
+
 dhcp-range={{ deployer.network.dhcp_start }},{{ deployer.network.dhcp_end }},{{ deployer.network.netmask }},12h
-dhcp-option=6,{{ deployer.network.dns_server }}
+# Clients use the deployer as their ONLY DNS server; it forwards upstream.
+dhcp-option=6,{{ deployer.network.server_ip }}
 
 enable-tftp
 tftp-root={{ deployer.paths.tftp }}
@@ -13,6 +29,6 @@ dhcp-match=set:efi-x86_64,option:client-arch,7
 dhcp-match=set:efi-x86_64,option:client-arch,9
 dhcp-userclass=set:ipxe,iPXE
 
-dhcp-boot=tag:ipxe,http://{{ deployer.network.server_ip }}/ipxe/autoexec.ipxe
+dhcp-boot=tag:ipxe,http://{{ deployer.offline.hostname }}/ipxe/autoexec.ipxe
 dhcp-boot=tag:!ipxe,tag:bios,undionly.kpxe
 dhcp-boot=tag:!ipxe,tag:efi-x86_64,{{ deployer.ipxe.secure_boot_shim }}
