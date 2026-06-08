@@ -100,6 +100,62 @@
           - deployer.network.dns_server | length > 0
         fail_msg: "Network settings must be explicitly declared in inventory."
 
+    - name: Assert offline appliance identity is explicitly defined (no defaults)
+      ansible.builtin.assert:
+        that:
+          - deployer.offline is mapping
+          - deployer.offline.hostname is string
+          - deployer.offline.hostname | length > 0
+          - deployer.offline.hostname_fqdn is string
+          - deployer.offline.hostname_fqdn | length > 0
+        fail_msg: "deployer.offline.hostname and deployer.offline.hostname_fqdn must be set in inventory."
+
+    - name: Assert WinPE wimboot args key is defined (empty allowed, but must exist)
+      ansible.builtin.assert:
+        that:
+          - windows.deploy_debug is mapping
+          - windows.deploy_debug.wimboot_args is defined
+        fail_msg: "windows.deploy_debug.wimboot_args must be defined in inventory (empty string allowed)."
+
+    - name: Assert site domain schema is present and well-formed (no defaults)
+      ansible.builtin.assert:
+        that:
+          - deployer.site is mapping
+          - deployer.site.domain is mapping
+          - deployer.site.domain.enabled is boolean
+          - deployer.site.naming is mapping
+          - deployer.site.naming.source is string
+          - deployer.site.naming.source | length > 0
+          - deployer.site.naming.max_length | int > 0
+        fail_msg: "deployer.site.domain.enabled and deployer.site.naming.* must be explicitly defined in inventory."
+
+    - name: Assert site DNS servers are provided when domain join is enabled
+      ansible.builtin.assert:
+        that:
+          - deployer.site.domain.dns_servers is iterable
+          - deployer.site.domain.dns_servers | length > 0
+          - deployer.site.domain.domain_fqdn | length > 0
+        fail_msg: "When deployer.site.domain.enabled is true, dns_servers and domain_fqdn are required."
+      when: deployer.site.domain.enabled | bool
+
+    - name: Assert all vault-backed credentials decrypt and are non-empty (no defaults)
+      ansible.builtin.assert:
+        that:
+          - vault_proxmox_root_password is defined
+          - vault_proxmox_root_password | length > 0
+          - vault_goldimage_password is defined
+          - vault_goldimage_password | length > 0
+          - vault_winpe_builder_password is defined
+          - vault_winpe_builder_password | length > 0
+          - vault_deployer_lxc_password is defined
+          - vault_deployer_lxc_password | length > 0
+          - vault_deploy_smb_password is defined
+          - vault_deploy_smb_password | length > 0
+        fail_msg: >-
+          One or more vault_* credentials are missing. Ensure group_vars/all/vault.yml exists,
+          is ansible-vault encrypted, and that .vault_pass can decrypt it (run scripts/environment-wizard.py).
+      no_log: true
+
     - name: Ensure artifact directory exists
       ansible.builtin.file:
         path: "{{ deployer.artifacts.local_dir }}"

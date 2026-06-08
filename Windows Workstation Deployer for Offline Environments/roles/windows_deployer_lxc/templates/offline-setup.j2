@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Offline deployer setup entry point. Run on the deployer LXC after restore:
+#   pct exec <deployer-vmid> -- offline-setup
+set -euo pipefail
+
+INSTALL_DIR="{{ deployer.offline_tui.install_dir }}"
+CONFIG_FILE="{{ deployer.offline_tui.local_config }}"
+
+export WINDEPLOY_OFFLINE_CONFIG="$CONFIG_FILE"
+exec python3 "$INSTALL_DIR/offline-deployer-tui.py" "$@"

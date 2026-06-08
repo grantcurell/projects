@@ -122,3 +122,63 @@
           - deployer.network.dns_server in (dnsmasq_config_raw.content | b64decode)
           - deployer.ipxe.secure_boot_shim in (dnsmasq_config_raw.content | b64decode)
         fail_msg: "dnsmasq config contains an invalid DHCP/DNS setting."
+
+    - name: Assert dnsmasq hands the deployer as the only client DNS (option 6)
+      ansible.builtin.assert:
+        that:
+          - "('dhcp-option=6,' ~ deployer.network.server_ip) in (dnsmasq_config_raw.content | b64decode)"
+          - "('address=/' ~ deployer.offline.hostname ~ '/') in (dnsmasq_config_raw.content | b64decode)"
+        fail_msg: "dnsmasq must set DHCP option 6 to the deployer and resolve the appliance hostname."
+
+    - name: Check offline TUI entry point and install dir exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ deployer.offline_tui.entrypoint }}"
+        - "{{ deployer.offline_tui.install_dir }}/offline-deployer-tui.py"
+        - "{{ deployer.offline_tui.install_dir }}/ad_discovery.py"
+        - "{{ deployer.paths.site }}"
+        - "{{ deployer.paths.join_secret }}"
+      register: offline_tui_files
+
+    - name: Fail if any offline TUI / site path is missing
+      ansible.builtin.fail:
+        msg: "Missing offline deployer artifact: {{ item.item }}"
+      loop: "{{ offline_tui_files.results }}"
+      when: not item.stat.exists
+
+    - name: Assert protected join-credential directory is root-owned 0700
+      ansible.builtin.stat:
+        path: "{{ deployer.paths.join_secret }}"
+      register: join_secret_stat
+
+    - name: Fail if join-credential directory is not locked down
+      ansible.builtin.fail:
+        msg: "{{ deployer.paths.join_secret }} must be mode 0700 and root-owned (off the nginx web root)."
+      when: >-
+        join_secret_stat.stat.mode != '0700'
+        or join_secret_stat.stat.pw_name != 'root'
+
+    - name: Assert the join secret directory is NOT under the nginx web root
+      ansible.builtin.assert:
+        that:
+          - not (deployer.paths.join_secret.startswith(deployer.paths.root ~ '/'))
+          - deployer.paths.join_secret != deployer.paths.root
+        fail_msg: "The join credential directory must live OFF the nginx web root."
+
+    - name: Confirm the join path is not web-served (must return 404)
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/join/join.cred"
+        method: GET
+        status_code: 404
+      failed_when: false
+      register: join_http_probe
+
+    - name: Fail if the join path is reachable over HTTP
+      ansible.builtin.fail:
+        msg: "Join credential path is served over HTTP (status {{ join_http_probe.status }}); it must be off-web."
+      when: join_http_probe.status not in [404, -1]
+
+    - name: Read deployed WinPE deploy.ps1 marker over HTTP-served winpe? (hostname check is repo-side)
+      ansible.builtin.debug:
+        msg: "Hostname-portability of WinPE scripts is asserted in playbook 02 (deploy.ps1 contains the hostname, not the build IP)."

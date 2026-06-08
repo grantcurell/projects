@@ -17,3 +17,12 @@
     - { path: "{{ deployer.ipxe.cache_dir }}", mode: "0755" }
     - { path: "{{ deployer.paths.capture }}", mode: "0777" }
     - { path: "{{ deployer.paths.logs }}", mode: "0777" }
+    - { path: "{{ deployer.paths.site }}", mode: "0750" }
+
+- name: Create protected off-web join-credential directory
+  ansible.builtin.file:
+    path: "{{ deployer.paths.join_secret }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"

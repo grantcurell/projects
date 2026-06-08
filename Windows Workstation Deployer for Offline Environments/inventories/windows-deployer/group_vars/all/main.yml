@@ -3,15 +3,15 @@ controller_artifacts_dir: "{{ inventory_dir | dirname | dirname }}/artifacts"
 proxmox:
   host: 192.168.5.2
   user: root
-  root_password: CHANGEME_PROXMOX_ROOT_PASSWORD
+  root_password: "{{ vault_proxmox_root_password }}"
   node: proxmox1
   token: ''
   automation_token_id: ''
   insecure_skip_tls_verify: true
   defaults:
     network_bridge: vmbr0
-    storage: local-lvm
-    storage_pool: local-lvm
+    storage: zfs_1
+    storage_pool: zfs_1
     template_storage: local
     ostemplate: ubuntu-24.04-standard_24.04-2_amd64.tar.zst
 windows:
@@ -29,7 +29,7 @@ windows:
     name: goldimage
     ip: 192.168.5.172
     username: Admin
-    password: CHANGEME_GOLDIMAGE_PASSWORD
+    password: "{{ vault_goldimage_password }}"
     unattend_path: C:\Windows\Panther\Unattend.xml
     capture_boot_order: order=ide2
     normal_boot_order: order=sata1;ide2
@@ -38,7 +38,7 @@ windows:
     name: WinServ2025
     ip: 192.168.5.171
     username: Administrator
-    password: CHANGEME_WINPE_BUILDER_PASSWORD
+    password: "{{ vault_winpe_builder_password }}"
     force_rebuild: false
     build_dir: C:\DeployBuild
     drivers_dir: C:\Drivers
@@ -86,15 +86,15 @@ deployer:
     cidr_prefix: 24
     netmask: 255.255.255.0
     gateway: 192.168.5.1
-    password: CHANGEME_DEPLOYER_LXC_PASSWORD
+    password: "{{ vault_deployer_lxc_password }}"
     cores: 2
     memory: 4096
     memory_mb: 4096
     swap: 1024
     swap_mb: 1024
     rootfs_gb: 120
-    disk: local-lvm:120
-    storage: local-lvm
+    disk: zfs_1:120
+    storage: zfs_1
     template_storage: local
     ostemplate: local:vztmpl/ubuntu-24.04-standard_24.04-2_amd64.tar.zst
     bridge: vmbr0
@@ -106,6 +106,28 @@ deployer:
     features:
     - nesting=1
     - keyctl=1
+  offline:
+    hostname: win-deploy
+    hostname_fqdn: win-deploy.local
+  site:
+    domain:
+      enabled: false
+      domain_fqdn: ''
+      domain_netbios: ''
+      ou_path: ''
+      domain_controller: ''
+      domain_controller_ip: ''
+      dns_servers: []
+    naming:
+      source: service_tag
+      max_length: 15
+  offline_tui:
+    entrypoint: /usr/local/bin/offline-setup
+    install_dir: /opt/windows-deployer
+    local_config: /etc/windows-deployer/offline-config.yml
+    vault:
+      password_file: /etc/windows-deployer/.vault_pass
+      secrets_file: /etc/windows-deployer/secrets.vault.yml
   network:
     interface: eth0
     server_ip: 192.168.5.219
@@ -116,7 +138,7 @@ deployer:
     dns_server: 1.1.1.1
   samba:
     username: deployer
-    password: CHANGEME_DEPLOY_SMB_PASSWORD
+    password: "{{ vault_deploy_smb_password }}"
   capture:
     wait_retries: 120
     wait_delay_seconds: 30
@@ -142,6 +164,8 @@ deployer:
     tftp: /srv/tftp
     capture: /srv/deploy/capture
     logs: /srv/deploy/logs
+    site: /srv/deploy/site
+    join_secret: /var/lib/windows-deployer/join
     boot_wim: /srv/deploy/winpe/boot.wim
     ipxe_boot_wim: /srv/deploy/ipxe/winpe/boot.wim
     bootmgr: /srv/deploy/winpe/bootmgr

@@ -1,4 +1,12 @@
 artifacts/**
 !artifacts/.gitkeep
 *.retry
+
+# Ansible Vault — never commit the password file or populated secret vaults.
 .vault_pass
+**/.vault_pass
+inventories/windows-deployer/group_vars/all/vault.yml
+**/secrets.vault.yml
+
+# Inventory backups written by the wizard.
+**/*.bak.*
