@@ -20,3 +20,10 @@ vault_winpe_builder_password: "REPLACE_WITH_WINPE_BUILDER_PASSWORD"
 vault_deployer_lxc_password: "REPLACE_WITH_DEPLOYER_LXC_ROOT_PASSWORD"
 vault_deploy_smb_password: "REPLACE_WITH_DEPLOY_SHARE_SMB_PASSWORD"
 vault_workstation_local_admin_password: "REPLACE_WITH_WORKSTATION_LOCAL_ADMIN_PASSWORD"
+
+# Automated offline domain-join test (only required when offline_test.enabled: true).
+# WinRM password for the offline DC fixture, the offline admin workstation fixture,
+# and the delegated account the workstation uses for Add-Computer at first boot.
+vault_offline_dc_winrm_password: "REPLACE_WITH_OFFLINE_DC_WINRM_PASSWORD"
+vault_offline_admin_winrm_password: "REPLACE_WITH_OFFLINE_ADMIN_WINRM_PASSWORD"
+vault_offline_domain_join_password: "REPLACE_WITH_OFFLINE_DOMAIN_JOIN_PASSWORD"

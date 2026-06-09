@@ -273,10 +273,10 @@ class SetupApp(App[None]):
         self.launch_deploy_after_exit = False
 
     def compose(self) -> ComposeResult:
-        yield Static("Stage 1/7: Validate Proxmox credentials.", id="status")
+        yield Static("Stage 1/8: Validate Proxmox credentials.", id="status")
         yield Static("Controls: Tab/Shift+Tab move fields, arrows navigate fields/options, Enter opens/selects dropdown options, q = Quit.", id="help")
         yield Static("", id="control_legend")
-        yield ProgressBar(total=7, show_eta=False, show_percentage=True, id="stage_progress")
+        yield ProgressBar(total=8, show_eta=False, show_percentage=True, id="stage_progress")
         with ContentSwitcher(initial="stage-proxmox-auth", id="main-switcher"):
             with VerticalScroll(id="stage-proxmox-auth", classes="stage"):
                 yield Static("Stage 1: Validate Proxmox host reachability and API username/password first.")
@@ -364,8 +364,76 @@ class SetupApp(App[None]):
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_builder", classes="nav-button")
                     yield Button("Next", id="next_builder", variant="primary", classes="nav-button")
+            with VerticalScroll(id="stage-offline", classes="stage"):
+                yield Static("Stage 6: Automated offline domain-join test settings (the end-to-end test that PXE-installs a workstation and proves it joins the offline AD domain).")
+                yield Static("This test runs on an ISOLATED offline Proxmox node/bridge. The pre-existing DC + admin workstation fixtures are only powered on and health-checked. All offline-net probes run from the deployer (the only node on the offline net).")
+                yield Static("Run the offline test as the main workflow?")
+                yield PersistentSelect(options=[("Yes - run the offline domain-join test", "true"), ("No - disable offline test", "false")], value="true" if bool(get_in(self.group_vars, ["offline_test", "enabled"])) else "false", id="off_enabled", classes="field")
+                yield Static("Offline Proxmox node (hosts the isolated bridge + fixtures)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "proxmox_node"]) or ""), id="off_node", classes="field")
+                yield Static("Offline Proxmox host IP (SSH/API for the offline node)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "proxmox_host"]) or ""), id="off_host", classes="field")
+                yield Static("Offline bridge (isolated, air-gapped)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "bridge"]) or ""), id="off_bridge", classes="field")
+                yield Static("Offline subnet CIDR (e.g. 172.27.10.0/24)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "subnet_cidr"]) or ""), id="off_subnet", classes="field")
+                yield Static("Rebuild artifacts online before the offline phase? (No = fastest reuse of an already-built deployer)")
+                yield PersistentSelect(options=[("No - reuse existing deployer/artifacts (fastest)", "false"), ("Yes - rebuild via site.yml first", "true")], value="true" if bool(get_in(self.group_vars, ["offline_test", "run_build"])) else "false", id="off_run_build", classes="field")
+                yield Static("Auto-clean test artifacts on success without prompting?")
+                yield PersistentSelect(options=[("No - prompt before cleanup", "false"), ("Yes - destroy deployer+workstation automatically", "true")], value="true" if bool(get_in(self.group_vars, ["offline_test", "auto_cleanup"])) else "false", id="off_auto_cleanup", classes="field")
+                yield Static("Offline deployer LXC VMID")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "vmid"]) or ""), id="off_dep_vmid", classes="field")
+                yield Static("Offline deployer IP (on the offline bridge)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "ip"]) or ""), id="off_dep_ip", classes="field")
+                yield Static("Offline deployer CIDR prefix (e.g. 24)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "cidr_prefix"]) or ""), id="off_dep_prefix", classes="field")
+                yield Static("Offline deployer gateway")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "gateway"]) or ""), id="off_dep_gw", classes="field")
+                yield Static("Offline DHCP range start")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "dhcp_start"]) or ""), id="off_dep_dhcp_start", classes="field")
+                yield Static("Offline DHCP range end")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "dhcp_end"]) or ""), id="off_dep_dhcp_end", classes="field")
+                yield Static("Offline deployer storage pool")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "storage"]) or ""), id="off_dep_storage", classes="field")
+                yield Static("Domain controller fixture VMID")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "domain_controller", "vmid"]) or ""), id="off_dc_vmid", classes="field")
+                yield Static("Domain controller IP (on the offline bridge)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "domain_controller", "ip"]) or ""), id="off_dc_ip", classes="field")
+                yield Static("Domain controller WinRM username")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "domain_controller", "winrm_user"]) or ""), id="off_dc_user", classes="field")
+                yield Static("Domain controller WinRM password (vaulted)")
+                yield Input(str(self.vault.get("vault_offline_dc_winrm_password") or ""), password=True, id="off_dc_pass", classes="field")
+                yield Static("Admin workstation fixture VMID")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "admin_workstation", "vmid"]) or ""), id="off_admin_vmid", classes="field")
+                yield Static("Admin workstation WinRM username")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "admin_workstation", "winrm_user"]) or ""), id="off_admin_user", classes="field")
+                yield Static("Admin workstation WinRM password (vaulted)")
+                yield Input(str(self.vault.get("vault_offline_admin_winrm_password") or ""), password=True, id="off_admin_pass", classes="field")
+                yield Static("AD domain FQDN (e.g. identity.lab.example.com)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "domain", "fqdn"]) or ""), id="off_dom_fqdn", classes="field")
+                yield Static("AD domain NetBIOS name")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "domain", "netbios"]) or ""), id="off_dom_netbios", classes="field")
+                yield Static("Target OU for new computer objects (DN)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "domain", "ou"]) or ""), id="off_dom_ou", classes="field")
+                yield Static("AD DNS server IP(s) (comma-separated)")
+                yield Input(", ".join(get_in(self.group_vars, ["offline_test", "domain", "dns_servers"]) or []), id="off_dom_dns", classes="field")
+                yield Static("Delegated domain-join account (UPN or DOMAIN\\user)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "join_account", "username"]) or ""), id="off_join_user", classes="field")
+                yield Static("Domain-join account password (vaulted)")
+                yield Input(str(self.vault.get("vault_offline_domain_join_password") or ""), password=True, id="off_join_pass", classes="field")
+                yield Static("Test workstation VMID (recreated each run)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "test_workstation", "vmid"]) or ""), id="off_tw_vmid", classes="field")
+                yield Static("Test workstation SMBIOS service tag (becomes the computer name)")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "test_workstation", "smbios_serial"]) or ""), id="off_tw_serial", classes="field")
+                yield Static("Test workstation node")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "test_workstation", "node"]) or ""), id="off_tw_node", classes="field")
+                yield Static("Test workstation storage pool")
+                yield Input(str(get_in(self.group_vars, ["offline_test", "test_workstation", "storage"]) or ""), id="off_tw_storage", classes="field")
+                with Horizontal(classes="stage-nav"):
+                    yield Button("Back", id="back_offline", classes="nav-button")
+                    yield Button("Next", id="next_offline", variant="primary", classes="nav-button")
             with VerticalScroll(id="stage-network", classes="stage"):
-                yield Static("Stage 6: Deployer networking + DHCP safety checks + inventory write + bootstrap.")
+                yield Static("Stage 7: Deployer networking + DHCP safety checks + inventory write + bootstrap.")
                 yield Static("The deployer LXC is the container you will export and use to deploy windows workstations elsewhere")
                 yield Static("Deployer LXC VMID (must be unused)")
                 yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "vmid"]) or ""), id="dep_vmid", classes="field")
@@ -437,8 +505,9 @@ class SetupApp(App[None]):
             "stage-proxmox-storage": 3,
             "stage-golden": 4,
             "stage-builder": 5,
-            "stage-network": 6,
-            "stage-deploy": 7,
+            "stage-offline": 6,
+            "stage-network": 7,
+            "stage-deploy": 8,
         }
         progress = self.query_one("#stage_progress", ProgressBar)
         progress.update(progress=stage_map.get(self.current_stage, 1))
@@ -456,6 +525,8 @@ class SetupApp(App[None]):
             legend.update(f"Now: fill fields, then highlight Next button and press Enter. Use Back button to return.{armed_suffix}")
         elif self.current_stage == "stage-builder":
             legend.update(f"Now: fill fields, then highlight Next button and press Enter. Use Back button to return.{armed_suffix}")
+        elif self.current_stage == "stage-offline":
+            legend.update(f"Now: review/fill offline-test fields, then highlight Next and press Enter. Use Back to return.{armed_suffix}")
         elif self.current_stage == "stage-network":
             legend.update(f"Now: highlight Run Setup button and press Enter to run validation + bootstrap.{armed_suffix}")
         else:
@@ -719,8 +790,8 @@ class SetupApp(App[None]):
         self.append_log("  ./scripts/run-full-deploy.sh")
         self.append_log("Alternative:")
         self.append_log("  ansible-playbook -i inventories/windows-deployer/hosts.yml playbooks/site.yml")
-        self.set_status("Stage 6 complete. Continue to Stage 7 to deploy.")
-        self.switch_stage("stage-deploy", "Stage 7/7: Press DEPLOY to exit and start full deployment.")
+        self.set_status("Stage 7 complete. Continue to Stage 8 to deploy.")
+        self.switch_stage("stage-deploy", "Stage 8/8: Press DEPLOY to exit and start full deployment.")
 
     @on(Button.Pressed, "#next_auth")
     def on_next_auth(self) -> None:
@@ -758,9 +829,17 @@ class SetupApp(App[None]):
     def on_next_builder(self) -> None:
         self.validate_builder_stage()
 
+    @on(Button.Pressed, "#back_offline")
+    def on_back_offline(self) -> None:
+        self.back_to_builder()
+
+    @on(Button.Pressed, "#next_offline")
+    def on_next_offline(self) -> None:
+        self.validate_offline_stage()
+
     @on(Button.Pressed, "#back_network")
     def on_back_network(self) -> None:
-        self.back_to_builder()
+        self.back_to_offline()
 
     @on(Button.Pressed, "#finish_setup_btn")
     def on_finish_setup_btn(self) -> None:
@@ -937,7 +1016,7 @@ class SetupApp(App[None]):
             self.set_status("Stage 3 failed. Fix fields and try again.")
 
     def back_to_proxmox_auth(self) -> None:
-        self.switch_stage("stage-proxmox-auth", "Stage 1/7: Validate Proxmox credentials.")
+        self.switch_stage("stage-proxmox-auth", "Stage 1/8: Validate Proxmox credentials.")
 
     def back_to_proxmox_node(self) -> None:
         self.switch_stage("stage-proxmox-node", "Stage 2/7: Select Proxmox node.")
@@ -1009,13 +1088,93 @@ class SetupApp(App[None]):
             self.append_log("WinPE builder WinRM credentials validated successfully.")
 
             self.set_status("Stage 5 passed. Continue to Stage 6.")
-            self.switch_stage("stage-network", "Stage 6/7: Validate deployer networking, write files, run bootstrap.")
+            self.switch_stage("stage-offline", "Stage 6/8: Offline domain-join test settings.")
         except Exception as exc:  # noqa: BLE001
             self.append_log(f"[ERROR] Stage 5 failed: {exc}")
             self.set_status("Stage 5 failed. Fix fields and try again.")
 
     def back_to_builder(self) -> None:
-        self.switch_stage("stage-builder", "Stage 5/7: Validate WinPE builder VM over WinRM.")
+        self.switch_stage("stage-builder", "Stage 5/8: Validate WinPE builder VM over WinRM.")
+
+    def back_to_offline(self) -> None:
+        self.switch_stage("stage-offline", "Stage 6/8: Offline domain-join test settings.")
+
+    def validate_offline_stage(self) -> None:
+        """Validate + stash offline-test values; the single inventory write happens
+        on the network stage's Run Setup (finish_setup)."""
+        try:
+            enabled = self._select("off_enabled") == "true"
+            offline: dict[str, Any] = {
+                "enabled": enabled,
+                "run_build": self._select("off_run_build") == "true",
+                "auto_cleanup": self._select("off_auto_cleanup") == "true",
+                "proxmox_node": self._input("off_node"),
+                "proxmox_host": self._input("off_host"),
+                "bridge": self._input("off_bridge"),
+                "subnet_cidr": self._input("off_subnet"),
+                "dep_vmid": self._input("off_dep_vmid"),
+                "dep_ip": self._input("off_dep_ip"),
+                "dep_prefix": self._input("off_dep_prefix"),
+                "dep_gw": self._input("off_dep_gw"),
+                "dep_dhcp_start": self._input("off_dep_dhcp_start"),
+                "dep_dhcp_end": self._input("off_dep_dhcp_end"),
+                "dep_storage": self._input("off_dep_storage"),
+                "dc_vmid": self._input("off_dc_vmid"),
+                "dc_ip": self._input("off_dc_ip"),
+                "dc_user": self._input("off_dc_user"),
+                "dc_pass": self._input("off_dc_pass"),
+                "admin_vmid": self._input("off_admin_vmid"),
+                "admin_user": self._input("off_admin_user"),
+                "admin_pass": self._input("off_admin_pass"),
+                "dom_fqdn": self._input("off_dom_fqdn"),
+                "dom_netbios": self._input("off_dom_netbios"),
+                "dom_ou": self._input("off_dom_ou"),
+                "dom_dns": [s.strip() for s in self._input("off_dom_dns").replace(",", " ").split() if s.strip()],
+                "join_user": self._input("off_join_user"),
+                "join_pass": self._input("off_join_pass"),
+                "tw_vmid": self._input("off_tw_vmid"),
+                "tw_serial": self._input("off_tw_serial"),
+                "tw_node": self._input("off_tw_node"),
+                "tw_storage": self._input("off_tw_storage"),
+            }
+            if enabled:
+                self._must_ipv4(offline["proxmox_host"], "Offline Proxmox host")
+                for label, value in [
+                    ("Offline deployer IP", offline["dep_ip"]),
+                    ("Offline deployer gateway", offline["dep_gw"]),
+                    ("Offline DHCP start", offline["dep_dhcp_start"]),
+                    ("Offline DHCP end", offline["dep_dhcp_end"]),
+                    ("Domain controller IP", offline["dc_ip"]),
+                ]:
+                    self._must_ipv4(value, label)
+                if not offline["dom_dns"]:
+                    raise RuntimeError("At least one AD DNS server IP is required.")
+                for ip in offline["dom_dns"]:
+                    self._must_ipv4(ip, "AD DNS server")
+                for label, value in [
+                    ("offline bridge", offline["bridge"]),
+                    ("offline node", offline["proxmox_node"]),
+                    ("domain FQDN", offline["dom_fqdn"]),
+                    ("domain NetBIOS", offline["dom_netbios"]),
+                    ("target OU", offline["dom_ou"]),
+                    ("join account username", offline["join_user"]),
+                    ("test workstation SMBIOS serial", offline["tw_serial"]),
+                ]:
+                    if not value:
+                        raise RuntimeError(f"Offline test {label} is required.")
+                for secret_label, secret_value in [
+                    ("DC WinRM password", offline["dc_pass"]),
+                    ("Admin WinRM password", offline["admin_pass"]),
+                    ("Domain-join password", offline["join_pass"]),
+                ]:
+                    if not secret_value:
+                        raise RuntimeError(f"Offline test {secret_label} is required (stored in the vault).")
+            self._offline_values = offline
+            self.append_log("Offline test settings captured; they are written with the rest on Run Setup.")
+            self.switch_stage("stage-network", "Stage 7/8: Validate deployer networking, write files, run bootstrap.")
+        except Exception as exc:  # noqa: BLE001
+            self.append_log(f"[ERROR] Stage 6 failed: {exc}")
+            self.set_status("Stage 6 failed. Fix fields and try again.")
 
     def finish_setup(self) -> None:
         try:
@@ -1138,6 +1297,39 @@ class SetupApp(App[None]):
             set_in(self.group_vars, ["deployer", "network", "dns_server"], dep_dns)
             set_in(self.group_vars, ["windows", "deploy", "auto_reboot"], auto_reboot)
 
+            # Offline domain-join test settings captured on Stage 6 (non-secrets to
+            # main.yml; the three offline secrets go to the vault below).
+            off = getattr(self, "_offline_values", {}) or {}
+            if off:
+                set_in(self.group_vars, ["offline_test", "enabled"], bool(off["enabled"]))
+                set_in(self.group_vars, ["offline_test", "run_build"], bool(off["run_build"]))
+                set_in(self.group_vars, ["offline_test", "auto_cleanup"], bool(off["auto_cleanup"]))
+                set_in(self.group_vars, ["offline_test", "proxmox_node"], off["proxmox_node"])
+                set_in(self.group_vars, ["offline_test", "proxmox_host"], off["proxmox_host"])
+                set_in(self.group_vars, ["offline_test", "bridge"], off["bridge"])
+                set_in(self.group_vars, ["offline_test", "subnet_cidr"], off["subnet_cidr"])
+                set_in(self.group_vars, ["offline_test", "deployer", "vmid"], int(off["dep_vmid"]))
+                set_in(self.group_vars, ["offline_test", "deployer", "ip"], off["dep_ip"])
+                set_in(self.group_vars, ["offline_test", "deployer", "cidr_prefix"], int(off["dep_prefix"]))
+                set_in(self.group_vars, ["offline_test", "deployer", "gateway"], off["dep_gw"])
+                set_in(self.group_vars, ["offline_test", "deployer", "dhcp_start"], off["dep_dhcp_start"])
+                set_in(self.group_vars, ["offline_test", "deployer", "dhcp_end"], off["dep_dhcp_end"])
+                set_in(self.group_vars, ["offline_test", "deployer", "storage"], off["dep_storage"])
+                set_in(self.group_vars, ["offline_test", "domain_controller", "vmid"], int(off["dc_vmid"]))
+                set_in(self.group_vars, ["offline_test", "domain_controller", "ip"], off["dc_ip"])
+                set_in(self.group_vars, ["offline_test", "domain_controller", "winrm_user"], off["dc_user"])
+                set_in(self.group_vars, ["offline_test", "admin_workstation", "vmid"], int(off["admin_vmid"]))
+                set_in(self.group_vars, ["offline_test", "admin_workstation", "winrm_user"], off["admin_user"])
+                set_in(self.group_vars, ["offline_test", "domain", "fqdn"], off["dom_fqdn"])
+                set_in(self.group_vars, ["offline_test", "domain", "netbios"], off["dom_netbios"])
+                set_in(self.group_vars, ["offline_test", "domain", "ou"], off["dom_ou"])
+                set_in(self.group_vars, ["offline_test", "domain", "dns_servers"], off["dom_dns"])
+                set_in(self.group_vars, ["offline_test", "join_account", "username"], off["join_user"])
+                set_in(self.group_vars, ["offline_test", "test_workstation", "vmid"], int(off["tw_vmid"]))
+                set_in(self.group_vars, ["offline_test", "test_workstation", "smbios_serial"], off["tw_serial"])
+                set_in(self.group_vars, ["offline_test", "test_workstation", "node"], off["tw_node"])
+                set_in(self.group_vars, ["offline_test", "test_workstation", "storage"], off["tw_storage"])
+
             # Only non-secret connection facts go into hosts.yml; passwords stay as
             # {{ vault_* }} references that resolve from the encrypted vault at runtime.
             set_in(self.hosts, ["all", "children", "proxmox_nodes", "hosts", "pve", "ansible_host"], host)
@@ -1152,14 +1344,19 @@ class SetupApp(App[None]):
 
             # Prompt-then-store: encrypt all collected secrets into the managed vault.
             ensure_vault_pass()
-            write_vault({
+            vault_payload = {
                 "vault_proxmox_root_password": ssh_pass,
                 "vault_goldimage_password": gold_pass,
                 "vault_winpe_builder_password": builder_pass,
                 "vault_deployer_lxc_password": dep_password,
                 "vault_deploy_smb_password": dep_smb_password,
                 "vault_workstation_local_admin_password": ws_admin_pass,
-            })
+            }
+            if off:
+                vault_payload["vault_offline_dc_winrm_password"] = off["dc_pass"]
+                vault_payload["vault_offline_admin_winrm_password"] = off["admin_pass"]
+                vault_payload["vault_offline_domain_join_password"] = off["join_pass"]
+            write_vault(vault_payload)
             self.append_log(f"Secrets encrypted into {VAULT_FILE_PATH.name} (vault password file: {VAULT_PASS_PATH.name}).")
 
             self._persist_and_bootstrap()

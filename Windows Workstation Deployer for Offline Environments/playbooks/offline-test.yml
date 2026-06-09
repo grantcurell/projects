@@ -1,0 +1,38 @@
+---
+# End-to-end automated offline domain-join test (the project's primary workflow).
+#
+# Proves that a freshly PXE-installed workstation joins the isolated offline AD
+# domain. The deployer LXC on the offline net is the only orchestration jumpbox
+# that talks to the offline Windows guests; the controller drives Proxmox over the
+# main network. The pre-existing DC + admin fixtures are only powered on and
+# health-checked, never rebuilt.
+#
+# Phases:
+#   00-preflight                  inventory + vault validation (incl. offline_test)
+#   00c-offline-cleanup-leftovers purge prior-run AD object/DNS + test workstation
+#   11-offline-fixture-preflight  power on + health-check DC/admin from the deployer
+#   site.yml                      (optional) rebuild artifacts online; gated by run_build
+#   12-restore-deployer-offline   restore + configure the offline deployer (skip if present)
+#   13-offline-pxe-test           recreate + PXE-install the workstation; verify join
+#   14-offline-test-teardown      success-only cleanup prompt
+- name: Guard - offline test must be enabled
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Assert offline_test.enabled
+      ansible.builtin.assert:
+        that:
+          - offline_test.enabled | bool
+        fail_msg: "offline_test.enabled is false in inventory; enable it to run the offline test."
+
+- import_playbook: 00-preflight.yml
+- import_playbook: 00c-offline-cleanup-leftovers.yml
+- import_playbook: 11-offline-fixture-preflight.yml
+
+# Optional online rebuild of WinPE + gold image artifacts before the offline phase.
+- import_playbook: site.yml
+  when: offline_test.run_build | bool
+
+- import_playbook: 12-restore-deployer-offline.yml
+- import_playbook: 13-offline-pxe-test.yml
+- import_playbook: 14-offline-test-teardown.yml

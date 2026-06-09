@@ -1,0 +1,264 @@
+---
+# Recreate a blank workstation VM on the isolated offline net, PXE-install it from
+# the offline deployer, and prove (FROM the deployer) that it joined the offline
+# domain with the right name, has an AD computer object, and scrubbed its transient
+# join credential. Replaces the online-only 10-test-workstation-install.yml.
+- name: Recreate the PXE test workstation VM on the offline bridge
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+    tw: "{{ offline_test.test_workstation }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+    community.proxmox.proxmox_vm_info:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Purge any existing test workstation VM first
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_destroy_vms.yml"
+
+    - name: Create the test workstation VM (OVMF + SecureBoot, offline bridge, no autostart)
+      community.proxmox.proxmox_kvm:
+        node: "{{ tw.node }}"
+        vmid: "{{ tw.vmid }}"
+        name: "{{ tw.name }}"
+        memory: "{{ tw.memory_mb | int }}"
+        cores: "{{ tw.cores | int }}"
+        sockets: "{{ tw.sockets | int }}"
+        machine: "{{ tw.machine }}"
+        bios: "{{ tw.bios }}"
+        ostype: win11
+        cpu: "{{ tw.cpu }}"
+        net:
+          net0: "{{ tw.nic_model }},bridge={{ offline_test.bridge }},firewall=1"
+        boot: "{{ tw.boot_order }}"
+        agent: "enabled=1"
+        efidisk0:
+          storage: "{{ tw.storage }}"
+          format: raw
+          efitype: 4m
+          pre_enrolled_keys: 1
+        sata:
+          sata0: "{{ tw.storage }}:{{ tw.disk_gb }},format=raw"
+        state: present
+
+    - name: Stamp the SMBIOS service tag (plaintext serial) via qm on the offline node
+      ansible.builtin.shell: |
+        set -euo pipefail
+        cur=$(qm config {{ tw.vmid }} | awk -F': ' '/^smbios1:/ {print $2}')
+        uuid=$(printf '%s' "$cur" | tr ',' '\n' | awk -F= '/^uuid=/{print $2}')
+        if [ -z "$uuid" ]; then uuid=$(cat /proc/sys/kernel/random/uuid); fi
+        qm set {{ tw.vmid }} --smbios1 "uuid=$uuid,serial={{ tw.smbios_serial }}"
+      args:
+        executable: /bin/bash
+      delegate_to: offline-pve
+      register: smbios_qm
+      changed_when: smbios_qm.rc == 0
+
+    - name: Start the test workstation VM
+      community.proxmox.proxmox_kvm:
+        node: "{{ tw.node }}"
+        vmid: "{{ tw.vmid }}"
+        state: started
+
+    - name: Read test workstation config for the generated MAC
+      community.proxmox.proxmox_vm_info:
+        node: "{{ tw.node }}"
+        vmid: "{{ tw.vmid }}"
+        type: qemu
+        config: current
+      register: tw_info
+      changed_when: false
+
+    - name: Extract the net0 MAC address
+      ansible.builtin.set_fact:
+        test_workstation_mac: >-
+          {{
+            ((tw_info.proxmox_vms | default([]) | first | default({})).config | default({})).net0
+            | default('') | regex_findall('([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})') | first | default('') | lower
+          }}
+
+    - name: Assert the MAC was parsed
+      ansible.builtin.assert:
+        that:
+          - test_workstation_mac | length == 17
+        fail_msg: "Failed to parse net0 MAC from VM {{ tw.vmid }} config."
+
+    - name: Publish MAC for the deployer play
+      ansible.builtin.set_fact:
+        test_workstation_mac_runtime: "{{ test_workstation_mac }}"
+
+- name: Wait for install + verify domain join from the deployer
+  hosts: offline_deployer
+  gather_facts: false
+  vars:
+    tw_mac: "{{ hostvars['localhost'].test_workstation_mac_runtime }}"
+  tasks:
+    - name: Stage helper scripts + confirm pywinrm on the deployer
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_deployer_prep.yml"
+
+    - name: Wait for a DHCP lease for the test workstation MAC
+      ansible.builtin.slurp:
+        src: /var/lib/misc/dnsmasq.leases
+      register: leases_raw
+      until: (leases_raw.content | b64decode | lower) is search(tw_mac)
+      retries: 180
+      delay: 10
+      changed_when: false
+
+    - name: Parse the test workstation lease IP
+      ansible.builtin.set_fact:
+        test_workstation_ip: >-
+          {{
+            ((leases_raw.content | b64decode | lower).splitlines()
+             | select('search', ' ' ~ tw_mac ~ ' ') | list | first | default('')).split()[2]
+            if ((leases_raw.content | b64decode | lower).splitlines()
+                | select('search', ' ' ~ tw_mac ~ ' ') | list | length) > 0
+            else ''
+          }}
+
+    - name: Assert the lease IP was parsed
+      ansible.builtin.assert:
+        that:
+          - test_workstation_ip | length > 0
+        fail_msg: "MAC {{ tw_mac }} has no parsable lease IP yet."
+
+    - name: Report the workstation lease IP
+      ansible.builtin.debug:
+        msg: "Test workstation {{ tw_mac }} leased {{ test_workstation_ip }}; waiting for install + WinRM (this includes the full deploy + first-boot join)."
+
+    - name: Wait for the installed workstation WinRM endpoint (from the deployer)
+      ansible.builtin.wait_for:
+        host: "{{ test_workstation_ip }}"
+        port: 5985
+        timeout: 7200
+        sleep: 15
+      changed_when: false
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    # The first-boot SetupComplete script joins the domain, scrubs the transient
+    # credential + itself, then reboots as its final action. WinRM can briefly answer
+    # DURING that first-boot window (before the scrub/reboot), so polling only for
+    # rc == 0 races and can observe a half-finished machine. Retry until the box has
+    # SETTLED: domain-joined AND scrubbed. The reboot drops WinRM mid-loop, which just
+    # yields a non-zero rc and another retry until it comes back clean. The `and`
+    # short-circuits so stdout is only parsed once rc == 0 (valid JSON).
+    - name: Gather workstation identity/domain/scrub state over WinRM (from the deployer)
+      ansible.builtin.command:
+        argv:
+          - "{{ deployer_venv_python }}"
+          - "{{ deployer_helper_dir }}/offline_verify.py"
+          - workstation
+          - --ws-ip
+          - "{{ test_workstation_ip }}"
+      environment:
+        WS_USER: "{{ windows.goldimage.username }}"
+        WS_PASS: "{{ windows.goldimage.password }}"
+      register: ws_identity_raw
+      changed_when: false
+      retries: 45
+      delay: 20
+      until: >-
+        ws_identity_raw.rc == 0
+        and ((ws_identity_raw.stdout | from_json).workstation.PartOfDomain | bool)
+        and (not ((ws_identity_raw.stdout | from_json).workstation.ResidualCredential | bool))
+        and (not ((ws_identity_raw.stdout | from_json).workstation.ResidualJoinScript | bool))
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    - name: Parse workstation identity
+      ansible.builtin.set_fact:
+        ws: "{{ (ws_identity_raw.stdout | from_json).workstation }}"
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    - name: Assert workstation name matches the BIOS service tag
+      ansible.builtin.assert:
+        that:
+          - (ws.ComputerName | upper) == (ws.ServiceTag | upper)
+        fail_msg: "Computer name {{ ws.ComputerName }} != service tag {{ ws.ServiceTag }}."
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    - name: Assert the transient join credential + first-boot script were scrubbed
+      ansible.builtin.assert:
+        that:
+          - not ws.ResidualCredential
+          - not ws.ResidualJoinScript
+        fail_msg: "Residual join credential/script remains on the workstation."
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    - name: Assert the workstation joined the offline domain
+      ansible.builtin.assert:
+        that:
+          - ws.PartOfDomain
+          - (ws.DomainOrWorkgroup | lower) == (offline_test.domain.fqdn | lower)
+        fail_msg: >-
+          Expected join to {{ offline_test.domain.fqdn }}, but workstation reports
+          '{{ ws.DomainOrWorkgroup }}'.
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    - name: Confirm the AD computer object exists on the DC (from the deployer)
+      ansible.builtin.command:
+        argv:
+          - "{{ deployer_venv_python }}"
+          - "{{ deployer_helper_dir }}/offline_verify.py"
+          - ad-object
+          - --dc-ip
+          - "{{ offline_test.domain_controller.ip }}"
+          - --name
+          - "{{ offline_test.test_workstation.smbios_serial }}"
+      environment:
+        DC_USER: "{{ offline_test.domain_controller.winrm_user }}"
+        DC_PASS: "{{ offline_test.domain_controller.winrm_password }}"
+      register: ad_object_raw
+      changed_when: false
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    - name: Assert the AD computer object is present
+      ansible.builtin.assert:
+        that:
+          - (ad_object_raw.stdout | from_json).computer.Present | bool
+        fail_msg: "No AD computer object found for {{ offline_test.test_workstation.smbios_serial }}: {{ ad_object_raw.stdout }}"
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    - name: Report deployed workstation identity
+      ansible.builtin.debug:
+        msg:
+          - "Workstation reachable over WinRM from the deployer at {{ test_workstation_ip }}."
+          - "Computer name: {{ ws.ComputerName }} (service tag {{ ws.ServiceTag }})"
+          - "PartOfDomain: {{ ws.PartOfDomain }} ({{ ws.DomainOrWorkgroup }})"
+          - "Credential scrub OK: {{ (not ws.ResidualCredential) and (not ws.ResidualJoinScript) }}"
+          - "AD computer object present: {{ (ad_object_raw.stdout | from_json).computer.Present }}"
+      when: offline_test.test_workstation.expect_winrm | bool
+
+    - name: Publish success marker for downstream teardown
+      ansible.builtin.set_fact:
+        offline_pxe_test_succeeded: true
+
+- name: Switch test workstation boot order to local disk after success
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+    tw: "{{ offline_test.test_workstation }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Update boot order to local disk first
+      community.proxmox.proxmox_kvm:
+        node: "{{ tw.node }}"
+        vmid: "{{ tw.vmid }}"
+        boot: "{{ tw.post_deploy_boot_order }}"
+        update: true
+        update_unsafe: true
+        state: present
+      when: offline_test.test_workstation.expect_winrm | bool

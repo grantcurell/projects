@@ -180,33 +180,55 @@ function Ensure-DeployShareMapped {
         return
     }
 
-    cmd.exe /c "net use $MappedDrive /delete /y" | Out-Host
+    # The WinPE SMB redirector can transiently fail `net use` with "System error 53"
+    # even immediately after a successful TCP/445 probe (cold-boot negotiate races,
+    # stale cached failures, a lease that just settled). A single attempt is therefore
+    # too brittle: retry with short backoff and re-resolve the deployer IP each pass
+    # before giving up. Each attempt tries the credentialed deploy share first, then
+    # the guest capture share, deleting any half-mapping between tries.
+    $maxMapAttempts = 20
+    for ($attempt = 1; $attempt -le $maxMapAttempts; $attempt++) {
+        # Re-resolve in case the lease/DNS changed the deployer IP between passes.
+        Resolve-DeployServerAddress
+        Update-DeploySharePaths
 
-    $netUseArgs = @(
-        "use",
-        $MappedDrive,
-        $DeploySharePath,
-        $DeploySharePassword,
-        "/user:$DeployShareUser",
-        "/persistent:no"
-    )
-    & net.exe @netUseArgs
-    if ($LASTEXITCODE -eq 0) {
-        $script:DeployShareMapped = $true
-        Write-Host "Mapped credentialed deploy share $DeploySharePath as $MappedDrive"
-        return
+        # Best-effort unmap. `net use /delete` prints "network connection could not be
+        # found" when nothing is mapped yet; under $ErrorActionPreference='Stop' a 2>&1
+        # redirect would promote that native stderr to a terminating error, so pipe the
+        # normal output to the host and let the (expected) noise through harmlessly.
+        cmd.exe /c "net use $MappedDrive /delete /y" | Out-Host
+
+        $netUseArgs = @(
+            "use",
+            $MappedDrive,
+            $DeploySharePath,
+            $DeploySharePassword,
+            "/user:$DeployShareUser",
+            "/persistent:no"
+        )
+        & net.exe @netUseArgs
+        if ($LASTEXITCODE -eq 0) {
+            $script:DeployShareMapped = $true
+            Write-Host "Mapped credentialed deploy share $DeploySharePath as $MappedDrive (attempt $attempt/$maxMapAttempts)"
+            return
+        }
+
+        Write-Host "Credentialed deploy share map failed (attempt $attempt/$maxMapAttempts); trying guest capture share fallback."
+        cmd.exe /c "net use $MappedDrive /delete /y" | Out-Host
+        & net.exe use $MappedDrive $DeployShareFallbackPath /persistent:no
+        if ($LASTEXITCODE -eq 0) {
+            $script:DeployShareMapped = $true
+            Write-Host "Mapped guest capture share $DeployShareFallbackPath as $MappedDrive (attempt $attempt/$maxMapAttempts)"
+            return
+        }
+
+        if ($attempt -lt $maxMapAttempts) {
+            Write-Host "Deploy share not mappable yet; waiting 6s before retry..."
+            Start-Sleep -Seconds 6
+        }
     }
 
-    Write-Host "Credentialed deploy share map failed; trying guest capture share fallback."
-    cmd.exe /c "net use $MappedDrive /delete /y" | Out-Host
-    & net.exe use $MappedDrive $DeployShareFallbackPath /persistent:no
-    if ($LASTEXITCODE -eq 0) {
-        $script:DeployShareMapped = $true
-        Write-Host "Mapped guest capture share $DeployShareFallbackPath as $MappedDrive"
-        return
-    }
-
-    throw "SMB mapping to deploy share failed. Refusing to continue without a network deploy.wim path."
+    throw "SMB mapping to deploy share failed after $maxMapAttempts attempts. Refusing to continue without a network deploy.wim path."
 }
 
 function Read-RequiredJson {

@@ -158,6 +158,55 @@
           is ansible-vault encrypted, and that .vault_pass can decrypt it (run scripts/environment-wizard.py).
       no_log: true
 
+    - name: Assert offline-test schema is present and well-formed (no defaults)
+      ansible.builtin.assert:
+        that:
+          - offline_test is mapping
+          - offline_test.enabled is boolean
+          - offline_test.bridge | length > 0
+          - offline_test.subnet_cidr | length > 0
+          - offline_test.proxmox_node | length > 0
+          - offline_test.proxmox_host | length > 0
+          - offline_test.deployer.vmid | int > 0
+          - offline_test.deployer.ip | length > 0
+          - offline_test.deployer.cidr_prefix | int > 0
+          - offline_test.deployer.gateway | length > 0
+          - offline_test.deployer.storage | length > 0
+          - offline_test.domain_controller.vmid | int > 0
+          - offline_test.domain_controller.ip | length > 0
+          - offline_test.domain_controller.winrm_user | length > 0
+          - offline_test.admin_workstation.vmid | int > 0
+          - offline_test.domain.fqdn | length > 0
+          - offline_test.domain.netbios | length > 0
+          - offline_test.domain.ou | length > 0
+          - offline_test.domain.dns_servers | length > 0
+          - offline_test.join_account.username | length > 0
+          - offline_test.test_workstation.vmid | int > 0
+          - offline_test.test_workstation.smbios_serial | length > 0
+          - offline_test.test_workstation.node | length > 0
+          - offline_test.test_workstation.storage | length > 0
+          - offline_test.test_workstation.bios | length > 0
+          - offline_test.test_workstation.boot_order | length > 0
+          - offline_test.test_workstation.post_deploy_boot_order | length > 0
+        fail_msg: "offline_test.* must be fully and explicitly defined in inventory."
+      when: offline_test.enabled | bool
+
+    - name: Assert offline-test vault credentials decrypt and are non-empty (no defaults)
+      ansible.builtin.assert:
+        that:
+          - vault_offline_dc_winrm_password is defined
+          - vault_offline_dc_winrm_password | length > 0
+          - vault_offline_admin_winrm_password is defined
+          - vault_offline_admin_winrm_password | length > 0
+          - vault_offline_domain_join_password is defined
+          - vault_offline_domain_join_password | length > 0
+        fail_msg: >-
+          Offline-test vault_* credentials are missing. Add vault_offline_dc_winrm_password,
+          vault_offline_admin_winrm_password, and vault_offline_domain_join_password to
+          group_vars/all/vault.yml (run scripts/environment-wizard.py) or set offline_test.enabled: false.
+      no_log: true
+      when: offline_test.enabled | bool
+
     - name: Ensure artifact directory exists
       ansible.builtin.file:
         path: "{{ deployer.artifacts.local_dir }}"
