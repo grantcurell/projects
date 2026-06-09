@@ -24,7 +24,7 @@ workflow.
 - [Step 1 — Prepare the Windows Server VM](#step-1--prepare-the-windows-server-vm)
 - [Step 2 — Copy the project onto the server](#step-2--copy-the-project-onto-the-server)
 - [Step 3 — Install the YAML PowerShell module](#step-3--install-the-yaml-powershell-module)
-- [Step 4 — Create and edit your config](#step-4--create-and-edit-your-config)
+- [Step 4 — Create your config (the wizard / TUI)](#step-4--create-your-config-the-wizard--tui)
 - [Step 5 — Preview without changing anything (PlanOnly)](#step-5--preview-without-changing-anything-planonly)
 - [Step 6 — Run it](#step-6--run-it)
 - [Step 7 — The reboot (this is normal)](#step-7--the-reboot-this-is-normal)
@@ -113,9 +113,43 @@ Install-Module powershell-yaml -Scope AllUsers
 If the module is missing at runtime, the script stops and tells you this exact command.
 It will **not** auto-install modules.
 
-## Step 4 — Create and edit your config
+## Step 4 — Create your config (the wizard / TUI)
 
-Everything the script does comes from your YAML file. Copy the template and edit it:
+Everything the script does comes from your `config.yaml`. The easiest and safest way to
+build it is the **interactive wizard**, which prompts you for every environment-specific
+setting, **validates each answer as you type** (IP addresses, prefix lengths,
+NetBIOS/domain rules, DHCP ranges that must fall inside their subnet, forwarders that must
+not point at the server itself, and more), and refuses to move on until the answer is
+valid. It runs in any PowerShell console — no GUI, no Python, nothing extra to install
+beyond the `powershell-yaml` module from Step 3.
+
+```powershell
+cd C:\Admin\Configure-WindowsIdentityServices
+.\New-WindowsServerConfig.ps1
+```
+
+What it does:
+
+- Seeds a **reviewed baseline** from `config.example.yaml` (or, if you already have a
+  `config.yaml`, offers to **edit that** instead).
+- Walks you through the environment-specific sections in order:
+  **environment metadata → execution paths → Proxmox guest → network/identity →
+  Active Directory → DNS → DHCP (incl. building scopes) → domain time →
+  service accounts → optional features (PKI/WSUS/event forwarding/Wazuh/integrations)**.
+- Press **Enter** to keep the value shown in `[brackets]`; type a new value to change it.
+  Bad input is rejected on the spot with an explanation, so you never get a config that
+  fails later.
+- Writes `config.yaml` and then runs the project's **own validator** as a final gate —
+  if anything is inconsistent it tells you before you ever touch the server.
+
+> The wizard intentionally **does not** prompt for the security/policy baseline
+> (GPO definitions, hardening, firewall, Defender, OU/group structure, validation and
+> reporting). Those are inherited from the template; review and tune them directly in
+> `config.yaml` if needed (see the "edit by hand" note below).
+
+### Prefer to edit by hand?
+
+You can skip the wizard and copy/edit the template directly:
 
 ```powershell
 cd C:\Admin\Configure-WindowsIdentityServices
@@ -155,7 +189,7 @@ Always dry-run first. This validates your config and prints every operation it *
 perform, then exits **without changing the system**:
 
 ```powershell
-.\Configure-WindowsIdentityServices.ps1 -ConfigPath .\config.yaml -PlanOnly
+.\Configure-WindowsServer.ps1 -ConfigPath .\config.yaml -PlanOnly
 ```
 
 If the config is invalid (missing/empty/contradictory values), it stops here and tells you
@@ -167,17 +201,17 @@ The simplest path is to run the whole thing — it walks the phases in order and
 resume task to continue across the reboot:
 
 ```powershell
-.\Configure-WindowsIdentityServices.ps1 -ConfigPath .\config.yaml
+.\Configure-WindowsServer.ps1 -ConfigPath .\config.yaml
 ```
 
 Prefer to go one phase at a time? Run them in this order:
 
 ```powershell
-.\Configure-WindowsIdentityServices.ps1 -ConfigPath .\config.yaml -Phase Preflight
-.\Configure-WindowsIdentityServices.ps1 -ConfigPath .\config.yaml -Phase PromoteDomainController
+.\Configure-WindowsServer.ps1 -ConfigPath .\config.yaml -Phase Preflight
+.\Configure-WindowsServer.ps1 -ConfigPath .\config.yaml -Phase PromoteDomainController
 # --- server reboots here ---
-.\Configure-WindowsIdentityServices.ps1 -ConfigPath .\config.yaml -Phase PostPromotion
-.\Configure-WindowsIdentityServices.ps1 -ConfigPath .\config.yaml -Phase Validate
+.\Configure-WindowsServer.ps1 -ConfigPath .\config.yaml -Phase PostPromotion
+.\Configure-WindowsServer.ps1 -ConfigPath .\config.yaml -Phase Validate
 ```
 
 - **Preflight** — checks elevation/OS/pending-reboot, installs the AD/DNS/DHCP roles.
@@ -204,7 +238,7 @@ phase instead of starting over.
 If you didn't run the full pipeline, run validation explicitly:
 
 ```powershell
-.\Configure-WindowsIdentityServices.ps1 -ConfigPath .\config.yaml -ValidateOnly
+.\Configure-WindowsServer.ps1 -ConfigPath .\config.yaml -ValidateOnly
 ```
 
 This writes evidence files and `summary.txt` / `summary.json` / `final-report.json`.
@@ -287,7 +321,8 @@ tells you what to fix. It will not silently substitute a guess.
 
 ```
 Configure-WindowsIdentityServices/
-  Configure-WindowsIdentityServices.ps1   # entrypoint
+  Configure-WindowsServer.ps1              # entrypoint — runs the build
+  New-WindowsServerConfig.ps1              # interactive wizard/TUI that writes config.yaml
   config.example.yaml                      # template — copy to config.yaml (git-ignored)
   README.md                                # this guide
   lib/                                     # one module per concern (AD, DNS, DHCP, GPO, ...)
