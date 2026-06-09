@@ -4,6 +4,7 @@
     name:
       - python3
       - python3-pip
+      - python3-venv
       - python3-yaml
       - python3-dnspython
       - python3-ldap3
@@ -11,12 +12,25 @@
     state: present
     update_cache: true
 
+# textual is not packaged in apt. Install it into a dedicated venv that also
+# exposes the apt-provided modules (yaml/ldap3/dnspython) via system site
+# packages. This avoids clobbering the distro-managed Pygments/Rich packages.
+- name: Create offline TUI virtualenv
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -m
+      - venv
+      - --system-site-packages
+      - "{{ deployer.offline_tui.venv }}"
+    creates: "{{ deployer.offline_tui.venv }}/bin/python"
+
 - name: Install offline TUI Python deps not packaged in apt
   ansible.builtin.pip:
     name:
       - textual
-    extra_args: --break-system-packages
     state: present
+    virtualenv: "{{ deployer.offline_tui.venv }}"
 
 - name: Create offline TUI install directory
   ansible.builtin.file:

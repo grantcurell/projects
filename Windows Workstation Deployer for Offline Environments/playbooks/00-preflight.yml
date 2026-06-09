@@ -151,6 +151,8 @@
           - vault_deployer_lxc_password | length > 0
           - vault_deploy_smb_password is defined
           - vault_deploy_smb_password | length > 0
+          - vault_workstation_local_admin_password is defined
+          - vault_workstation_local_admin_password | length > 0
         fail_msg: >-
           One or more vault_* credentials are missing. Ensure group_vars/all/vault.yml exists,
           is ansible-vault encrypted, and that .vault_pass can decrypt it (run scripts/environment-wizard.py).

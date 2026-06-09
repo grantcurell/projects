@@ -10,6 +10,7 @@
   - [Expected artifacts](#expected-artifacts)
   - [Portable hostname model](#portable-hostname-model)
   - [Offline Restore and Use](#offline-restore-and-use)
+  - [Unattended OOBE](#unattended-oobe)
   - [Domain join (online first-boot)](#domain-join-online-first-boot)
   - [How to Force Rebuild](#how-to-force-rebuild)
 
@@ -44,9 +45,10 @@ Before you start make sure you have the Windows Server box, the golden image VM,
 
 Every secret in this project is stored in **Ansible Vault — always**. There is no plaintext-credential path.
 
-- The setup wizard (`./setup`) **prompts** for each secret (Proxmox root, gold image, WinPE builder, deployer LXC, and the deploy-share SMB password) and **encrypts** them into `inventories/windows-deployer/group_vars/all/vault.yml`.
+- The setup wizard (`./setup`) **prompts** for each secret (Proxmox root, gold image, WinPE builder, deployer LXC, the deploy-share SMB password, and the workstation break-glass local-admin password) and **encrypts** them into `inventories/windows-deployer/group_vars/all/vault.yml`.
 - A vault password file `.vault_pass` is auto-created (`chmod 600`) and referenced by `ansible.cfg` (`vault_password_file = .vault_pass`), so playbooks decrypt automatically with no `--ask-vault-pass`.
 - `.vault_pass` and the populated `vault.yml` are **git-ignored**. A fresh clone has no secrets; re-run the wizard to repopulate them. `group_vars/all/main.yml` only references them as `{{ vault_* }}`.
+- The **workstation local-admin** is a single break-glass account (username in `windows.workstation_local_admin.username`, password in `vault_workstation_local_admin_password`). It is created silently by `Unattend.xml` so the deployed workstation's OOBE completes with **zero interaction** — see [Unattended OOBE](#unattended-oobe). Real users sign in with **domain** accounts; this account is only a local recovery credential.
 - The **delegated domain-join credential** is collected later by the offline TUI (`offline-setup`) on the deployer and stored in the deployer's own vault (`/etc/windows-deployer/secrets.vault.yml`).
 
 ## Quickstart
@@ -145,6 +147,13 @@ pct exec <new-vmid> -- offline-setup
 - Boot target workstation(s) on that network.
 - They should chain through iPXE/wimboot and install from `/srv/deploy/images/deploy.wim`.
 
+## Unattended OOBE
+
+Deployed workstations complete Windows OOBE with **zero interaction** — no "Who's going to use this device?" prompt and no per-machine setup screens. This is a domain workstation, so all real settings come from **domain policy (GPO)**, not from a standalone first-run wizard.
+
+- `files/Unattend.xml` is templated by `05-sysprep-goldimage.yml` (via `win_template`) into the golden image's `oobeSystem` pass. It hides the EULA/online-account/wireless screens **and** silently creates one break-glass local administrator (`windows.workstation_local_admin.username`, password from `vault_workstation_local_admin_password`) with `HideLocalAccountScreen`. Windows 11 requires at least one local account; this satisfies that requirement so OOBE never has to prompt.
+- After OOBE auto-completes, the SYSTEM-context first-boot join (below) runs and the box reboots domain-joined. End users then sign in with their **domain** accounts.
+
 ## Domain join (online first-boot)
 
 This deployer joins workstations to AD **online, at first boot**, using `Add-Computer` — there are **no ODJ blobs, no `djoin`, and no WinRM helper**. The deployer itself never joins the domain.
@@ -155,8 +164,8 @@ Flow:
 2. Enter a **delegated** join account (UPN `user@domain` or `DOMAIN\user`) — **not Domain Admin**. It is stored in the deployer's Ansible Vault.
 3. Provide the **site DNS server(s)** (which may or may not be the domain controller). The TUI runs AD SRV + LDAP discovery, confirms the account can **create computer objects** in the chosen OU, and resolves the DC — all before any workstation is deployed. There is no manual fallback; the wizard cannot advance past a failed check.
 4. The TUI writes non-secret `domain.json` / `naming.json` to `/srv/deploy/site` and renders the join credential from the vault to the protected, off-web `[join]` SMB share (`/var/lib/windows-deployer/join`, mode `0700`).
-5. During PXE deploy, `deploy.ps1` sets the computer name from the BIOS service tag and stages a SYSTEM-context `SetupComplete.cmd` + `first-boot-join.ps1` (plus the transient credential) into the image — no domain contact in WinPE.
-6. At first boot, `first-boot-join.ps1` runs `Add-Computer -NewName <service-tag> -DomainName ... -OUPath ... -Credential ... -Force` (never `-Restart`), then **scrubs the credential and itself**, and only then calls `Restart-Computer -Force`. The machine reboots domain-joined and named after its service tag.
+5. During PXE deploy, `deploy.ps1` reads the BIOS service tag and **stamps it as the computer name into the applied image's `specialize` pass** (`Set-OfflineComputerName`), so the box boots already named after its service tag — before OOBE. It also stages a SYSTEM-context `SetupComplete.cmd` + `first-boot-join.ps1` (plus the transient credential) into the image. No domain contact happens in WinPE.
+6. At first boot, after [unattended OOBE](#unattended-oobe) completes, `first-boot-join.ps1` runs as SYSTEM. Because the machine is already named after its service tag, it joins the **existing** computer account with `Add-Computer -DomainName ... -OUPath ... -Credential ... -Force` (no `-NewName`, never `-Restart`). This avoids the "account already exists" rename collision and makes **re-imaging the same machine idempotent**. It then **scrubs the credential and itself**, and only then calls `Restart-Computer -Force`. The machine reboots domain-joined and named after its service tag.
 
 The join credential lives off the nginx web root and is served only over authenticated SMB; it exists on the target for a single boot and is then scrubbed.
 

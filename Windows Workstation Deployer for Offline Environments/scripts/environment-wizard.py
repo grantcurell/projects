@@ -331,6 +331,10 @@ class SetupApp(App[None]):
                 yield Input(str(get_in(self.group_vars, ["windows", "goldimage", "username"]) or ""), id="gold_user", classes="field")
                 yield Static("Golden Image Password")
                 yield Input(str(self.vault.get("vault_goldimage_password") or ""), password=True, id="gold_pass", classes="field")
+                yield Static("Workstation local-admin username (break-glass account created silently during OOBE so it completes unattended; end users sign in with domain accounts)")
+                yield Input(str(get_in(self.group_vars, ["windows", "workstation_local_admin", "username"]) or ""), id="ws_admin_user", classes="field")
+                yield Static("Workstation local-admin password (vaulted)")
+                yield Input(str(self.vault.get("vault_workstation_local_admin_password") or ""), password=True, id="ws_admin_pass", classes="field")
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_golden", classes="nav-button")
                     yield Button("Next", id="next_golden", variant="primary", classes="nav-button")
@@ -1042,6 +1046,8 @@ class SetupApp(App[None]):
             gold_ip = self._input("gold_ip")
             gold_user = self._input("gold_user")
             gold_pass = self._input("gold_pass")
+            ws_admin_user = self._input("ws_admin_user")
+            ws_admin_pass = self._input("ws_admin_pass")
             builder_vmid = int(self._input("builder_vmid"))
             builder_ip = self._input("builder_ip")
             builder_user = self._input("builder_user")
@@ -1059,12 +1065,15 @@ class SetupApp(App[None]):
                 raise RuntimeError("All deployer fields are required.")
             if not dep_smb_password:
                 raise RuntimeError("Deploy share SMB password is required (vaulted, used by WinPE).")
+            if not ws_admin_user:
+                raise RuntimeError("Workstation local-admin username is required (created during unattended OOBE).")
             for secret_label, secret_value in [
                 ("Proxmox SSH password", ssh_pass),
                 ("Golden image password", gold_pass),
                 ("WinPE builder password", builder_pass),
                 ("Deployer LXC password", dep_password),
                 ("Deploy share SMB password", dep_smb_password),
+                ("Workstation local-admin password", ws_admin_pass),
             ]:
                 if not secret_value:
                     raise RuntimeError(f"{secret_label} is required and cannot be empty (it is stored in Ansible Vault).")
@@ -1108,6 +1117,7 @@ class SetupApp(App[None]):
             set_in(self.group_vars, ["windows", "goldimage", "vmid"], gold_vmid)
             set_in(self.group_vars, ["windows", "goldimage", "ip"], gold_ip)
             set_in(self.group_vars, ["windows", "goldimage", "username"], gold_user)
+            set_in(self.group_vars, ["windows", "workstation_local_admin", "username"], ws_admin_user)
             set_in(self.group_vars, ["windows", "winpe_builder", "vmid"], builder_vmid)
             set_in(self.group_vars, ["windows", "winpe_builder", "ip"], builder_ip)
             set_in(self.group_vars, ["windows", "winpe_builder", "username"], builder_user)
@@ -1148,6 +1158,7 @@ class SetupApp(App[None]):
                 "vault_winpe_builder_password": builder_pass,
                 "vault_deployer_lxc_password": dep_password,
                 "vault_deploy_smb_password": dep_smb_password,
+                "vault_workstation_local_admin_password": ws_admin_pass,
             })
             self.append_log(f"Secrets encrypted into {VAULT_FILE_PATH.name} (vault password file: {VAULT_PASS_PATH.name}).")
 

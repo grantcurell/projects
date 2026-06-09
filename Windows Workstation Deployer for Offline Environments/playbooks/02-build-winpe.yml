@@ -28,7 +28,10 @@
     - name: Assert WinPE scripts use the stable hostname, not the build IP
       ansible.builtin.assert:
         that:
-          - "deployer.offline.hostname in deploy_ps1_text"
+          # deploy.ps1 is a win_template; it must reference the hostname variable
+          # token (rendered to deployer.offline.hostname on the builder) and must
+          # never bake in the build-time deployer IP.
+          - "'deployer.offline.hostname' in deploy_ps1_text"
           - "deployer.network.server_ip not in deploy_ps1_text"
         fail_msg: "deploy.ps1 must address the deployer by hostname; the build IP must not be baked in."
 

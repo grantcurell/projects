@@ -5,6 +5,7 @@ set -euo pipefail
 
 INSTALL_DIR="{{ deployer.offline_tui.install_dir }}"
 CONFIG_FILE="{{ deployer.offline_tui.local_config }}"
+VENV_PYTHON="{{ deployer.offline_tui.venv }}/bin/python"
 
 export WINDEPLOY_OFFLINE_CONFIG="$CONFIG_FILE"
-exec python3 "$INSTALL_DIR/offline-deployer-tui.py" "$@"
+exec "$VENV_PYTHON" "$INSTALL_DIR/offline-deployer-tui.py" "$@"

@@ -1,12 +1,24 @@
 $ErrorActionPreference = "Stop"
 
-# Portable, hostname-based addressing: boot.wim never contains the deployer IP.
-$DeployServer = "{{ deployer.offline.hostname }}"
-$DeploySharePath = "\\$DeployServer\deploy"
-$DeployShareFallbackPath = "\\$DeployServer\capture"
-$JoinSharePath = "\\$DeployServer\join"
+# Portable addressing: boot.wim never contains the deployer IP.
+# The configured name is only a fallback label; the deployer is always this client's
+# DHCP server (it serves DHCP, DNS, SMB and HTTP from a single IP), so we discover
+# that IP at runtime. This avoids depending on name resolution, which is unreliable
+# in WinPE for single-label names (no DNS suffix/devolution), while still keeping the
+# deployer IP out of the image.
+#
+# WinPE DHCP/DNS bring-up is racy on a cold PXE boot: the script can start before the
+# NIC has a lease, at which point no DHCP server is known yet. We therefore re-run this
+# discovery on every network-probe attempt (stage 1) rather than only once, so a slow
+# lease can never pin us to an unresolvable single-label name and fail SMB with error 53.
+$ConfiguredDeployServer = "{{ deployer.offline.hostname }}"
+$DeployServer = $ConfiguredDeployServer
 $DeployShareUser = "{{ deployer.samba.username }}"
 $DeploySharePassword = "{{ deployer.samba.password }}"
+# Resolved from $DeployServer once the network is confirmed reachable (Update-DeploySharePaths).
+$DeploySharePath = $null
+$DeployShareFallbackPath = $null
+$JoinSharePath = $null
 $StopAfterStage = "{{ windows.deploy.stop_after_stage | lower }}".Trim().ToLowerInvariant()
 $PauseBetweenStages = [System.Convert]::ToBoolean("{{ windows.deploy.pause_between_stages | bool }}")
 $AutoReboot = [System.Convert]::ToBoolean("{{ windows.deploy.auto_reboot | bool }}")
@@ -108,6 +120,58 @@ public static class ConsoleNative {
     } catch {
         Write-Host "Warning: could not disable QuickEdit on current console. $($_.Exception.Message)"
     }
+}
+
+function Resolve-DeployServerAddress {
+    # Goal: end up with the deployer's IP ADDRESS, never a single-label name. The WinPE
+    # SMB redirector frequently cannot resolve single-label names (no DNS suffix /
+    # devolution), so `net use \\win-deploy\...` fails with "System error 53" even though
+    # .NET DNS and the TCP/445 probe succeed against that same name. We therefore convert
+    # the deployer to an IP, trying in order:
+    #   1) the DHCP server address (the deployer is always this client's DHCP server), and
+    #   2) .NET DNS resolution of the configured name (works via the deployer's own DNS).
+    # Safe to call repeatedly: until the NIC has a lease both lookups are no-ops and the
+    # caller retries.
+    $candidate = $null
+
+    try {
+        $dhcpServer = (Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration -ErrorAction Stop |
+            Where-Object {
+                $_.IPEnabled -and $_.DHCPEnabled -and
+                $_.DHCPServer -and
+                $_.DHCPServer -ne "255.255.255.255" -and
+                $_.DHCPServer -ne "0.0.0.0"
+            } |
+            Select-Object -First 1 -ExpandProperty DHCPServer)
+        if (-not [string]::IsNullOrWhiteSpace($dhcpServer)) {
+            $candidate = $dhcpServer
+        }
+    } catch {
+        # NIC not ready yet.
+    }
+
+    if ([string]::IsNullOrWhiteSpace($candidate)) {
+        try {
+            $candidate = ([System.Net.Dns]::GetHostAddresses($ConfiguredDeployServer) |
+                Where-Object { $_.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork } |
+                Select-Object -First 1).IPAddressToString
+        } catch {
+            # Name not resolvable yet.
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($candidate)) {
+        if ($script:DeployServer -ne $candidate) {
+            Write-Host "Resolved deploy server to IP $candidate (configured name '$ConfiguredDeployServer')."
+        }
+        $script:DeployServer = $candidate
+    }
+}
+
+function Update-DeploySharePaths {
+    $script:DeploySharePath = "\\$($script:DeployServer)\deploy"
+    $script:DeployShareFallbackPath = "\\$($script:DeployServer)\capture"
+    $script:JoinSharePath = "\\$($script:DeployServer)\join"
 }
 
 function Ensure-DeployShareMapped {
@@ -268,10 +332,48 @@ function Resolve-EfiDriveLetter {
     return $assignLetter
 }
 
+function Set-OfflineComputerName {
+    param(
+        [string]$WindowsDrive,
+        [string]$Name
+    )
+
+    # Stamp the authoritative computer name (service tag) into the offline image's
+    # specialize pass so the machine boots ALREADY named correctly, before OOBE.
+    #
+    # Why this matters: if the machine instead booted with a random name and
+    # first-boot-join used `Add-Computer -NewName <tag>`, the rename fails with
+    # "The account already exists" whenever a computer account for <tag> is already
+    # in AD -- which is exactly the case when re-imaging the same physical machine
+    # (same service tag). By naming the box <tag> up front, first-boot-join takes the
+    # join-by-existing-name path (`Add-Computer ... -Force`, no -NewName), which
+    # cleanly takes over / re-uses the existing account and is idempotent for
+    # re-images.
+    $pantherUnattend = "$WindowsDrive`:\Windows\Panther\unattend.xml"
+    if (-not (Test-Path $pantherUnattend)) {
+        throw "Offline unattend not found at $pantherUnattend; cannot set authoritative ComputerName."
+    }
+
+    [xml]$ua = Get-Content -Path $pantherUnattend -Raw
+    $ns = New-Object System.Xml.XmlNamespaceManager($ua.NameTable)
+    $ns.AddNamespace("u", "urn:schemas-microsoft-com:unattend")
+    $cnNodes = $ua.SelectNodes("//u:settings[@pass='specialize']/u:component[@name='Microsoft-Windows-Shell-Setup']/u:ComputerName", $ns)
+    if ($null -eq $cnNodes -or $cnNodes.Count -eq 0) {
+        throw "No specialize ComputerName element found in $pantherUnattend; cannot set authoritative ComputerName."
+    }
+    foreach ($n in $cnNodes) { $n.InnerText = $Name }
+    $ua.Save($pantherUnattend)
+    Write-Host "Stamped offline ComputerName '$Name' into $pantherUnattend (specialize pass)."
+}
+
 function Invoke-StageJoin {
     param([string]$WindowsDrive)
 
-    # No offline registry editing. deploy.ps1 only drops the first-boot script
+    # Set the authoritative offline ComputerName (= service tag) in the applied image
+    # so the box boots already named correctly and the domain join is re-image safe.
+    Set-OfflineComputerName -WindowsDrive $WindowsDrive -Name $script:ComputerName
+
+    # Beyond the ComputerName above, deploy.ps1 only drops the first-boot script
     # (and, when domain join is enabled, the transient credential) into the image.
     $scriptsDir = "$WindowsDrive`:\Windows\Setup\Scripts"
     New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null
@@ -342,9 +444,58 @@ try {
 
     Write-Step "Deployment stage 1: network check"
     ipconfig /all
-    if (-not (Test-Connection -ComputerName $DeployServer -Count 3 -Quiet)) {
-        throw "Cannot reach deploy server $DeployServer"
+    # PXE/WinPE networking (DHCP lease, DNS, first-hop ARP) can take a few seconds
+    # to settle. Retry so an unattended deployment tolerates a slow bring-up instead
+    # of failing on a single cold-start probe.
+    #
+    # NOTE: Test-Connection (ICMP) is unreliable in WinPE because it depends on the
+    # WMI ping provider, which is not present in WinPE. Instead, probe the actual SMB
+    # port (445) on the deploy server with a TCP connect. This both resolves the
+    # deploy server's name via DNS and validates the dependency we truly need.
+    $networkReady = $false
+    $maxNetworkAttempts = 30
+    for ($attempt = 1; $attempt -le $maxNetworkAttempts -and -not $networkReady; $attempt++) {
+        # Re-resolve the deployer to an IP each attempt: on a cold boot the lease/DNS may
+        # not be ready on the first pass, so this upgrades $DeployServer from the configured
+        # single-label name to the deployer IP as soon as either lookup succeeds. Using an
+        # IP (not the name) is what lets `net use` work in WinPE.
+        Resolve-DeployServerAddress
+        # Require an actual IP before proceeding: net use against a single-label name
+        # fails with error 53 in WinPE, so we wait until resolution yields an address.
+        $parsedDeployIp = $null
+        $deployServerIsIp = [System.Net.IPAddress]::TryParse($DeployServer, [ref]$parsedDeployIp)
+        if (-not $deployServerIsIp) {
+            Write-Host "Deployer not resolved to an IP yet (have '$DeployServer'); attempt $attempt/$maxNetworkAttempts; waiting..."
+            Start-Sleep -Seconds 6
+            continue
+        }
+        $tcpClient = $null
+        try {
+            $tcpClient = New-Object System.Net.Sockets.TcpClient
+            $async = $tcpClient.BeginConnect($DeployServer, 445, $null, $null)
+            if ($async.AsyncWaitHandle.WaitOne(3000, $false) -and $tcpClient.Connected) {
+                $tcpClient.EndConnect($async)
+                $networkReady = $true
+            }
+        } catch {
+            $networkReady = $false
+        } finally {
+            if ($null -ne $tcpClient) {
+                $tcpClient.Close()
+            }
+        }
+        if (-not $networkReady) {
+            Write-Host "Deploy server $DeployServer (SMB/445) not reachable yet (attempt $attempt/$maxNetworkAttempts); waiting..."
+            Start-Sleep -Seconds 6
+        }
     }
+    if (-not $networkReady) {
+        throw "Cannot reach deploy server $DeployServer on SMB port 445 after $maxNetworkAttempts attempts."
+    }
+    # Network confirmed: freeze the resolved server into the SMB share paths used by
+    # every later stage (Ensure-DeployShareMapped, Resolve-DeployWimPath, Invoke-StageJoin).
+    Update-DeploySharePaths
+    Write-Host "Deploy server $DeployServer is reachable on SMB port 445."
     Complete-Stage -StageName "network"
 
     Write-Step "Deployment stage 2: map deploy share (single persistent SMB session)"

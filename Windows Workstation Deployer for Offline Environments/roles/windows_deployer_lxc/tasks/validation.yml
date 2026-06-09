@@ -9,6 +9,15 @@
     - dnsmasq
     - smbd
 
+# Reload nginx unconditionally so validation never races a lost handler
+# notification (e.g. when a prior run failed before flush_handlers fired and
+# the config tasks are now idempotent/unchanged on re-run).
+- name: Reload nginx so the active config matches the deployed site
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: reloaded
+  changed_when: false
+
 - name: Validate Secure Boot autoexec script over HTTP
   ansible.builtin.uri:
     url: "http://127.0.0.1/ipxe/autoexec.ipxe"
