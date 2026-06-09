@@ -1,0 +1,523 @@
+schemaVersion: 1
+
+environment:
+  name: "example-lab"
+  purpose: "lab"
+  changeId: "ISSUE-000"
+  approvedBy: "CHANGE-MANAGER"
+  maintenanceWindow: "2026-01-01T00:00:00-05:00/2026-01-01T04:00:00-05:00"
+
+execution:
+  statePath: "C:\\ProgramData\\Configure-WindowsIdentityServices"
+  logPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs"
+  transcriptPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs\\transcript.log"
+  jsonLogPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs\\operations.jsonl"
+  evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence"
+  allowModuleInstall: false
+  requiredPowerShellModules:
+    - name: "powershell-yaml"
+      minimumVersion: "0.4.7"
+      installCommand: "Install-Module powershell-yaml -Scope AllUsers"
+  requireCleanPendingReboot: true
+  stopOnFirstValidationFailure: true
+  planOnlyRequiresNoChanges: true
+  resumeScheduledTaskName: "Configure-WindowsIdentityServices-Resume"
+
+proxmoxGuest:
+  enabled: true
+  requireVirtioDrivers: true
+  requireQemuGuestAgent: true
+  qemuGuestAgentServiceName: "QEMU-GA"
+  virtioIsoDriveLetter: "D:"
+  guestToolsInstallerPath: "D:\\virtio-win-guest-tools.exe"
+  allowSilentGuestToolsInstall: false
+  expectedDeviceNamePatterns: ["VirtIO", "Red Hat", "QEMU"]
+
+network:
+  enabled: true
+  computerName: "dc01"
+  timeZone: "Eastern Standard Time"
+  interfaceAlias: "Ethernet"
+  ipv4:
+    address: "192.168.1.10"
+    prefixLength: 24
+    defaultGateway: "192.168.1.1"
+    dnsClientServersBeforePromotion: ["192.168.1.10"]
+    dnsClientServersAfterPromotion: ["127.0.0.1"]
+  ipv6:
+    configure: false
+    disable: false
+  requireStaticIp: true
+  allowDhcpAddressing: false
+  allowMultipleDefaultGateways: false
+
+roles:
+  activeDirectoryDomainServices:
+    enabled: true
+    includeManagementTools: true
+  dns:
+    enabled: true
+    includeManagementTools: true
+  dhcp:
+    enabled: true
+    includeManagementTools: true
+  wsus:
+    enabled: false
+    includeManagementTools: false
+  pki:
+    enabled: false
+    includeManagementTools: false
+
+activeDirectory:
+  enabled: true
+  mode: "newForest"
+  domainName: "lab.example.com"
+  netbiosName: "LAB"
+  forestMode: "WinThreshold"
+  domainMode: "WinThreshold"
+  installDns: true
+  createDnsDelegation: false
+  databasePath: "C:\\Windows\\NTDS"
+  logPath: "C:\\Windows\\NTDS"
+  sysvolPath: "C:\\Windows\\SYSVOL"
+  safeModeAdministratorPasswordPrompt: true
+  safeModeAdministratorPasswordSecretName: null
+  allowDotLocal: false
+  allowSingleLabelDomain: false
+  site:
+    renameDefaultSite: true
+    defaultSiteCurrentName: "Default-First-Site-Name"
+    newSiteName: "Main-Site"
+  domainController:
+    globalCatalog: true
+    readOnlyDomainController: false
+
+dns:
+  enabled: true
+  allowForwardersPointingToSelf: false
+  forwarders: ["1.1.1.1", "8.8.8.8"]
+  useRootHints: true
+  createReverseLookupZones: true
+  reverseLookupZones:
+    - networkId: "192.168.1.0/24"
+      replicationScope: "Forest"
+  dnsClientUseLoopbackAfterPromotion: true
+  requiredRecordsToValidate:
+    - name: "lab.example.com"
+      type: "A"
+    - name: "_ldap._tcp.dc._msdcs.lab.example.com"
+      type: "SRV"
+  scavenging:
+    enabled: false
+    noRefreshIntervalDays: null
+    refreshIntervalDays: null
+
+dhcp:
+  enabled: true
+  reconcileExisting: false
+  authorizeInActiveDirectory: true
+  serverDnsName: "dc01.lab.example.com"
+  serverIpAddress: "192.168.1.10"
+  conflictDetectionAttempts: 1
+  scopes:
+    - name: "Desktop VLAN 10"
+      scopeId: "192.168.10.0"
+      startRange: "192.168.10.100"
+      endRange: "192.168.10.199"
+      subnetMask: "255.255.255.0"
+      leaseDuration: "8.00:00:00"
+      state: "Active"
+      options:
+        router: ["192.168.10.1"]
+        dnsServers: ["192.168.1.10"]
+        dnsDomain: "lab.example.com"
+        ntpServers: ["192.168.1.10"]
+      reservations:
+        - name: "desktop-admin-01"
+          ipAddress: "192.168.10.20"
+          clientId: "00-11-22-33-44-55"
+          description: "Admin desktop reservation"
+
+time:
+  enabled: true
+  configureOnlyIfPdcEmulator: true
+  behaviorIfNotPdc: "stop"
+  authoritativeForDomain: true
+  externalNtpServers: ["time.cloudflare.com", "time.google.com"]
+  ntpFlags: "0x8"
+  reliableTimeSource: true
+  resyncAfterConfiguration: true
+  validation:
+    queryStatus: true
+    queryConfiguration: true
+    queryPeers: true
+    stripchartTargets: ["time.cloudflare.com"]
+    stripchartSamples: 3
+
+organizationalUnits:
+  enabled: true
+  protectedFromAccidentalDeletion: true
+  structure:
+    - distinguishedNameRelative: "OU=Users"
+      description: "Standard users"
+    - distinguishedNameRelative: "OU=Servers"
+      description: "Server objects"
+    - distinguishedNameRelative: "OU=Desktops"
+      description: "Desktop objects"
+    - distinguishedNameRelative: "OU=Admins"
+      description: "Privileged accounts"
+    - distinguishedNameRelative: "OU=Service Accounts"
+      description: "Service accounts"
+    - distinguishedNameRelative: "OU=Groups"
+      description: "Security groups"
+
+groups:
+  enabled: true
+  defaultOuDistinguishedNameRelative: "OU=Groups"
+  items:
+    - name: "GG-Server-Admins"
+      scope: "Global"
+      category: "Security"
+      description: "Server admins"
+      pathRelative: "OU=Groups"
+      members: []
+    - name: "GG-GitLab-Users"
+      scope: "Global"
+      category: "Security"
+      description: "GitLab users"
+      pathRelative: "OU=Groups"
+      members: []
+    - name: "GG-Keycloak-Users"
+      scope: "Global"
+      category: "Security"
+      description: "Keycloak users"
+      pathRelative: "OU=Groups"
+      members: []
+    - name: "GG-YubiKey-Required"
+      scope: "Global"
+      category: "Security"
+      description: "YubiKey required users"
+      pathRelative: "OU=Groups"
+      members: []
+
+serviceAccounts:
+  enabled: true
+  defaultOuDistinguishedNameRelative: "OU=Service Accounts"
+  createStandardServiceAccounts: true
+  createGroupManagedServiceAccounts: false
+  accounts:
+    - name: "svc-wazuh-win"
+      samAccountName: "svc-wazuh-win"
+      type: "standard"
+      pathRelative: "OU=Service Accounts"
+      description: "Wazuh account"
+      enabled: true
+      passwordPrompt: true
+      passwordNeverExpires: false
+      userCannotChangePassword: true
+      resetPasswordIfExists: false
+      groups: []
+    - name: "svc-keycloak-ldap"
+      samAccountName: "svc-keycloak-ldap"
+      type: "standard"
+      pathRelative: "OU=Service Accounts"
+      description: "Keycloak bind account"
+      enabled: true
+      passwordPrompt: true
+      passwordNeverExpires: false
+      userCannotChangePassword: true
+      resetPasswordIfExists: false
+      groups: []
+    - name: "svc-gitlab-ldap"
+      samAccountName: "svc-gitlab-ldap"
+      type: "standard"
+      pathRelative: "OU=Service Accounts"
+      description: "GitLab bind account"
+      enabled: true
+      passwordPrompt: true
+      passwordNeverExpires: false
+      userCannotChangePassword: true
+      resetPasswordIfExists: false
+      groups: []
+
+gpo:
+  enabled: true
+  allowModifyDefaultDomainPolicy: true
+  linkOrderExplicit: true
+  gpos:
+    - name: "GPO-Domain-Password-Lockout-Policy"
+      linkOrder: 1
+      target: "domain"
+      linkDistinguishedNameRelative: ""
+      enforced: true
+      enabled: true
+      settings:
+        passwordPolicy:
+          minimumPasswordLength: 15
+          passwordHistoryCount: 24
+          maximumPasswordAgeDays: 60
+          minimumPasswordAgeDays: 1
+          complexityEnabled: true
+          reversibleEncryptionEnabled: false
+        lockoutPolicy:
+          lockoutThreshold: 5
+          lockoutDurationMinutes: 15
+          lockoutObservationWindowMinutes: 15
+    - name: "GPO-Baseline-Servers"
+      linkOrder: 2
+      target: "ou"
+      linkDistinguishedNameRelative: "OU=Servers"
+      enforced: false
+      enabled: true
+      settings:
+        auditPolicy:
+          enabled: true
+          categories:
+            accountLogon: "Success,Failure"
+        firewall:
+          enabled: true
+          domainProfile: "On"
+          privateProfile: "On"
+          publicProfile: "On"
+        screenLock:
+          enabled: true
+          timeoutSeconds: 900
+        removableMedia:
+          denyWriteAccess: true
+          denyExecuteAccess: true
+        wsus:
+          enabled: false
+          serverUrl: null
+          targetGroup: null
+
+hardening:
+  enabled: true
+  stigAligned: true
+  applyLocalSecurityPolicy: true
+  importSecurityTemplate: false
+  securityTemplatePath: null
+  disableUnnecessaryServices: true
+  missingServiceBehavior: "warn"
+  unnecessaryServices:
+    - name: "Spooler"
+      startupType: "Disabled"
+      stopService: true
+      justification: "Not required on domain controller"
+  fipsAlignedCrypto:
+    enabled: false
+    approved: false
+    registrySettings: []
+  localSecurityOptions: {}
+  eventLogSizes:
+    securityMaxSizeMb: 1024
+    systemMaxSizeMb: 256
+    applicationMaxSizeMb: 256
+    directoryServiceMaxSizeMb: 512
+    dnsServerMaxSizeMb: 256
+  requireSmbSigning: true
+  disableSmbv1: true
+  ldapSigning:
+    requireSigning: true
+  channelBinding:
+    enabled: true
+
+defender:
+  enabled: true
+  configureMicrosoftDefender: true
+  realTimeProtection: true
+  cloudProtection: false
+  sampleSubmission: false
+  controlledFolderAccess: false
+  exclusions:
+    paths: []
+    processes: []
+    extensions: []
+  onboarding:
+    enabled: false
+    scriptPath: null
+
+firewall:
+  enabled: true
+  configureProfiles: true
+  profiles:
+    domain:
+      enabled: true
+      defaultInboundAction: "Block"
+      defaultOutboundAction: "Allow"
+    private:
+      enabled: true
+      defaultInboundAction: "Block"
+      defaultOutboundAction: "Allow"
+    public:
+      enabled: true
+      defaultInboundAction: "Block"
+      defaultOutboundAction: "Allow"
+  enableBuiltInRuleGroups:
+    - "Active Directory Domain Services"
+    - "DNS Service"
+    - "DHCP Server"
+    - "Remote Event Log Management"
+    - "Windows Remote Management"
+  customRules: []
+
+eventForwarding:
+  enabled: true
+  mode: "collector"
+  collector:
+    subscriptionName: "Domain-Controller-Security-Events"
+    subscriptionXmlPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Subscriptions\\dc-security-subscription.xml"
+    allowedSourceComputersGroup: "GG-Server-Admins"
+    destinationLog: "ForwardedEvents"
+  source:
+    configureWinRM: true
+    configureSubscriptionManager: false
+    subscriptionManagerServer: null
+  validation:
+    requireForwardedEventsLog: true
+    requireSubscriptionPresent: true
+
+wazuh:
+  enabled: false
+  agentMsiPath: null
+  managerAddress: null
+  registrationServer: null
+  agentGroup: null
+  deploymentMode: "manual"
+  serviceName: "WazuhSvc"
+  validateServiceRunning: true
+
+pki:
+  enabled: false
+  mode: "offline-root-and-issuing-ca"
+  allowRootAndIssuingOnSameServer: false
+  rootCa:
+    enabled: false
+    caCommonName: null
+    validityYears: null
+    keyLength: null
+    hashAlgorithm: null
+    cryptoProvider: null
+  issuingCa:
+    enabled: false
+    caCommonName: null
+    validityYears: null
+    keyLength: null
+    hashAlgorithm: null
+    cryptoProvider: null
+  certificateWorkflow:
+    requestDirectory: null
+    issuedDirectory: null
+    renewalWarningDays: null
+    templates: []
+
+wsus:
+  enabled: false
+  mode: "install-and-configure"
+  contentDirectory: null
+  upstreamServer: null
+  upstreamPort: null
+  useSsl: null
+  products: []
+  classifications: []
+  computerTargetGroups: []
+  autoApprovalRules: []
+  emergencyPatching:
+    processDocumented: true
+    runbookPath: "docs/operator-runbook.md"
+  rollback:
+    processDocumented: true
+    runbookPath: "docs/rollback-runbook.md"
+
+backupRecovery:
+  enabled: true
+  backupPath: "E:\\ADBackups"
+  createRunbook: true
+  runbookPath: "docs/ad-backup-restore-runbook.md"
+  createBackupPathIfMissing: true
+  runInitialBackupNow: false
+  systemStateBackup:
+    enabled: true
+    scheduleConfiguredOutsideScript: true
+    scheduleDescription: "Daily system state backup at 02:00"
+  recoveryObjectives:
+    rpoHours: 24
+    rtoHours: 4
+  restoreValidation:
+    requireDocumentedTest: true
+    evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\restore-validation"
+
+vulnerabilityScanning:
+  enabled: true
+  requireScannerExecutionNow: false
+  authenticatedScan:
+    credentialAccountName: "svc-scan-win"
+    createCredentialAccount: false
+    requiredGroups: ["Event Log Readers"]
+  stigScanning:
+    enabled: true
+    toolName: "SCAP or approved scanner"
+    scannerPath: null
+    scheduleDescription: "Monthly authenticated scan and remediation cycle"
+  remediationCycle:
+    requireFindingExport: true
+    requireRescanEvidence: true
+    evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\vulnerability-scanning"
+
+identityIntegrations:
+  enabled: true
+  gitlab:
+    enabled: false
+    approved: false
+    ldapBindAccountSam: "svc-gitlab-ldap"
+    allowedGroup: "GG-GitLab-Users"
+    ldapBaseDnRelative: ""
+    ldapUserFilter: null
+    outputConfigSnippetPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\gitlab-ldap-config-example.txt"
+  keycloak:
+    enabled: true
+    approved: true
+    ldapBindAccountSam: "svc-keycloak-ldap"
+    allowedGroup: "GG-Keycloak-Users"
+    ldapBaseDnRelative: ""
+    ldapVendor: "ad"
+    connectionUrl: "ldap://dc01.lab.example.com"
+    useKerberos: false
+    kerberosRealm: "LAB.EXAMPLE.COM"
+    outputConfigSummaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\keycloak-ad-federation-summary.txt"
+  yubiKey:
+    enabled: true
+    policyGroup: "GG-YubiKey-Required"
+    requireSmartCardForInteractiveLogon: false
+    applySmartCardRequirementToGroupMembers: false
+    certificateMappingPlanned: true
+    notesPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\yubikey-policy-notes.txt"
+
+validation:
+  enabled: true
+  commands:
+    dcdiag: true
+    dcdiagDns: true
+    repadminReplSummary: true
+    nltestDsGetDc: true
+    resolveDomainName: true
+    resolveLdapSrvRecord: true
+    w32tmStatus: true
+    w32tmConfiguration: true
+    dhcpServerv4Scopes: true
+    gpoReport: true
+    firewallProfile: true
+    defenderStatus: true
+    eventForwardingStatus: true
+  evidenceFiles:
+    dcdiag: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\dcdiag.txt"
+    dcdiagDns: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\dcdiag-dns.txt"
+    repadmin: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\repadmin-replsummary.txt"
+    gpoReportDirectory: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\GPO"
+    finalReport: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\final-report.json"
+
+reporting:
+  enabled: true
+  writeHumanReadableSummary: true
+  summaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\summary.txt"
+  writeJsonSummary: true
+  jsonSummaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\summary.json"
