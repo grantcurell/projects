@@ -77,6 +77,12 @@ windows:
     boot_order: order=net0
     post_deploy_boot_order: order=sata0;net0
     expect_winrm: true
+  # Break-glass local administrator created silently by Unattend.xml so OOBE completes
+  # with zero interaction. End users sign in with DOMAIN accounts (policy via GPO); this
+  # local account exists only because Windows requires at least one local account.
+  workstation_local_admin:
+    username: wsadmin
+    password: "{{ vault_workstation_local_admin_password }}"
 deployer:
   lxc:
     vmid: 131
@@ -124,6 +130,7 @@ deployer:
   offline_tui:
     entrypoint: /usr/local/bin/offline-setup
     install_dir: /opt/windows-deployer
+    venv: /opt/windows-deployer/venv
     local_config: /etc/windows-deployer/offline-config.yml
     vault:
       password_file: /etc/windows-deployer/.vault_pass

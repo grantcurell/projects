@@ -62,8 +62,8 @@
         path: C:\Windows\Panther
         state: directory
 
-    - name: Copy unattend file
-      ansible.windows.win_copy:
+    - name: Render unattend file (vault-backed local admin so OOBE completes unattended)
+      ansible.windows.win_template:
         src: ../files/Unattend.xml
         dest: C:\Windows\Panther\Unattend.xml
 

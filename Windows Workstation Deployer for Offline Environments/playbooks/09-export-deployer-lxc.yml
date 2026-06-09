@@ -40,6 +40,9 @@
             )
           }}
         dumpdir_available_bytes: "{{ (dumpdir_avail.stdout_lines[1] | trim | int) if (dumpdir_avail.stdout_lines | length) > 1 else 0 }}"
+
+    - name: Compute minimum required export space
+      ansible.builtin.set_fact:
         dumpdir_required_bytes: "{{ [21474836480, (deployer_rootfs_used_bytes | int) + 5368709120] | max }}"
 
     - name: Fail early when dump target does not have enough free space
