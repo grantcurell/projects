@@ -400,7 +400,7 @@ class SetupApp(App[None]):
                     yield Button("Run Setup", id="finish_setup_btn", variant="success", classes="nav-button")
             with Vertical(id="stage-deploy", classes="stage"):
                 with Horizontal(classes="deploy-center"):
-                    yield Button("DEPLOY", id="deploy_now")
+                    yield Button("DEPLOY\n[dim](press enter)[/dim]", id="deploy_now")
 
         yield Log(id="log", highlight=True, auto_scroll=True)
         yield Footer()
