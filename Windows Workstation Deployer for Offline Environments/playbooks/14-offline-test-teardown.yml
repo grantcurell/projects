@@ -1,0 +1,97 @@
+---
+# Runs only on a SUCCESSFUL offline test (Ansible aborts the orchestrator before
+# this on any earlier failure, leaving artifacts up for inspection). Prompts the
+# operator to clean up the test artifacts; on yes (or offline_test.auto_cleanup)
+# it purges the AD object, destroys the PXE test workstation, and destroys the
+# restored deployer LXC.
+- name: Prompt for offline-test cleanup
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Ask whether to clean up the test artifacts
+      ansible.builtin.pause:
+        prompt: |
+
+          Image built and tested successfully. Would you like to clean up the artifacts from the test? [y/N]
+      register: cleanup_answer
+      when: not (offline_test.auto_cleanup | bool)
+
+    - name: Decide whether to clean up
+      ansible.builtin.set_fact:
+        do_cleanup: >-
+          {{
+            (offline_test.auto_cleanup | bool)
+            or ((cleanup_answer.user_input | default('') | trim | lower) in ['y', 'yes'])
+          }}
+
+    - name: Report decision
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'Cleaning up deployer + workstation.' if (do_cleanup | bool)
+             else 'Leaving deployer + workstation running for inspection.' }}
+
+- name: Purge the workstation AD object before destroying the deployer
+  hosts: offline_deployer
+  gather_facts: false
+  ignore_unreachable: true
+  tasks:
+    - name: Stage helper scripts + confirm pywinrm on the deployer
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_deployer_prep.yml"
+      when: hostvars['localhost'].do_cleanup | bool
+
+    - name: Purge stale AD computer object + DNS record
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_purge_ad.yml"
+      when: hostvars['localhost'].do_cleanup | bool
+
+- name: Destroy the PXE test workstation VM
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+    community.proxmox.proxmox_vm_info:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Destroy the test workstation VM
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_destroy_vms.yml"
+      when: do_cleanup | bool
+
+- name: Destroy the restored offline deployer LXC
+  hosts: offline_proxmox_node
+  gather_facts: false
+  tasks:
+    - name: Force-stop the deployer LXC
+      ansible.builtin.command:
+        argv:
+          - pct
+          - stop
+          - "{{ offline_test.deployer.vmid | string }}"
+      changed_when: true
+      failed_when: false
+      when: hostvars['localhost'].do_cleanup | bool
+
+    - name: Destroy the deployer LXC
+      ansible.builtin.command:
+        argv:
+          - pct
+          - destroy
+          - "{{ offline_test.deployer.vmid | string }}"
+          - --purge
+      changed_when: true
+      failed_when: false
+      when: hostvars['localhost'].do_cleanup | bool
+
+    - name: Report teardown completion
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'Offline test artifacts cleaned up (deployer + workstation destroyed).'
+             if (hostvars['localhost'].do_cleanup | bool)
+             else 'No cleanup performed.' }}

@@ -1,0 +1,43 @@
+---
+# Reusable tasks (run within a localhost play that sets community.proxmox.proxmox_kvm
+# module_defaults): force-stop and purge the PXE test workstation VM if it exists.
+# Idempotent and non-fatal when the VM is already absent.
+- name: Read offline node VM inventory
+  community.proxmox.proxmox_vm_info:
+    node: "{{ offline_test.test_workstation.node }}"
+    type: qemu
+    config: current
+  delegate_to: localhost
+  register: offline_node_vms
+  changed_when: false
+
+- name: Determine whether the test workstation VM exists
+  ansible.builtin.set_fact:
+    test_workstation_present: >-
+      {{
+        (
+          offline_node_vms.proxmox_vms | default([])
+          | selectattr('vmid', 'equalto', (offline_test.test_workstation.vmid | int))
+          | list | length
+        ) > 0
+      }}
+
+- name: Force-stop the test workstation VM if present
+  community.proxmox.proxmox_kvm:
+    node: "{{ offline_test.test_workstation.node }}"
+    vmid: "{{ offline_test.test_workstation.vmid }}"
+    state: stopped
+    force: true
+    timeout: 90
+  delegate_to: localhost
+  failed_when: false
+  when: test_workstation_present | bool
+
+- name: Destroy the test workstation VM if present
+  community.proxmox.proxmox_kvm:
+    node: "{{ offline_test.test_workstation.node }}"
+    vmid: "{{ offline_test.test_workstation.vmid }}"
+    state: absent
+    purge: true
+  delegate_to: localhost
+  when: test_workstation_present | bool

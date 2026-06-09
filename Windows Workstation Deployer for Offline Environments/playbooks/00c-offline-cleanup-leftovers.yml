@@ -1,0 +1,51 @@
+---
+# Idempotently purge ALL prior-run leftovers before a fresh offline test so each
+# run starts from a known-clean state. Safe to run repeatedly.
+#   * Removes the stale AD computer object + DNS A record for the test workstation
+#     (run FROM the deployer; best-effort and skipped if the deployer is absent).
+#   * Force-stops + destroys the leftover PXE test workstation VM.
+# It does NOT destroy the deployer here (that is the teardown's job on success);
+# the deployer is reused across runs.
+- name: Purge stale AD/DNS for the test workstation (from the deployer)
+  hosts: offline_deployer
+  gather_facts: false
+  ignore_unreachable: true
+  tasks:
+    - name: Stage helper scripts + confirm pywinrm on the deployer
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_deployer_prep.yml"
+
+    - name: Purge stale AD computer object + DNS record
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_purge_ad.yml"
+
+- name: Destroy leftover PXE test workstation VM
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+    community.proxmox.proxmox_vm_info:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Destroy the leftover test workstation VM
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_destroy_vms.yml"
+
+    - name: Remove stale exported deployer TARs from the local artifacts dir
+      ansible.builtin.find:
+        paths: "{{ deployer.artifacts.local_dir }}"
+        patterns: "vzdump-lxc-*.tar.zst"
+        age: 7d
+      register: stale_local_tars
+      changed_when: false
+
+    - name: Report any old local TARs (left in place; informational)
+      ansible.builtin.debug:
+        msg: "Old local vzdump TARs (>7d) present: {{ stale_local_tars.files | map(attribute='path') | list }}"
+      when: (stale_local_tars.files | default([])) | length > 0

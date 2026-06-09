@@ -1,0 +1,26 @@
+---
+# Reusable tasks (run within an `offline_deployer` host play after
+# offline_deployer_prep.yml): remove a stale AD computer object + its DNS A record
+# for the test workstation, so a re-run joins cleanly. Best-effort: never fatal.
+- name: Purge stale AD computer object + DNS record for the test workstation
+  ansible.builtin.command:
+    argv:
+      - "{{ deployer_venv_python }}"
+      - "{{ deployer_helper_dir }}/offline_verify.py"
+      - purge
+      - --dc-ip
+      - "{{ offline_test.domain_controller.ip }}"
+      - --domain
+      - "{{ offline_test.domain.fqdn }}"
+      - --name
+      - "{{ offline_test.test_workstation.smbios_serial }}"
+    environment:
+      DC_USER: "{{ offline_test.domain_controller.winrm_user }}"
+      DC_PASS: "{{ offline_test.domain_controller.winrm_password }}"
+  register: ad_purge
+  changed_when: "'\"RemovedComputer\":true' in (ad_purge.stdout | default('')) or '\"RemovedDns\":true' in (ad_purge.stdout | default(''))"
+  failed_when: false
+
+- name: Report AD/DNS purge result
+  ansible.builtin.debug:
+    msg: "AD/DNS purge for {{ offline_test.test_workstation.smbios_serial }}: {{ ad_purge.stdout | default('(no output)') }}"

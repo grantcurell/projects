@@ -191,3 +191,96 @@ deployer:
     bootx64_efi: "{{ controller_artifacts_dir }}/efi/boot/bootx64.efi"
     capture_iso: "{{ controller_artifacts_dir }}/winpe_capture.iso"
     deploy_wim: "{{ controller_artifacts_dir }}/deploy.wim"
+
+# ---------------------------------------------------------------------------
+# Automated offline domain-join test.
+#
+# This is the END-TO-END test workflow that replaces the online-only test. It
+# proves a freshly PXE-installed workstation joins the offline Active Directory
+# domain. The offline network (vmbr27 / subnet_cidr) is an isolated, air-gapped
+# bridge: the controller is NOT on it. The DEPLOYER LXC is the only orchestration
+# jumpbox on the offline net, so every probe that must reach an offline Windows
+# guest (DC/admin/workstation WinRM, LDAP/OU, DHCP lease) runs FROM the deployer.
+#
+# Pre-existing fixtures the automation only powers-on + health-checks (never
+# rebuilds): the domain controller, the admin workstation, and a standalone
+# WinPE builder. Per the no-defaults policy every value below is explicit.
+# ---------------------------------------------------------------------------
+offline_test:
+  enabled: true
+  # Isolated offline bridge + subnet (exists only on the offline Proxmox node).
+  bridge: vmbr27
+  subnet_cidr: 172.27.10.0/24
+  # Offline Proxmox node that hosts the deployer + fixtures + test workstation.
+  proxmox_node: proxmox2
+  proxmox_host: 192.168.5.3
+  # When true the post-success teardown prompt is skipped (unattended cleanup).
+  auto_cleanup: false
+  # When true the orchestrator rebuilds artifacts online (site.yml) before the
+  # offline phases. False = "fastest" reuse of the already-built deployer/artifacts.
+  run_build: false
+  # Restored offline deployer LXC (jumpbox + PXE/DHCP/SMB server on vmbr27).
+  deployer:
+    vmid: 132
+    hostname: win-deploy-lxc
+    ip: 172.27.10.5
+    cidr_prefix: 24
+    gateway: 172.27.10.2
+    dhcp_start: 172.27.10.30
+    dhcp_end: 172.27.10.50
+    storage: zfs_1
+    # Optional explicit TAR to restore; empty selects the newest exported
+    # vzdump for the build-side deployer vmid under restore_dir.
+    source_tar: ''
+    restore_dir: /tank/zfs_1/restore
+  # Pre-existing domain controller fixture (powered on + health-checked only).
+  domain_controller:
+    vmid: 110
+    ip: 172.27.10.10
+    winrm_user: Administrator
+    winrm_password: "{{ vault_offline_dc_winrm_password }}"
+  # Pre-existing offline admin workstation fixture (powered on + checked only).
+  admin_workstation:
+    vmid: 116
+    # Discovered from the deployer's dnsmasq leases / ARP after power-on.
+    ip: ''
+    winrm_user: Administrator
+    winrm_password: "{{ vault_offline_admin_winrm_password }}"
+  # Offline Active Directory domain the workstation must join.
+  domain:
+    fqdn: identity.lab.example.com
+    netbios: IDENTITY
+    ou: OU=Workstations,DC=identity,DC=lab,DC=example,DC=com
+    dns_servers:
+      - 172.27.10.10
+  # Delegated account used by the workstation first-boot Add-Computer join.
+  join_account:
+    username: IDENTITY\administrator
+    password: "{{ vault_offline_domain_join_password }}"
+  # Blank VM that gets PXE-installed and proven domain-joined each run.
+  test_workstation:
+    vmid: 199
+    name: windows-install-test
+    node: proxmox2
+    smbios_serial: TEST199
+    memory_mb: 4096
+    cores: 4
+    sockets: 1
+    cpu: host
+    disk_gb: 100
+    disk_bus: sata
+    nic_model: e1000
+    machine: q35
+    bios: ovmf
+    secure_boot: true
+    storage: local-lvm
+    # Disk-first with PXE fallback. A freshly created VM has an empty sata0 with no EFI
+    # bootloader, so OVMF falls through to net0 (PXE -> WinPE -> deploy.ps1). After the
+    # image is applied and bcdboot writes the EFI entry, every subsequent reboot
+    # (specialize/OOBE, first-boot domain join, normal use) boots straight from disk.
+    # This is what prevents the post-install PXE loop, since the iPXE script always
+    # serves WinPE and deploy.ps1 ends with `wpeutil reboot` (it cannot change the
+    # Proxmox boot order itself).
+    boot_order: order=sata0;net0
+    post_deploy_boot_order: order=sata0;net0
+    expect_winrm: true

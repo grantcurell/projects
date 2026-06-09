@@ -1,0 +1,169 @@
+---
+# Restore the exported build-side deployer as the OFFLINE deployer LXC on the
+# offline node + bridge, then configure it non-interactively for domain join.
+# Idempotent: if the offline deployer already exists and is configured, the whole
+# thing is skipped (the "fastest" reuse path).
+- name: Restore + place the offline deployer LXC on vmbr27
+  hosts: offline_proxmox_node
+  gather_facts: false
+  tasks:
+    - name: Check whether the offline deployer LXC already exists
+      ansible.builtin.command:
+        argv:
+          - pct
+          - status
+          - "{{ offline_test.deployer.vmid | string }}"
+      register: deployer_status
+      changed_when: false
+      failed_when: false
+
+    - name: Record deployer presence
+      ansible.builtin.set_fact:
+        offline_deployer_present: "{{ deployer_status.rc == 0 }}"
+
+    - name: Locate the exported deployer TAR on the offline node
+      ansible.builtin.find:
+        paths: "{{ offline_test.deployer.restore_dir }}"
+        patterns: "vzdump-lxc-{{ deployer.lxc.vmid }}-*.tar.zst"
+        file_type: file
+      register: offline_tars
+      when: not offline_deployer_present
+
+    - name: Copy the exported TAR from the controller if none is present on the node
+      ansible.builtin.copy:
+        src: "{{ offline_test.deployer.source_tar }}"
+        dest: "{{ offline_test.deployer.restore_dir }}/"
+        mode: "0644"
+      when:
+        - not offline_deployer_present
+        - (offline_tars.files | default([]) | length) == 0
+        - (offline_test.deployer.source_tar | length) > 0
+
+    - name: Re-scan for the TAR after optional copy
+      ansible.builtin.find:
+        paths: "{{ offline_test.deployer.restore_dir }}"
+        patterns: "vzdump-lxc-{{ deployer.lxc.vmid }}-*.tar.zst"
+        file_type: file
+      register: offline_tars2
+      when: not offline_deployer_present
+
+    - name: Fail when no deployer TAR is available to restore
+      ansible.builtin.fail:
+        msg: >-
+          No deployer TAR found in {{ offline_test.deployer.restore_dir }} (pattern
+          vzdump-lxc-{{ deployer.lxc.vmid }}-*.tar.zst) and offline_test.deployer.source_tar is unset.
+      when:
+        - not offline_deployer_present
+        - (offline_tars2.files | default([]) | length) == 0
+
+    - name: Select the newest deployer TAR
+      ansible.builtin.set_fact:
+        selected_tar: "{{ (offline_tars2.files | sort(attribute='mtime'))[-1].path }}"
+      when:
+        - not offline_deployer_present
+        - (offline_tars2.files | default([]) | length) > 0
+
+    - name: Restore the deployer LXC from the TAR
+      ansible.builtin.command:
+        argv:
+          - pct
+          - restore
+          - "{{ offline_test.deployer.vmid | string }}"
+          - "{{ selected_tar }}"
+          - --storage
+          - "{{ offline_test.deployer.storage }}"
+      register: pct_restore
+      changed_when: pct_restore.rc == 0
+      when: not offline_deployer_present
+
+    - name: Place the deployer on the offline bridge with its static offline IP
+      ansible.builtin.command:
+        argv:
+          - pct
+          - set
+          - "{{ offline_test.deployer.vmid | string }}"
+          - --net0
+          - "name=eth0,bridge={{ offline_test.bridge }},ip={{ offline_test.deployer.ip }}/{{ offline_test.deployer.cidr_prefix }},gw={{ offline_test.deployer.gateway }},type=veth"
+      changed_when: true
+      when: not offline_deployer_present
+
+    - name: Start the offline deployer LXC
+      ansible.builtin.command:
+        argv:
+          - pct
+          - start
+          - "{{ offline_test.deployer.vmid | string }}"
+      changed_when: true
+      failed_when: false
+      when: not offline_deployer_present
+
+    - name: Give the deployer a moment to finish booting
+      ansible.builtin.pause:
+        seconds: 15
+      when: not offline_deployer_present
+
+- name: Configure the offline deployer for domain join (non-interactive)
+  hosts: offline_deployer
+  gather_facts: false
+  tasks:
+    - name: Determine whether the deployer is already configured
+      ansible.builtin.stat:
+        path: "{{ deployer.paths.site }}/domain.json"
+      register: domain_json_stat
+
+    - name: Stage helper scripts + confirm pywinrm on the deployer
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_deployer_prep.yml"
+      when: not domain_json_stat.stat.exists
+
+    - name: Run non-interactive offline configuration
+      ansible.builtin.command:
+        argv:
+          - "{{ deployer_venv_python }}"
+          - "{{ deployer_helper_dir }}/offline_configure.py"
+          - --domain-enabled
+          - "true"
+          - --domain-fqdn
+          - "{{ offline_test.domain.fqdn }}"
+          - --netbios
+          - "{{ offline_test.domain.netbios }}"
+          - --ou
+          - "{{ offline_test.domain.ou }}"
+          - --dc-ip
+          - "{{ offline_test.domain_controller.ip }}"
+          - --dns-servers
+          - "{{ offline_test.domain.dns_servers | join(',') }}"
+          - --join-user
+          - "{{ offline_test.join_account.username }}"
+          - --ip
+          - "{{ offline_test.deployer.ip }}"
+          - --prefix
+          - "{{ offline_test.deployer.cidr_prefix }}"
+          - --dhcp-start
+          - "{{ offline_test.deployer.dhcp_start }}"
+          - --dhcp-end
+          - "{{ offline_test.deployer.dhcp_end }}"
+          - --upstream-dns
+          - "{{ offline_test.domain.dns_servers | first }}"
+      environment:
+        JOIN_PASS: "{{ offline_test.join_account.password }}"
+      register: offline_configure_run
+      changed_when: true
+      when: not domain_json_stat.stat.exists
+
+    - name: Verify required deployment artifacts are present on the deployer
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ deployer.paths.deploy_wim }}"
+        - "{{ deployer.paths.boot_wim }}"
+      register: artifact_stats
+
+    - name: Assert deploy.wim and boot.wim exist on the deployer
+      ansible.builtin.assert:
+        that:
+          - artifact_stats.results | map(attribute='stat.exists') | list | min
+        fail_msg: "Deployer is missing deploy.wim and/or boot.wim; run the online build (site.yml) first."
+
+    - name: Report deployer readiness
+      ansible.builtin.debug:
+        msg: "Offline deployer {{ offline_test.deployer.ip }} is configured and has the deployment artifacts."

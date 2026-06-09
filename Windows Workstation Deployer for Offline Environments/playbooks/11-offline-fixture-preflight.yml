@@ -1,0 +1,108 @@
+---
+# Power on the pre-existing offline fixtures (DC 110 + admin workstation 116) and
+# health-check them. The automation NEVER rebuilds or re-IPs these; it only starts
+# them and confirms readiness. All Windows probes run FROM the deployer (the only
+# orchestration node on the isolated offline net); the controller only drives the
+# Proxmox API over the main network.
+- name: Power on offline DC + admin fixtures via the Proxmox API
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_api_user: "{{ proxmox.user if ('@' in proxmox.user) else (proxmox.user ~ '@pam') }}"
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox.host }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox.root_password }}"
+      validate_certs: "{{ not (proxmox.insecure_skip_tls_verify | bool) }}"
+  tasks:
+    - name: Start the domain controller fixture (idempotent)
+      community.proxmox.proxmox_kvm:
+        node: "{{ offline_test.proxmox_node }}"
+        vmid: "{{ offline_test.domain_controller.vmid }}"
+        state: started
+      register: dc_start
+      failed_when:
+        - dc_start is failed
+        - "'already running' not in (dc_start.msg | default(''))"
+
+    - name: Start the admin workstation fixture (idempotent)
+      community.proxmox.proxmox_kvm:
+        node: "{{ offline_test.proxmox_node }}"
+        vmid: "{{ offline_test.admin_workstation.vmid }}"
+        state: started
+      register: admin_start
+      failed_when:
+        - admin_start is failed
+        - "'already running' not in (admin_start.msg | default(''))"
+
+- name: Health-check the offline fixtures from the deployer jumpbox
+  hosts: offline_deployer
+  gather_facts: false
+  tasks:
+    - name: Stage helper scripts + confirm pywinrm on the deployer
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/../tasks/offline_deployer_prep.yml"
+
+    - name: Wait for the DC WinRM endpoint to come up (from the deployer)
+      ansible.builtin.wait_for:
+        host: "{{ offline_test.domain_controller.ip }}"
+        port: 5985
+        timeout: 600
+        sleep: 10
+      changed_when: false
+
+    - name: Run DC domain + OU preflight from the deployer
+      ansible.builtin.command:
+        argv:
+          - "{{ deployer_venv_python }}"
+          - "{{ deployer_helper_dir }}/offline_verify.py"
+          - dc-preflight
+          - --dc-ip
+          - "{{ offline_test.domain_controller.ip }}"
+          - --domain
+          - "{{ offline_test.domain.fqdn }}"
+          - --ou
+          - "{{ offline_test.domain.ou }}"
+      environment:
+        DC_USER: "{{ offline_test.domain_controller.winrm_user }}"
+        DC_PASS: "{{ offline_test.domain_controller.winrm_password }}"
+      register: dc_preflight
+      changed_when: false
+
+    - name: Parse DC preflight result
+      ansible.builtin.set_fact:
+        dc_preflight_data: "{{ dc_preflight.stdout | from_json }}"
+
+    - name: Assert the DC reports the expected domain and the target OU exists
+      ansible.builtin.assert:
+        that:
+          - dc_preflight_data.ok | bool
+          - dc_preflight_data.domain_ok | bool
+          - dc_preflight_data.ou_ok | bool
+        fail_msg: "DC fixture preflight failed: {{ dc_preflight.stdout }}"
+
+    - name: Report DC readiness
+      ansible.builtin.debug:
+        msg:
+          - "DC {{ offline_test.domain_controller.ip }} reachable over WinRM from the deployer."
+          - "Domain DNSRoot: {{ dc_preflight_data.dc.DnsRoot }} (NetBIOS {{ dc_preflight_data.dc.NetBIOSName }})"
+          - "PDC emulator: {{ dc_preflight_data.dc.PdcEmulator }}"
+          - "Target OU present: {{ dc_preflight_data.dc.OuPresent }}"
+
+    - name: Best-effort discover the admin workstation lease by its vmbr27 MAC
+      ansible.builtin.shell: >-
+        set -o pipefail;
+        grep -i ' {{ offline_test.admin_workstation.mac | default("") }} ' /var/lib/misc/dnsmasq.leases
+        | awk '{print $3}' | head -n1
+      args:
+        executable: /bin/bash
+      register: admin_lease_ip
+      changed_when: false
+      failed_when: false
+      when: (offline_test.admin_workstation.mac | default('')) | length > 0
+
+    - name: Note admin workstation status (non-blocking)
+      ansible.builtin.debug:
+        msg: >-
+          Admin workstation fixture (vmid {{ offline_test.admin_workstation.vmid }}) was started.
+          {{ ('Lease IP: ' ~ admin_lease_ip.stdout) if (admin_lease_ip.stdout | default('') | length > 0) else 'Lease/IP not auto-discovered (admin workstation is not required for the workstation-join proof).' }}

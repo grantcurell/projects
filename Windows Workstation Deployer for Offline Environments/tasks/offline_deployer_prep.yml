@@ -1,0 +1,35 @@
+---
+# Reusable tasks (run within an `offline_deployer` host play): stage the offline
+# helper scripts onto the deployer and confirm pywinrm is present. pywinrm is
+# baked into the deployer image during the online build (roles/windows_deployer_lxc/
+# tasks/offline_tui.yml) because the offline site has no internet to pip-install it.
+- name: Ensure deployer offline helper directory exists
+  ansible.builtin.file:
+    path: "{{ deployer.offline_tui.install_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Stage offline helper scripts onto the deployer
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../scripts/{{ item }}"
+    dest: "{{ deployer.offline_tui.install_dir }}/{{ item }}"
+    mode: "0755"
+  loop:
+    - offline_verify.py
+    - offline_configure.py
+    - ad_discovery.py
+
+- name: Confirm pywinrm is importable in the deployer venv
+  ansible.builtin.command:
+    argv:
+      - "{{ deployer.offline_tui.venv }}/bin/python"
+      - -c
+      - import winrm
+  changed_when: false
+  register: deployer_pywinrm_check
+  failed_when: deployer_pywinrm_check.rc != 0
+
+- name: Record deployer venv python interpreter for helper invocations
+  ansible.builtin.set_fact:
+    deployer_venv_python: "{{ deployer.offline_tui.venv }}/bin/python"
+    deployer_helper_dir: "{{ deployer.offline_tui.install_dir }}"

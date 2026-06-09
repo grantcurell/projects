@@ -29,6 +29,10 @@
   ansible.builtin.pip:
     name:
       - textual
+      # pywinrm is baked into the deployer image here (while the build host is
+      # still online) because the deployer runs every offline-net WinRM probe
+      # for the automated domain-join test and the offline site has no internet.
+      - pywinrm
     state: present
     virtualenv: "{{ deployer.offline_tui.venv }}"
 
@@ -58,6 +62,8 @@
   loop:
     - offline-deployer-tui.py
     - ad_discovery.py
+    - offline_configure.py
+    - offline_verify.py
 
 - name: Install offline-setup wrapper
   ansible.builtin.template:
