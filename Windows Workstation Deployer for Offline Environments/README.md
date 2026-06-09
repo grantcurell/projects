@@ -24,13 +24,14 @@ Before running the setup you will need:
 - **Windows Server 2025 - WinPE builder VM** (Windows Server) with ADK/WinPE tooling and WinRM access.
   - You will need to manually build and setup Windows Server 2025 somewhere in your environment and record the credentials
   - Need to build out the Windows Server identity host / domain controller too? The sibling project [`Configure-WindowsIdentityServices`](../Configure-WindowsIdentityServices/README.md) automates that buildout (AD DS, DNS, DHCP, time, GPO baseline, optional PKI) from a single YAML file. It is standalone and not part of this deployer's workflow.
-- **Golden image VM**
+- **Golden image VM (Source VM)**
   - This is a running version of your Windows client from which you want to build a golden image. It must have WinRM enabled!
-- Controller
+- **Controller**
   - This is the thing from which the Ansible will run. You'll pull your code down onto the controller and it will then orchestrate everything. Doesn't matter where or what it is as long as it has IP connectivity to Proxmox, Windows Server, the Golden Image VM, and it's running Ubuntu.
 - **Intel RST/NVMe driver package** pre-cached on the controller for first run:
   - Put `Intel-RST-7WNN0.exe` in `artifacts/drivers/` before running the pipeline.
   - Download URL: [Intel Rapid Storage Technology Driver and Application 7WNN0 (Dell)](https://dl.dell.com/FOLDER12407846M/2/Intel-Rapid-Storage-Technology-Driver-and-Application_7WNN0_WIN64_20.2.1.1016_A01.EXE)
+    - You must manually download this. Dell blocks automation against this website
 
 
 This project builds for you:
@@ -71,6 +72,8 @@ cd projects/"Windows Workstation Deployer for Offline Environments"
 ```
 
 Follow the instructions and at the end it will kick off the deployment.
+
+If you want to rerun the setup, follow the instructions in [Manually run full pipeline without using setup](#manually-run-full-pipeline-without-using-setup)
 
 ### Manually run full pipeline without using setup
 
