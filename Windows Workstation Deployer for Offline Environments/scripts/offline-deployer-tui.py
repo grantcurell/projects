@@ -24,11 +24,12 @@ import os
 import secrets as secrets_lib
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
 import yaml
-from textual import events, on
+from textual import events, on, work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Button, ContentSwitcher, Footer, Input as TextInput, Log, ProgressBar, Select, Static
@@ -283,7 +284,7 @@ class OfflineSetupApp(App[None]):
         ("q", "quit", "Quit"),
     ]
 
-    STAGE_ORDER = ["stage-domain", "stage-cred", "stage-dns", "stage-confirm", "stage-network", "stage-done"]
+    STAGE_ORDER = ["stage-domain", "stage-network", "stage-cred", "stage-dns", "stage-confirm", "stage-done"]
 
     def __init__(self) -> None:
         super().__init__()
@@ -296,6 +297,7 @@ class OfflineSetupApp(App[None]):
         self.offline_hostname_fqdn = str(self.cfg["offline_hostname_fqdn"])
         self.existing_vault = load_vault(self.vault_file, self.vault_pass)
         self.discovery: dict[str, Any] = {}
+        self.net: dict[str, Any] = {}
         self.current_stage = "stage-domain"
         self.quit_armed = False
 
@@ -316,7 +318,7 @@ class OfflineSetupApp(App[None]):
                 with Horizontal(classes="stage-nav"):
                     yield Button("Next", id="next_domain", variant="primary", classes="nav-button")
             with VerticalScroll(id="stage-cred", classes="stage"):
-                yield Static("Stage 2: Domain join account (UPN user@domain or DOMAIN\\user). Must have rights to create and join computer objects in the target OU. A delegated account with that right is sufficient - Domain Admin works but is not required.")
+                yield Static("Stage 3: Domain join account (UPN user@domain or DOMAIN\\user). Must have rights to create and join computer objects in the target OU. A delegated account with that right is sufficient - Domain Admin works but is not required.")
                 yield Static("Join account username")
                 yield Input(str(self.existing_vault.get("vault_domain_join_username") or ""), id="join_user", classes="field")
                 yield Static("Join account password")
@@ -325,7 +327,8 @@ class OfflineSetupApp(App[None]):
                     yield Button("Back", id="back_cred", classes="nav-button")
                     yield Button("Next", id="next_cred", variant="primary", classes="nav-button")
             with VerticalScroll(id="stage-dns", classes="stage"):
-                yield Static("Stage 3: Site DNS server(s) that answer AD records (comma-separated). May or may not be the DC.")
+                yield Static("Stage 4: Site DNS server(s) that answer AD records (comma-separated). May or may not be the DC.")
+                yield Static("─" * 80)
                 yield Static("Domain FQDN (e.g. corp.example.com)")
                 yield Input("", id="domain_fqdn", classes="field")
                 yield Static("Site DNS server IP(s)")
@@ -334,16 +337,16 @@ class OfflineSetupApp(App[None]):
                     yield Button("Back", id="back_dns", classes="nav-button")
                     yield Button("Discover", id="next_dns", variant="primary", classes="nav-button")
             with VerticalScroll(id="stage-confirm", classes="stage"):
-                yield Static("Stage 4: Confirm discovered domain settings. The join account's OU rights are verified before continuing.")
+                yield Static("Stage 5: Confirm discovered domain settings. The join account's OU rights are verified, then services are applied.")
                 yield Static("Domain controller")
                 yield PersistentSelect(options=[("(discover first)", "")], value="", id="sel_dc", classes="field")
                 yield Static("Target OU for new computer objects")
                 yield PersistentSelect(options=[("(discover first)", "")], value="", id="sel_ou", classes="field")
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_confirm", classes="nav-button")
-                    yield Button("Verify + Save", id="next_confirm", variant="primary", classes="nav-button")
+                    yield Button("Verify + Finish", id="next_confirm", variant="success", classes="nav-button")
             with VerticalScroll(id="stage-network", classes="stage"):
-                yield Static("Stage 5: Deployer network. Clients use the deployer as their ONLY DNS; it forwards to the site DNS.")
+                yield Static("Stage 2: Deployer network (PXE/DHCP/DNS service). Clients use the deployer as their ONLY DNS; it forwards to the site DNS. Pre-filled from the address set during field deployment.")
                 yield Static("Deployer IP (current offline IP)")
                 yield Input("", id="net_ip", classes="field")
                 yield Static("CIDR prefix (e.g. 24)")
@@ -358,7 +361,7 @@ class OfflineSetupApp(App[None]):
                 yield Input("", id="net_dns", classes="field")
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_network", classes="nav-button")
-                    yield Button("Apply + Finish", id="finish_network", variant="success", classes="nav-button")
+                    yield Button("Next", id="next_network", variant="primary", classes="nav-button")
             with VerticalScroll(id="stage-done", classes="stage"):
                 yield Static("Setup complete. The deployer is ready. Press q to quit.")
         yield Log(id="log", highlight=True, auto_scroll=True)
@@ -367,15 +370,75 @@ class OfflineSetupApp(App[None]):
     # -- lifecycle --------------------------------------------------------
     def on_mount(self) -> None:
         self.append_log("Offline deployer setup started.")
+        self._prefill_network_from_interface()
         self._refresh_controls()
         self._update_progress()
         self.set_focus(self.query_one("#domain_enabled", Select))
 
+    def _detect_interface(self) -> dict[str, str]:
+        """Read eth0's live IPv4/prefix and the default gateway (set by the
+        field-deploy script) so the network stage is pre-filled correctly."""
+        info: dict[str, str] = {}
+        try:
+            out = subprocess.run(
+                ["ip", "-4", "-o", "addr", "show", "eth0"],
+                capture_output=True, text=True, check=False,
+            ).stdout
+            for tok in out.split():
+                if "/" in tok and tok.count(".") == 3:
+                    ip, _, prefix = tok.partition("/")
+                    if prefix.isdigit() and not ip.startswith("169.254"):
+                        info["ip"], info["prefix"] = ip, prefix
+                        break
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            parts = subprocess.run(
+                ["ip", "route", "show", "default"],
+                capture_output=True, text=True, check=False,
+            ).stdout.split()
+            if "via" in parts:
+                info["gateway"] = parts[parts.index("via") + 1]
+        except Exception:  # noqa: BLE001
+            pass
+        return info
+
+    def _prefill_network_from_interface(self) -> None:
+        net = self._detect_interface()
+        if not net.get("ip"):
+            self.append_log("[WARN] Could not detect an IPv4 address on eth0; fill network fields manually.")
+            return
+        ip, prefix = net["ip"], net.get("prefix", "24")
+        self.query_one("#net_ip", Input).value = ip
+        self.query_one("#net_prefix", Input).value = prefix
+        if net.get("gateway"):
+            self.query_one("#net_gateway", Input).value = net["gateway"]
+        self.append_log(f"Detected deployer address {ip}/{prefix} on eth0 (from field deployment).")
+
+        # Derive a convenience DHCP pool inside the subnet. The upstream/general
+        # DNS field is intentionally left blank here: the gateway is rarely a
+        # resolver, so we backfill it from the site DNS after discovery instead.
+        try:
+            network = ipaddress.ip_network(f"{ip}/{prefix}", strict=False)
+            hosts = list(network.hosts())
+            if len(hosts) >= 210:
+                self.query_one("#net_dhcp_start", Input).value = str(hosts[99])   # .100-ish
+                self.query_one("#net_dhcp_end", Input).value = str(hosts[199])    # .200-ish
+        except ValueError:
+            pass
+
     def append_log(self, message: str) -> None:
-        self.query_one("#log", Log).write_line(message)
+        # Safe to call from worker threads: marshal back onto the UI thread.
+        if threading.current_thread() is threading.main_thread():
+            self.query_one("#log", Log).write_line(message)
+        else:
+            self.call_from_thread(self.query_one("#log", Log).write_line, message)
 
     def set_status(self, message: str) -> None:
-        self.query_one("#status", Static).update(message)
+        if threading.current_thread() is threading.main_thread():
+            self.query_one("#status", Static).update(message)
+        else:
+            self.call_from_thread(self.query_one("#status", Static).update, message)
 
     def switch_stage(self, stage_id: str, label: str) -> None:
         self.query_one("#main-switcher", ContentSwitcher).current = stage_id
@@ -390,7 +453,7 @@ class OfflineSetupApp(App[None]):
                 focusables[0].expanded = False
 
     def _update_progress(self) -> None:
-        idx = {"stage-domain": 1, "stage-cred": 2, "stage-dns": 3, "stage-confirm": 4, "stage-network": 5, "stage-done": 5}
+        idx = {"stage-domain": 1, "stage-network": 2, "stage-cred": 3, "stage-dns": 4, "stage-confirm": 5, "stage-done": 5}
         self.query_one("#stage_progress", ProgressBar).update(progress=idx.get(self.current_stage, 1))
 
     def _refresh_controls(self) -> None:
@@ -549,17 +612,26 @@ class OfflineSetupApp(App[None]):
             return
 
     # -- stage handlers ---------------------------------------------------
+    def _enter_network_stage(self) -> None:
+        """Network is now Stage 2. In workgroup mode it is the final step
+        (Apply + Finish); with domain join it is followed by discovery (Next)."""
+        btn = self.query_one("#next_network", Button)
+        if self._select("domain_enabled") == "yes":
+            btn.label = "Next"
+            btn.variant = "primary"
+            self.switch_stage("stage-network", "Stage 2/5: Deployer network (PXE/DHCP/DNS).")
+        else:
+            btn.label = "Apply + Finish"
+            btn.variant = "success"
+            self.switch_stage("stage-network", "Stage 2/5: Deployer network (workgroup mode).")
+
     @on(Button.Pressed, "#next_domain")
     def on_next_domain(self) -> None:
-        if self._select("domain_enabled") == "no":
-            self.append_log("Domain join disabled; skipping credential/discovery stages.")
-            self.switch_stage("stage-network", "Stage 5/5: Configure deployer network (workgroup mode).")
-        else:
-            self.switch_stage("stage-cred", "Stage 2/5: Delegated join credential.")
+        self._enter_network_stage()
 
     @on(Button.Pressed, "#back_cred")
     def on_back_cred(self) -> None:
-        self.switch_stage("stage-domain", "Stage 1/5: Enable domain join?")
+        self._enter_network_stage()
 
     @on(Button.Pressed, "#next_cred")
     def on_next_cred(self) -> None:
@@ -575,19 +647,21 @@ class OfflineSetupApp(App[None]):
                 self.vault_pass,
             )
             self.append_log("Delegated join credential encrypted into the deployer vault.")
-            # Derive a domain hint from a UPN suffix to prefill stage 3.
+            # Derive a domain hint from a UPN suffix to prefill the DNS stage.
             if "@" in user:
                 self.query_one("#domain_fqdn", Input).value = user.split("@", 1)[1]
-            self.switch_stage("stage-dns", "Stage 3/5: Site DNS + AD discovery.")
+            self.switch_stage("stage-dns", "Stage 4/5: Site DNS + AD discovery.")
         except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 2 failed: {exc}")
+            self.append_log(f"[ERROR] Stage 3 failed: {exc}")
 
     @on(Button.Pressed, "#back_dns")
     def on_back_dns(self) -> None:
-        self.switch_stage("stage-cred", "Stage 2/5: Delegated join credential.")
+        self.switch_stage("stage-cred", "Stage 3/5: Delegated join credential.")
 
     @on(Button.Pressed, "#next_dns")
     def on_next_dns(self) -> None:
+        # Validate inputs on the UI thread (fast), then run the network-bound
+        # discovery in a worker thread so the TUI never freezes.
         try:
             domain_fqdn = self._input("domain_fqdn")
             dns_servers = [s.strip() for s in self._input("dns_servers").replace(",", " ").split() if s.strip()]
@@ -601,51 +675,97 @@ class OfflineSetupApp(App[None]):
             user = vault.get("vault_domain_join_username", "")
             password = vault.get("vault_domain_join_password", "")
             if not user or not password:
-                raise RuntimeError("Join credential missing from vault; return to Stage 2.")
+                raise RuntimeError("Join credential missing from vault; return to Stage 3.")
+        except Exception as exc:  # noqa: BLE001
+            self.append_log(f"[ERROR] Stage 4 failed: {exc}")
+            return
 
-            self.append_log(f"Confirming site DNS answers AD SRV for {domain_fqdn} ...")
+        self._set_busy("#next_dns", True, "Discovering...")
+        self.set_status("Stage 4/5: Discovering AD services (working, please wait) ...")
+        self.append_log(f"Confirming site DNS answers AD SRV for {domain_fqdn} ...")
+        self._discover_worker(dns_servers, domain_fqdn, user, password)
+
+    @work(thread=True, exclusive=True)
+    def _discover_worker(self, dns_servers: list[str], domain_fqdn: str, user: str, password: str) -> None:
+        try:
             ad_discovery.site_dns_answers_ad(dns_servers, domain_fqdn)
-            self.append_log("Site DNS answers AD SRV. Running LDAP discovery ...")
+            self.call_from_thread(self.append_log, "Site DNS answers AD SRV. Binding to a DC and reading the directory ...")
             result = ad_discovery.full_preflight(dns_servers, domain_fqdn, user, password, ou_dn=None)
             result["dns_servers"] = dns_servers
             result["domain_fqdn"] = result.get("domain_fqdn") or domain_fqdn
-            self.discovery = result
-
-            dcs = result.get("domain_controllers") or [result.get("bound_dc", "")]
-            ous = result.get("organizational_units") or []
-            self.query_one("#sel_dc", Select).set_options([(d, d) for d in dcs] or [("(none)", "")])
-            self.query_one("#sel_ou", Select).set_options([(o, o) for o in ous] or [("(none discovered)", "")])
-            if dcs:
-                self.query_one("#sel_dc", Select).value = dcs[0]
-            if ous:
-                self.query_one("#sel_ou", Select).value = ous[0]
-            self.append_log(
-                f"Discovered domain={result.get('domain_fqdn')} netbios={result.get('domain_netbios')} "
-                f"DCs={len(dcs)} OUs={len(ous)}."
-            )
-            self.switch_stage("stage-confirm", "Stage 4/5: Confirm domain + verify OU rights.")
         except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 3 failed: {exc}")
+            self.call_from_thread(self.append_log, f"[ERROR] Stage 4 failed: {exc}")
+            self.call_from_thread(self._set_busy, "#next_dns", False, "Discover")
+            self.call_from_thread(self.set_status, "Stage 4/5: Site DNS + AD discovery.")
+            return
+        self.call_from_thread(self._discovery_succeeded, result)
+
+    def _discovery_succeeded(self, result: dict[str, Any]) -> None:
+        self.discovery = result
+        dcs = result.get("domain_controllers") or [result.get("bound_dc", "")]
+        ous = result.get("organizational_units") or []
+        self.query_one("#sel_dc", Select).set_options([(d, d) for d in dcs] or [("(none)", "")])
+        self.query_one("#sel_ou", Select).set_options([(o, o) for o in ous] or [("(none discovered)", "")])
+        if dcs:
+            self.query_one("#sel_dc", Select).value = dcs[0]
+        if ous:
+            self.query_one("#sel_ou", Select).value = ous[0]
+        self.append_log(
+            f"Discovered domain={result.get('domain_fqdn')} netbios={result.get('domain_netbios')} "
+            f"DCs={len(dcs)} OUs={len(ous)}."
+        )
+        # If the user left the upstream/general DNS blank in Stage 2, default it
+        # to the site DNS (a real resolver) rather than forcing a guess earlier.
+        net_dns = self.query_one("#net_dns", Input)
+        site_dns = result.get("dns_servers", [])
+        if not net_dns.value.strip() and site_dns:
+            net_dns.value = site_dns[0]
+            self.append_log(f"Upstream/general DNS defaulted to site DNS {site_dns[0]}.")
+        self._set_busy("#next_dns", False, "Discover")
+        self.switch_stage("stage-confirm", "Stage 5/5: Confirm domain + verify OU rights.")
+
+    def _set_busy(self, button_id: str, busy: bool, label: str) -> None:
+        """Toggle a stage's primary button into a disabled 'working' state and
+        back, so long-running steps show progress and can't be re-triggered."""
+        btn = self.query_one(button_id, Button)
+        btn.disabled = busy
+        btn.label = label
 
     @on(Button.Pressed, "#back_confirm")
     def on_back_confirm(self) -> None:
-        self.switch_stage("stage-dns", "Stage 3/5: Site DNS + AD discovery.")
+        self.switch_stage("stage-dns", "Stage 4/5: Site DNS + AD discovery.")
 
     @on(Button.Pressed, "#next_confirm")
     def on_next_confirm(self) -> None:
+        # Validate selections + the upstream DNS on the UI thread, then do the
+        # LDAP verify + service apply in a worker so the UI stays responsive.
         try:
             dc = self._select("sel_dc")
             ou = self._select("sel_ou")
             if not dc or not ou:
                 raise RuntimeError("Select both a domain controller and a target OU.")
+            upstream = self._require_upstream_dns()
             dns_servers = self.discovery["dns_servers"]
             domain_fqdn = self.discovery["domain_fqdn"]
             vault = load_vault(self.vault_file, self.vault_pass)
             user = vault["vault_domain_join_username"]
             password = vault["vault_domain_join_password"]
+        except Exception as exc:  # noqa: BLE001
+            self.append_log(f"[ERROR] Stage 5 failed: {exc}")
+            return
 
+        self._set_busy("#next_confirm", True, "Finishing...")
+        self.set_status("Stage 5/5: Verifying rights and applying services (working) ...")
+        self._confirm_worker(dc, ou, dns_servers, domain_fqdn, user, password, upstream)
+
+    @work(thread=True, exclusive=True)
+    def _confirm_worker(
+        self, dc: str, ou: str, dns_servers: list[str], domain_fqdn: str,
+        user: str, password: str, upstream: str,
+    ) -> None:
+        try:
             self.append_log(f"Verifying create-computer rights on {ou} ...")
-            conn = ad_discovery.ldap_bind(dc, user, password)
+            conn = ad_discovery.ldap_bind(dc, user, password, dns_servers=dns_servers)
             try:
                 ad_discovery.check_ou_create_rights(conn, ou)
             finally:
@@ -671,47 +791,111 @@ class OfflineSetupApp(App[None]):
             )
             self._render_join_credential(user, password)
             self.append_log("Wrote domain.json/naming.json and rendered the [join] credential.")
-            self.switch_stage("stage-network", "Stage 5/5: Configure deployer network.")
+            # Network inputs were captured back in Stage 2; render the PXE/DHCP/DNS
+            # service now that the discovered domain + site DNS are known.
+            self._apply_services(domain_enabled=True, upstream=upstream)
         except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 4 failed: {exc}")
+            self.append_log(f"[ERROR] Stage 5 failed: {exc}")
+            self.call_from_thread(self._set_busy, "#next_confirm", False, "Verify + Finish")
+            self.call_from_thread(self.set_status, "Stage 5/5: Confirm domain + verify OU rights.")
+            return
+        self.call_from_thread(self._finish_setup_ui)
+
+    # -- network capture + service application -----------------------------
+    def _collect_network(self) -> dict[str, Any]:
+        # Upstream/general DNS is finalized + liveness-checked later in
+        # _apply_services (it may be backfilled from the site DNS after
+        # discovery), so it is allowed to be blank at this point.
+        ip = self._input("net_ip")
+        prefix = int(self._input("net_prefix"))
+        gateway = self._input("net_gateway")
+        dhcp_start = self._input("net_dhcp_start")
+        dhcp_end = self._input("net_dhcp_end")
+        for label, value in [("IP", ip), ("gateway", gateway), ("DHCP start", dhcp_start), ("DHCP end", dhcp_end)]:
+            try:
+                ipaddress.ip_address(value)
+            except ValueError as exc:
+                raise RuntimeError(f"{label} '{value}' is not a valid IP address.") from exc
+        network = ipaddress.ip_network(f"{ip}/{prefix}", strict=False)
+        if ipaddress.ip_address(gateway) not in network:
+            raise RuntimeError(f"Gateway {gateway} is outside {network}.")
+        return {
+            "ip": ip, "prefix": prefix, "gateway": gateway,
+            "dhcp_start": dhcp_start, "dhcp_end": dhcp_end,
+            "upstream_dns": self._input("net_dns"),
+        }
+
+    def _require_upstream_dns(self) -> str:
+        """Validate the upstream/general DNS field (UI thread) and return it."""
+        upstream = self._input("net_dns")
+        if not upstream:
+            raise RuntimeError("Upstream/general DNS is required (an IP that answers DNS).")
+        try:
+            ipaddress.ip_address(upstream)
+        except ValueError as exc:
+            raise RuntimeError(f"Upstream/general DNS '{upstream}' is not a valid IP address.") from exc
+        return upstream
+
+    def _apply_services(self, domain_enabled: bool, upstream: str) -> None:
+        # Runs in a worker thread. Verify the upstream DNS (TCP/53 - not ICMP
+        # ping, not a recursive query - proves a DNS service is listening), then
+        # render dnsmasq and restart services. UI updates go via thread-safe
+        # append_log/set_status; the final stage switch is marshalled by callers.
+        self.net["upstream_dns"] = upstream
+        self.append_log(f"Verifying upstream DNS {upstream} answers on port 53 ...")
+        ad_discovery.dns_server_responds(upstream)
+        self.append_log(f"Upstream DNS {upstream} is responding.")
+
+        net = self.net
+        site_dns = self.discovery.get("dns_servers", []) if domain_enabled else []
+        self._render_dnsmasq(
+            net["ip"], net["prefix"], net["gateway"],
+            net["dhcp_start"], net["dhcp_end"], net["upstream_dns"],
+            domain_enabled, site_dns,
+        )
+        self._restart_services()
+        self.append_log("dnsmasq re-rendered; nginx/dnsmasq/smbd restarted.")
+        self._final_checks(net["ip"], domain_enabled)
+
+    def _finish_setup_ui(self) -> None:
+        self.set_status("Setup complete.")
+        self.switch_stage("stage-done", "Setup complete. Press q to quit.")
 
     @on(Button.Pressed, "#back_network")
     def on_back_network(self) -> None:
-        if self._select("domain_enabled") == "no":
-            self.switch_stage("stage-domain", "Stage 1/5: Enable domain join?")
-        else:
-            self.switch_stage("stage-confirm", "Stage 4/5: Confirm domain + verify OU rights.")
+        self.switch_stage("stage-domain", "Stage 1/5: Enable domain join?")
 
-    @on(Button.Pressed, "#finish_network")
-    def on_finish_network(self) -> None:
+    @on(Button.Pressed, "#next_network")
+    def on_next_network(self) -> None:
         try:
-            ip = self._input("net_ip")
-            prefix = int(self._input("net_prefix"))
-            gateway = self._input("net_gateway")
-            dhcp_start = self._input("net_dhcp_start")
-            dhcp_end = self._input("net_dhcp_end")
-            upstream_dns = self._input("net_dns")
-            for label, value in [("IP", ip), ("gateway", gateway), ("DHCP start", dhcp_start), ("DHCP end", dhcp_end), ("upstream DNS", upstream_dns)]:
-                ipaddress.ip_address(value)
-            network = ipaddress.ip_network(f"{ip}/{prefix}", strict=False)
-            if ipaddress.ip_address(gateway) not in network:
-                raise RuntimeError(f"Gateway {gateway} is outside {network}.")
-
+            self.net = self._collect_network()
             domain_enabled = self._select("domain_enabled") == "yes"
-            if not domain_enabled:
-                self._write_site_config(enabled=False)
-                self.append_log("Wrote domain.json (enabled: false). No join credential rendered.")
-
-            site_dns = self.discovery.get("dns_servers", []) if domain_enabled else []
-            self._render_dnsmasq(ip, prefix, gateway, dhcp_start, dhcp_end, upstream_dns, domain_enabled, site_dns)
-            self._restart_services()
-            self.append_log("dnsmasq re-rendered; nginx/dnsmasq/smbd restarted.")
-
-            self._final_checks(ip, domain_enabled)
-            self.set_status("Setup complete.")
-            self.switch_stage("stage-done", "Setup complete. Press q to quit.")
+            if domain_enabled:
+                self.append_log("Network settings captured; continuing to domain join.")
+                self.switch_stage("stage-cred", "Stage 3/5: Delegated join credential.")
+                return
+            # Workgroup mode: this is the final step, so apply services now.
+            upstream = self._require_upstream_dns()
         except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 5 failed: {exc}")
+            self.append_log(f"[ERROR] Stage 2 failed: {exc}")
+            return
+
+        self._set_busy("#next_network", True, "Applying...")
+        self.set_status("Stage 2/5: Applying deployer services (working) ...")
+        self._workgroup_finish_worker(upstream)
+
+    @work(thread=True, exclusive=True)
+    def _workgroup_finish_worker(self, upstream: str) -> None:
+        try:
+            self._write_site_config(enabled=False)
+            self.append_log("Wrote domain.json (enabled: false). No join credential rendered.")
+            self._apply_services(domain_enabled=False, upstream=upstream)
+        except Exception as exc:  # noqa: BLE001
+            self.append_log(f"[ERROR] Stage 2 failed: {exc}")
+            self.call_from_thread(self._set_busy, "#next_network", False, "Apply + Finish")
+            self.call_from_thread(self.set_status, "Stage 2/5: Deployer network (workgroup mode).")
+            return
+        self.call_from_thread(self._finish_setup_ui)
 
     # -- side effects -----------------------------------------------------
     def _write_site_config(

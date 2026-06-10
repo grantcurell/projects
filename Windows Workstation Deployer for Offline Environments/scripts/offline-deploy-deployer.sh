@@ -49,6 +49,16 @@ read_choice() {
   done
 }
 
+# Validate a dotted-quad IPv4 address without external dependencies.
+valid_ipv4() {
+  local ip="$1" o
+  [[ "$ip" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]] || return 1
+  for o in "${BASH_REMATCH[@]:1}"; do
+    (( o <= 255 )) || return 1
+  done
+  return 0
+}
+
 # Deployer's portable hostname + the on-deployer TUI path (matches inventory
 # defaults deployer.offline.hostname / deployer.offline_tui.entrypoint).
 DEPLOYER_HOSTNAME="win-deploy"
@@ -73,8 +83,9 @@ require_tools() {
     err "  RHEL/Rocky:     sudo dnf install -y sshpass jq openssh-clients"
     exit 1
   fi
-  # Optional: pv gives a nicer upload progress bar; scp's own meter is the fallback.
-  command -v pv >/dev/null 2>&1 || warn "Tip: install 'pv' for a richer upload progress bar (apt/dnf install pv). Falling back to scp's built-in meter."
+  # Optional: pv gives the nicest upload bar (percent + rate + ETA). Without it
+  # the upload still shows a live byte/rate meter via dd, so this is just a tip.
+  command -v pv >/dev/null 2>&1 || warn "Tip: install 'pv' for a percent/ETA upload bar (apt/dnf install pv). Without it you still get a live byte/rate meter via dd."
 }
 
 discover_tarball() {
@@ -120,22 +131,29 @@ prox_ssh() { sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${PROX_IP}" "$@"; }
 node_ssh() { sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${NODE_IP}" "$@"; }
 
 # Upload a (potentially very large) local file to NODE_IP:dest with a live
-# progress bar + transfer rate. Prefers `pv` for a rich bar (percent, rate, ETA);
-# otherwise falls back to scp, whose own progress meter also shows size/rate/ETA.
+# progress bar + transfer rate. Both paths stream the file through ssh and write
+# it on the node with `cat`; set -o pipefail makes a mid-transfer failure abort.
+#
+# NOTE: we deliberately do NOT use `scp` here. Under sshpass (which wraps the
+# command in its own PTY to feed the password) scp's progress meter does not get
+# rendered to the real terminal, so the user sees a silent, seemingly-hung copy.
+# `pv` and `dd status=progress` both write their meter to stderr (the terminal),
+# independent of the data pipe, so they always display.
 node_upload() {
-  local src="$1" dest="$2"
+  local src="$1" dest="$2" size
+  size="$(stat -c%s "$src" 2>/dev/null || echo 0)"
   if command -v pv >/dev/null 2>&1; then
-    local size
-    size="$(stat -c%s "$src" 2>/dev/null || echo 0)"
-    # pv streams the file through ssh; `cat` writes it on the node. pipefail
-    # (set -o pipefail) ensures a mid-transfer failure aborts the script.
+    # Best experience: percent bar + rate + ETA.
     if (( size > 0 )); then
       pv -pterab -s "$size" "$src" | sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${NODE_IP}" "cat > '${dest}'"
     else
       pv -pterab "$src" | sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${NODE_IP}" "cat > '${dest}'"
     fi
   else
-    sshpass -e scp "${SSH_OPTS[@]}" "$src" "${PROX_USER}@${NODE_IP}:${dest}"
+    # Fallback: dd streams data on stdout and prints "<bytes> copied, <secs>,
+    # <rate>" to stderr once per second. Always available (coreutils).
+    info "  (install 'pv' for a percent/ETA bar; using dd live byte+rate progress)"
+    dd if="$src" bs=4M status=progress | sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${NODE_IP}" "cat > '${dest}'"
   fi
 }
 
@@ -236,6 +254,110 @@ select_storage() {
   ok "  Selected storage: ${STORAGE}"
 }
 
+# Pull the bridges available on the chosen node from the Proxmox API and let the
+# user pick which one the deployer attaches to. Sets BRIDGE.
+select_bridge() {
+  hr
+  info "${BOLD}Step 5: Choose the network bridge on '${NODE}' for the deployer${RESET}"
+  local net_json
+  net_json="$(prox_ssh "pvesh get /nodes/${NODE}/network --type any_bridge --output-format json" 2>/dev/null)" \
+    || die "Failed to query network bridges on node ${NODE}."
+
+  mapfile -t BRIDGES < <(printf '%s' "$net_json" | jq -r '.[].iface' | sort)
+  (( ${#BRIDGES[@]} > 0 )) || die "No bridges found on node ${NODE}."
+
+  local i b cidr
+  for (( i=0; i<${#BRIDGES[@]}; i++ )); do
+    b="${BRIDGES[i]}"
+    cidr="$(printf '%s' "$net_json" | jq -r --arg b "$b" '.[] | select(.iface==$b) | (.cidr // "")' 2>/dev/null)"
+    if [[ -n "$cidr" && "$cidr" != "null" ]]; then
+      printf "   %s) %s ${DIM}(%s)${RESET}\n" "$((i+1))" "$b" "$cidr"
+    else
+      printf "   %s) %s ${DIM}(no IP on host)${RESET}\n" "$((i+1))" "$b"
+    fi
+  done
+  local sel
+  sel="$(read_choice "Select bridge [1-${#BRIDGES[@]}]: " "${#BRIDGES[@]}")"
+  BRIDGE="${BRIDGES[$((sel-1))]}"
+  ok "  Selected bridge: ${BRIDGE}"
+}
+
+# Ask how the deployer should get its address on the offline network: DHCP or a
+# validated static config. Sets IP_MODE, NET_IPCONF, and (for static) STATIC_*.
+select_ip_config() {
+  hr
+  info "${BOLD}Step 6: Network addressing for the deployer${RESET}"
+  printf "%s\n" "${DIM}  The deployer needs an address on the offline network so the setup TUI can reach your DC/DNS.${RESET}"
+  echo "   1) DHCP  - lease an address automatically"
+  echo "   2) Static - you provide IP / prefix / gateway"
+  local mode
+  mode="$(read_choice "Select addressing [1-2]: " 2)"
+  if [[ "$mode" == "1" ]]; then
+    IP_MODE="dhcp"
+    NET_IPCONF="ip=dhcp"
+    ok "  Addressing: DHCP"
+    return 0
+  fi
+
+  IP_MODE="static"
+  local ip prefix gw
+  while true; do
+    read -r -p "  Deployer IP address: " ip
+    valid_ipv4 "$ip" && break || err "  Not a valid IPv4 address."
+  done
+  while true; do
+    read -r -p "  CIDR prefix [24]: " prefix
+    prefix="${prefix:-24}"
+    { [[ "$prefix" =~ ^[0-9]+$ ]] && (( prefix >= 1 && prefix <= 32 )); } && break || err "  Prefix must be 1-32."
+  done
+  while true; do
+    read -r -p "  Gateway IP address: " gw
+    valid_ipv4 "$gw" && break || err "  Not a valid IPv4 address."
+  done
+  STATIC_IP="$ip"; STATIC_PREFIX="$prefix"; STATIC_GW="$gw"
+  NET_IPCONF="ip=${ip}/${prefix},gw=${gw}"
+  ok "  Addressing: static ${ip}/${prefix} (gateway ${gw})"
+}
+
+# After the deployer is started, confirm its addressing actually works:
+#  - DHCP: verify it pulled a real (non link-local) lease.
+#  - Static: verify it can ping the gateway the user provided.
+validate_deployer_network() {
+  hr
+  info "${BOLD}Validating deployer network on '${BRIDGE}'${RESET}"
+  if [[ "$IP_MODE" == "dhcp" ]]; then
+    info "  Waiting for the deployer to pull a DHCP lease (up to ~30s)..."
+    local leased="" tries=0 addr
+    while (( tries < 15 )); do
+      addr="$(node_ssh "pct exec ${VMID} -- ip -4 -o addr show eth0 2>/dev/null | awk '{print \$4}' | grep -v '^169\\.254' | head -n1" 2>/dev/null || true)"
+      [[ -n "$addr" ]] && { leased="$addr"; break; }
+      sleep 2; ((tries++))
+    done
+    if [[ -n "$leased" ]]; then
+      ok "  DHCP lease acquired: ${leased}"
+    else
+      warn "  No DHCP lease after ~30s - there may be no DHCP server on '${BRIDGE}'."
+      read -r -p "  Continue anyway? [y/N]: " c
+      [[ "$c" =~ ^[Yy]$ ]] || die "Deployer did not get a DHCP lease on '${BRIDGE}'."
+    fi
+  else
+    info "  Pinging gateway ${STATIC_GW} from the deployer..."
+    local reachable="" tries=0
+    while (( tries < 5 )); do
+      if node_ssh "pct exec ${VMID} -- ping -c1 -W2 ${STATIC_GW} >/dev/null 2>&1"; then reachable="yes"; break; fi
+      sleep 1; ((tries++))
+    done
+    if [[ -n "$reachable" ]]; then
+      ok "  Gateway ${STATIC_GW} is reachable from the deployer (${STATIC_IP}/${STATIC_PREFIX})."
+    else
+      warn "  Gateway ${STATIC_GW} did NOT respond from the deployer (${STATIC_IP}/${STATIC_PREFIX} on ${BRIDGE})."
+      warn "  Double-check the IP/prefix/gateway and that '${BRIDGE}' reaches that network."
+      read -r -p "  Continue anyway? [y/N]: " c
+      [[ "$c" =~ ^[Yy]$ ]] || die "Gateway ${STATIC_GW} not reachable from the deployer."
+    fi
+  fi
+}
+
 # Let the user choose the temporary staging filesystem for the tarball. The
 # selected *restore* storage (e.g. a ZFS/LVM pool) usually is not a plain
 # directory we can scp into, so the tarball needs a staging path on a filesystem
@@ -244,7 +366,7 @@ select_storage() {
 select_staging() {
   local need="$1" df_out line avail mount
   hr
-  info "${BOLD}Step 5: Choose where to stage the tarball on '${NODE}'${RESET}"
+  info "${BOLD}Step 7: Choose where to stage the tarball on '${NODE}'${RESET}"
   printf "%s\n" "${DIM}  This is a temporary copy used only for the restore, then deleted.${RESET}"
   # All filesystem parsing is done locally; Proxmox nodes do not ship jq, but df
   # is always present. -P gives stable single-line columns; -B1 = bytes.
@@ -297,10 +419,13 @@ deploy_deployer() {
   remote_path="${upload_dir}/${tarball_base}"
 
   hr
-  info "${BOLD}Step 6: Pushing and starting the deployer${RESET}"
+  info "${BOLD}Step 8: Pushing and starting the deployer${RESET}"
 
   VMID="$(prox_ssh 'pvesh get /cluster/nextid' 2>/dev/null | tr -dc '0-9')"
   [[ -n "$VMID" ]] || die "Could not obtain a free VMID from Proxmox."
+
+  local net_summary
+  if [[ "$IP_MODE" == "dhcp" ]]; then net_summary="DHCP"; else net_summary="${STATIC_IP}/${STATIC_PREFIX} gw ${STATIC_GW}"; fi
 
   printf '\n'
   info "About to deploy:"
@@ -308,6 +433,8 @@ deploy_deployer() {
   printf '   Node ......... %s (%s)\n' "$NODE" "$NODE_IP"
   printf '   Restore to ... %s\n' "$STORAGE"
   printf "   Staging at ... %s ${DIM}(%s GiB free, temporary - deleted after restore)${RESET}\n" "$upload_dir" "$((UPLOAD_AVAIL/1073741824))"
+  printf '   Bridge ....... %s\n' "$BRIDGE"
+  printf '   Addressing ... %s\n' "$net_summary"
   printf '   New VMID ..... %s\n' "$VMID"
   printf '   Hostname ..... %s\n' "$DEPLOYER_HOSTNAME"
   printf '\n'
@@ -329,32 +456,17 @@ deploy_deployer() {
   info "  Cleaning up the staged tarball on ${NODE}..."
   node_ssh "rm -f '${remote_path}'; rmdir '${upload_dir}' 2>/dev/null || true" || warn "  Could not remove staged tarball at ${remote_path}; delete it manually if needed."
 
-  # Make sure the restored network bridge exists on this node, otherwise the
-  # container cannot start. The real network is configured later by offline-setup.
-  # (All JSON parsing happens locally; Proxmox nodes do not ship jq.)
-  local cur_bridge net_json bridge_exists
-  cur_bridge="$(node_ssh "pct config ${VMID}" 2>/dev/null | sed -n 's/^net0:.*bridge=\([^,]*\).*/\1/p' | head -n1 || true)"
-  if [[ -n "$cur_bridge" ]]; then
-    net_json="$(prox_ssh "pvesh get /nodes/${NODE}/network --type any_bridge --output-format json" 2>/dev/null || true)"
-    bridge_exists="$(printf '%s' "$net_json" | jq -r --arg b "$cur_bridge" 'map(.iface)|index($b) // empty' 2>/dev/null || true)"
-    if [[ -z "$bridge_exists" ]]; then
-      warn "  Restored bridge '${cur_bridge}' does not exist on ${NODE}."
-      mapfile -t BRIDGES < <(printf '%s' "$net_json" | jq -r '.[].iface')
-      (( ${#BRIDGES[@]} > 0 )) || die "No bridges available on ${NODE} to attach the deployer to."
-      info "  Choose a bridge to attach the deployer to (offline-setup will set the final IP):"
-      local i=1
-      for b in "${BRIDGES[@]}"; do printf '   %s) %s\n' "$i" "$b"; ((i++)); done
-      local bsel
-      bsel="$(read_choice "Select bridge [1-${#BRIDGES[@]}]: " "${#BRIDGES[@]}")"
-      local chosen_bridge="${BRIDGES[$((bsel-1))]}"
-      node_ssh "pct set ${VMID} --net0 name=eth0,bridge=${chosen_bridge},ip=dhcp"
-      ok "  Attached deployer to bridge '${chosen_bridge}' (DHCP for now)."
-    fi
-  fi
+  # Attach the deployer to the bridge/addressing the user chose, overriding
+  # whatever build-time net config was baked into the exported tarball.
+  info "  Configuring network: bridge=${BRIDGE}, ${NET_IPCONF}..."
+  node_ssh "pct set ${VMID} --net0 name=eth0,bridge=${BRIDGE},${NET_IPCONF}"
+  ok "  Network configured on net0."
 
   info "  Starting the deployer..."
   node_ssh "pct start ${VMID}"
   ok "  Deployer is starting."
+
+  validate_deployer_network
 
   print_final_instructions
 }
@@ -371,6 +483,8 @@ The deployer LXC is now running on your offline Proxmox:
   Node .............. ${NODE}  (${NODE_IP})
   VMID .............. ${VMID}
   Hostname .......... ${DEPLOYER_HOSTNAME}
+  Bridge ............ ${BRIDGE}
+  Addressing ........ $(if [[ "$IP_MODE" == "dhcp" ]]; then echo "DHCP"; else echo "${STATIC_IP}/${STATIC_PREFIX} (gw ${STATIC_GW})"; fi)
 
 HOW TO FINISH (run the offline setup TUI on the deployer):
 
@@ -391,10 +505,11 @@ The offline setup TUI is located on the deployer at:
 
   ${OFFLINE_TUI_PATH}
 
-It will configure the deployer's offline network (IP/DHCP/DNS) and, if you
-choose, the domain-join settings. After it finishes, the deployer serves
-PXE/WinPE + deploy.wim on your offline network and is ready to image
-workstations - no rebuild needed (it addresses itself by hostname).
+The deployer already has its address on '${BRIDGE}' (configured above), so the
+TUI can reach your DC/DNS right away. The TUI configures the PXE/DHCP/DNS
+service (dnsmasq) and, if you choose, the domain-join settings. After it
+finishes, the deployer serves PXE/WinPE + deploy.wim on your offline network
+and is ready to image workstations - no rebuild needed.
 
 NOTE: The staged tarball was removed from the node after the restore; the
 deployer now lives on storage '${STORAGE}'. Your local copy of the tarball is
@@ -418,6 +533,8 @@ main() {
   confirm_connectivity
   select_node
   select_storage
+  select_bridge
+  select_ip_config
   deploy_deployer
 }
 
