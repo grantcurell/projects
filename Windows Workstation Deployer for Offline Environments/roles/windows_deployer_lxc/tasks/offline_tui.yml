@@ -7,13 +7,20 @@
       - python3-venv
       - python3-yaml
       - python3-dnspython
-      - python3-ldap3
+      # AD binds use Kerberos (SASL/GSSAPI) via python-ldap. A default-hardened
+      # AD DC requires LDAP signing and frequently has no LDAPS certificate, so
+      # SIMPLE/NTLM over plain LDAP is refused. python-ldap + the MIT GSSAPI
+      # cyrus-sasl plugin negotiates a signed channel; python-gssapi lets us mint
+      # the TGT straight from the join credential (no kinit/ccache needed).
+      - python3-ldap
+      - python3-gssapi
+      - libsasl2-modules-gssapi-mit
       - ansible-core
     state: present
     update_cache: true
 
 # textual is not packaged in apt. Install it into a dedicated venv that also
-# exposes the apt-provided modules (yaml/ldap3/dnspython) via system site
+# exposes the apt-provided modules (yaml/ldap/gssapi/dnspython) via system site
 # packages. This avoids clobbering the distro-managed Pygments/Rich packages.
 - name: Create offline TUI virtualenv
   ansible.builtin.command:

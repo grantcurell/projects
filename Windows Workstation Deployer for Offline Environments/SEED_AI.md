@@ -25,7 +25,7 @@ This is the continuity file for future AI edits. It reflects the current known-g
 
 - No ODJ blobs, no `djoin`, no WinRM helper, no offline registry editing.
 - Offline TUI (`scripts/offline-deployer-tui.py`, entry point `offline-setup`) runs ON the deployer LXC: domain yes/no -> delegated join credential into vault -> site DNS + AD SRV/LDAP discovery -> create-computer rights preflight -> write `domain.json`/`naming.json` + render `[join]` credential -> network/DNS.
-- `scripts/ad_discovery.py` does DNS SRV + LDAP/LDAPS discovery and the non-mutating `allowedChildClassesEffective` create-computer rights check.
+- `scripts/ad_discovery.py` does DNS SRV discovery and a Kerberos (SASL/GSSAPI via python-ldap) LDAP bind for the non-mutating `allowedChildClassesEffective` create-computer rights check. GSSAPI is used because a default-hardened AD DC requires LDAP signing and often has no LDAPS cert; the TGT is minted from the join credential (python-gssapi), so no kinit/ccache is needed.
 - `files/deploy.ps1` stage `stagejoin` drops `SetupComplete.cmd` + `first-boot-join.ps1` (+ transient credential, SYSTEM/Administrators ACL) into the applied image.
 - `files/domain-join/first-boot-join.ps1` runs as SYSTEM at first boot: `Add-Computer -NewName <service-tag>` (no `-Restart`), scrub credential + script, then `Restart-Computer -Force`.
 
