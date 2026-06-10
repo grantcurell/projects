@@ -51,7 +51,7 @@ Every secret in this project is stored in **Ansible Vault — always**. There is
 - A vault password file `.vault_pass` is auto-created (`chmod 600`) and referenced by `ansible.cfg` (`vault_password_file = .vault_pass`), so playbooks decrypt automatically with no `--ask-vault-pass`.
 - `.vault_pass` and the populated `vault.yml` are **git-ignored**. A fresh clone has no secrets; re-run the wizard to repopulate them. `group_vars/all/main.yml` only references them as `{{ vault_* }}`.
 - The **workstation local-admin** is a single break-glass account (username in `windows.workstation_local_admin.username`, password in `vault_workstation_local_admin_password`). It is created silently by `Unattend.xml` so the deployed workstation's OOBE completes with **zero interaction** — see [Unattended OOBE](#unattended-oobe). Real users sign in with **domain** accounts; this account is only a local recovery credential.
-- The **delegated domain-join credential** is collected later by the offline TUI (`offline-setup`) on the deployer and stored in the deployer's own vault (`/etc/windows-deployer/secrets.vault.yml`).
+- The **delegated domain-join credential** is collected later by the offline TUI (`offline-setup`) on the deployer and stored in the deployer's own vault (`/etc/windows-deployer/secrets.vault.yml`). The deployer validates it by binding to a domain controller with **Kerberos (SASL/GSSAPI)**, which works against default-hardened DCs that require LDAP signing and have no LDAPS certificate. The chosen DC must therefore be reachable on Kerberos (TCP 88) and LDAP (TCP 389), and the account needs delegated *Create Computer Object* rights on the target OU.
 
 ## Quickstart
 
@@ -115,6 +115,12 @@ Carry the exported tarball (`artifacts/vzdump-lxc-<deployer-vmid>-*.tar.zst`) an
 ```
 
 It walks you through everything:
+
+- Prompts for the offline Proxmox host IP + root credentials and verifies connectivity over the API.
+- Lets you pick the target node, the storage to restore onto, and a staging filesystem with enough free space for the tarball.
+- Lets you pick the offline bridge and choose DHCP or a static IP for the deployer, validating the choice (a real DHCP lease, or a reachable static gateway) before continuing.
+- Uploads the tarball with a live progress/throughput meter, restores the LXC, applies the network config via `pct set --net0`, starts it, and verifies connectivity.
+- Cleans up its staging copy and prints the exact command to launch the offline setup TUI.
 
 Requires `sshpass`, `jq`, and an SSH client on the machine running the script. After it finishes, run the offline setup TUI (it tells you exactly how) to configure the offline network and optional domain join.
 
@@ -180,5 +186,5 @@ Set force_rebuild to true in the [inventory file](./inventories/windows-deployer
 ```yaml
 windows:
   winpe_builder:
-    force_rebuild: false
+    force_rebuild: true
 ```
