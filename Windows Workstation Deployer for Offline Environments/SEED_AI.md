@@ -64,7 +64,7 @@ This is the continuity file for future AI edits. It reflects the current known-g
   - `boot.sdi`
   - `boot.wim`
 - UEFI path is explicit and validated over HTTP.
-- Diagnostic `pause` remains enabled in Secure Boot `autoexec` for visibility.
+- Boot is unattended by default. A diagnostic `pause` is only injected when `windows.deploy_debug.startup_pause` is true (default false); never enable it for normal deployments.
 
 ### 2) WinPE artifacts staged and validated
 - Build pipeline stages and verifies:

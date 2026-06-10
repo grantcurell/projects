@@ -58,7 +58,7 @@
           #!ipxe
           dhcp
           set base http://${next-server}
-          kernel ${base}/ipxe/wimboot pause
+          kernel ${base}/ipxe/wimboot
           initrd ${base}/winpe/bootmgr bootmgr
           initrd ${base}/winpe/Boot/BCD BCD
           initrd ${base}/winpe/Boot/boot.sdi boot.sdi
