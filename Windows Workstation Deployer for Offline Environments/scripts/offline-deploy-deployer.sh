@@ -73,6 +73,8 @@ require_tools() {
     err "  RHEL/Rocky:     sudo dnf install -y sshpass jq openssh-clients"
     exit 1
   fi
+  # Optional: pv gives a nicer upload progress bar; scp's own meter is the fallback.
+  command -v pv >/dev/null 2>&1 || warn "Tip: install 'pv' for a richer upload progress bar (apt/dnf install pv). Falling back to scp's built-in meter."
 }
 
 discover_tarball() {
@@ -116,7 +118,26 @@ SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o Connect
 
 prox_ssh() { sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${PROX_IP}" "$@"; }
 node_ssh() { sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${NODE_IP}" "$@"; }
-node_scp() { sshpass -e scp "${SSH_OPTS[@]}" "$1" "${PROX_USER}@${NODE_IP}:$2"; }
+
+# Upload a (potentially very large) local file to NODE_IP:dest with a live
+# progress bar + transfer rate. Prefers `pv` for a rich bar (percent, rate, ETA);
+# otherwise falls back to scp, whose own progress meter also shows size/rate/ETA.
+node_upload() {
+  local src="$1" dest="$2"
+  if command -v pv >/dev/null 2>&1; then
+    local size
+    size="$(stat -c%s "$src" 2>/dev/null || echo 0)"
+    # pv streams the file through ssh; `cat` writes it on the node. pipefail
+    # (set -o pipefail) ensures a mid-transfer failure aborts the script.
+    if (( size > 0 )); then
+      pv -pterab -s "$size" "$src" | sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${NODE_IP}" "cat > '${dest}'"
+    else
+      pv -pterab "$src" | sshpass -e ssh "${SSH_OPTS[@]}" "${PROX_USER}@${NODE_IP}" "cat > '${dest}'"
+    fi
+  else
+    sshpass -e scp "${SSH_OPTS[@]}" "$src" "${PROX_USER}@${NODE_IP}:${dest}"
+  fi
+}
 
 # --------------------------------------------------------------------------
 # 1. Prompt for Proxmox connection details
@@ -297,7 +318,7 @@ deploy_deployer() {
   node_ssh "mkdir -p '${upload_dir}'"
 
   info "  Copying tarball to ${NODE}:${remote_path} (this can take a while for large images)..."
-  node_scp "$TARBALL" "$remote_path"
+  node_upload "$TARBALL" "$remote_path"
   ok "  Upload complete."
 
   info "  Restoring LXC ${VMID} from the tarball onto storage '${STORAGE}'..."
@@ -360,9 +381,11 @@ HOW TO FINISH (run the offline setup TUI on the deployer):
 
          ${OFFLINE_TUI_PATH}
 
-  Option B - directly from this Proxmox host over SSH:
+  Option B - over SSH (the -t is REQUIRED so the TUI gets a real terminal;
+            without it the screen fills with escape codes and the mouse/keys
+            do not work):
 
-         ssh ${PROX_USER}@${NODE_IP} "pct exec ${VMID} -- ${OFFLINE_TUI_PATH}"
+         ssh -t ${PROX_USER}@${NODE_IP} "pct exec ${VMID} -- ${OFFLINE_TUI_PATH}"
 
 The offline setup TUI is located on the deployer at:
 

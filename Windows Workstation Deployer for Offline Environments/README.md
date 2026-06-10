@@ -154,10 +154,18 @@ pct exec <new-vmid> -- ls -lh /srv/deploy/winpe/boot.wim
 pct exec <new-vmid> -- ls -lh /srv/deploy/winpe/EFI/Microsoft/Boot/BCD
 ```
 
-7) Run the on-deployer offline setup TUI (configures network + optional domain join):
+7) Run the on-deployer offline setup TUI (configures network + optional domain join).
+   Run it from an interactive shell on the node (Proxmox web console or `ssh root@<node>`):
 
 ```bash
 pct exec <new-vmid> -- offline-setup
+```
+
+   If you run it as a one-shot SSH command instead, you MUST pass `-t` so the TUI
+   gets a real terminal (otherwise the screen fills with escape codes and input breaks):
+
+```bash
+ssh -t root@<node> "pct exec <new-vmid> -- offline-setup"
 ```
 
 8) Deploy in offline site:

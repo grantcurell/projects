@@ -3,7 +3,8 @@
 
 Staged wizard:
   Stage 1  Enable domain join? (Yes/No)
-  Stage 2  Delegated join credential (NOT Domain Admin) -> stored in Ansible Vault
+  Stage 2  Join credential (needs create/join computer rights in the target OU;
+           a delegated account is enough, Domain Admin not required) -> Ansible Vault
   Stage 3  Site DNS server(s) (may or may not be the DC) + AD SRV/LDAP discovery
   Stage 4  Confirm discovered domain/OU; create-computer rights preflight;
            write non-secret domain.json/naming.json; render the [join] credential
@@ -44,6 +45,21 @@ DEFAULT_CONFIG_PATH = "/etc/windows-deployer/offline-config.yml"
 
 # Labeled vault id keeps CLI encrypt/decrypt unambiguous (see environment-wizard.py).
 VAULT_ID = "windeploy"
+
+
+def _ansible_env() -> dict[str, str]:
+    """Environment for ansible-vault subprocesses with a guaranteed-valid locale.
+
+    Minimal container images often have LANG/LC_* pointing at a locale that was
+    never generated, which makes Ansible abort with 'could not initialize the
+    preferred locale: unsupported locale setting'. Force C.UTF-8 (always present
+    on modern glibc/musl) so encrypt/decrypt works regardless of the host locale.
+    """
+    env = dict(os.environ)
+    env["LC_ALL"] = "C.UTF-8"
+    env["LANG"] = "C.UTF-8"
+    env.pop("LANGUAGE", None)
+    return env
 
 
 def load_offline_config() -> dict[str, Any]:
@@ -89,6 +105,7 @@ def load_vault(vault_file: Path, pass_file: Path) -> dict[str, Any]:
             capture_output=True,
             text=True,
             check=True,
+            env=_ansible_env(),
         )
     except Exception:  # noqa: BLE001
         return {}
@@ -110,6 +127,7 @@ def write_vault(secrets: dict[str, str], vault_file: Path, pass_file: Path) -> N
             capture_output=True,
             text=True,
             check=False,
+            env=_ansible_env(),
         )
         if proc.returncode != 0:
             raise RuntimeError(f"ansible-vault encrypt failed: {proc.stderr.strip() or proc.stdout.strip()}")
@@ -123,38 +141,57 @@ def write_vault(secrets: dict[str, str], vault_file: Path, pass_file: Path) -> N
 # Widgets (mirror environment-wizard keyboard behavior)
 # ---------------------------------------------------------------------------
 class PersistentSelect(Select):
+    """Select widget with stable keyboard behavior for open dropdown navigation."""
+
     def on_focus(self) -> None:
+        # Never auto-open when merely focused.
         self.expanded = False
 
     def _cycle_option(self, direction: int) -> None:
         options = [opt for _, opt in self._options if opt is not Select.NULL]
         if not options:
             return
+        current = self.value
         try:
-            idx = options.index(self.value)
+            idx = options.index(current)
         except ValueError:
             idx = 0
         self.value = options[(idx + direction) % len(options)]
         self.action_show_overlay()
 
     def on_key(self, event: events.Key) -> None:
-        if event.key == "q" and bool(getattr(self.app, "quit_armed", False)):
+        if event.key == "q" and hasattr(self.app, "quit_armed") and bool(getattr(self.app, "quit_armed")):
             self.app.exit()
             event.stop()
             return
-        if self.expanded and event.key == "down":
+        if self.expanded and event.key in {"down"}:
             self._cycle_option(1)
             event.stop()
-        elif self.expanded and event.key == "up":
+            return
+        if self.expanded and event.key in {"up"}:
             self._cycle_option(-1)
             event.stop()
+            return
 
 
 class Input(TextInput):
+    """Input that honors global Esc->q quit flow while focused."""
+
     def on_key(self, event: events.Key) -> None:
-        if event.key == "q" and bool(getattr(self.app, "quit_armed", False)):
-            self.app.exit()
+        app = self.app
+        if event.key == "q" and hasattr(app, "quit_armed") and bool(getattr(app, "quit_armed")):
+            app.exit()
             event.stop()
+            return
+        if event.key == "escape" and not self.selection.is_empty:
+            # Cancel the edit: deselect the highlighted value WITHOUT deleting it.
+            # (Fields auto-select-all on focus, so Esc here means "leave it alone".)
+            # Only fall through to the global Esc->q quit flow when nothing is
+            # highlighted.
+            self.cursor_position = self.cursor_position
+            event.stop()
+            event.prevent_default()
+            return
 
 
 # ---------------------------------------------------------------------------
@@ -162,20 +199,82 @@ class Input(TextInput):
 # ---------------------------------------------------------------------------
 class OfflineSetupApp(App[None]):
     CSS = """
-    Screen { layout: vertical; }
-    #status { height: 1; padding: 0 1; }
-    #help { height: 1; padding: 0 1; }
-    #control_legend { height: 1; padding: 0 1; }
-    #stage_progress { height: 1; }
-    #main-switcher { height: 1fr; min-height: 8; border: round $panel; padding: 0 1; }
-    .stage { height: 1fr; }
-    .field { margin-bottom: 1; }
-    Input:focus { border: round #2d8cff; background: #10243a; }
-    Select:focus, Select:focus-within { border: round #2d8cff; background: #10243a; }
-    Button:focus { border: round #2d8cff; background: #0b3a66; }
-    .stage-nav { margin-top: 1; height: 3; }
-    .nav-button { min-width: 16; }
-    #log { height: 8; border: round $secondary; }
+    Screen {
+        layout: vertical;
+    }
+    #status {
+        height: 1;
+        padding: 0 1;
+    }
+    #help {
+        height: 1;
+        padding: 0 1;
+    }
+    #control_legend {
+        height: 1;
+        padding: 0 1;
+    }
+    #stage_progress {
+        height: 1;
+    }
+    #main-switcher {
+        height: 1fr;
+        min-height: 8;
+        border: round $panel;
+        padding: 0 1;
+    }
+    .stage {
+        height: 1fr;
+    }
+    #stage-deploy {
+        align: center middle;
+    }
+    .deploy-center {
+        width: 1fr;
+        height: 1fr;
+        align: center middle;
+    }
+    #deploy_now {
+        width: 32;
+        height: 5;
+        border: round #ff4d4f;
+        background: #7f1d1d;
+        color: #ffffff;
+        text-style: bold;
+    }
+    .field {
+        margin-bottom: 1;
+    }
+    Input:focus {
+        border: round #2d8cff;
+        background: #10243a;
+    }
+    Select:focus {
+        border: round #2d8cff;
+        background: #10243a;
+    }
+    Select:focus-within {
+        border: round #2d8cff;
+        background: #10243a;
+    }
+    Button:focus {
+        border: round #2d8cff;
+        background: #0b3a66;
+    }
+    .actions {
+        margin-top: 1;
+    }
+    .stage-nav {
+        margin-top: 1;
+        height: 3;
+    }
+    .nav-button {
+        min-width: 16;
+    }
+    #log {
+        height: 6;
+        border: round $secondary;
+    }
     """
 
     BINDINGS = [
@@ -202,7 +301,7 @@ class OfflineSetupApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield Static("Stage 1/5: Enable domain join?", id="status")
-        yield Static("Controls: Tab/Shift+Tab move fields, arrows navigate, Enter on a button activates, q = Quit.", id="help")
+        yield Static("Controls: Tab/Shift+Tab move fields, arrows navigate fields/options, Enter opens/selects dropdown options, q = Quit.", id="help")
         yield Static("", id="control_legend")
         yield ProgressBar(total=5, show_eta=False, show_percentage=True, id="stage_progress")
         with ContentSwitcher(initial="stage-domain", id="main-switcher"):
@@ -217,7 +316,7 @@ class OfflineSetupApp(App[None]):
                 with Horizontal(classes="stage-nav"):
                     yield Button("Next", id="next_domain", variant="primary", classes="nav-button")
             with VerticalScroll(id="stage-cred", classes="stage"):
-                yield Static("Stage 2: Delegated domain join account (UPN user@domain or DOMAIN\\user). NOT Domain Admin.")
+                yield Static("Stage 2: Domain join account (UPN user@domain or DOMAIN\\user). Must have rights to create and join computer objects in the target OU. A delegated account with that right is sufficient - Domain Admin works but is not required.")
                 yield Static("Join account username")
                 yield Input(str(self.existing_vault.get("vault_domain_join_username") or ""), id="join_user", classes="field")
                 yield Static("Join account password")
@@ -301,7 +400,38 @@ class OfflineSetupApp(App[None]):
 
     def _stage_focusables(self) -> list[Any]:
         stage = self.query_one(f"#{self.current_stage}")
-        return [w for w in stage.query("Input, Select, Button") if isinstance(w, (Input, Select, Button)) and not w.disabled]
+        widgets: list[Any] = []
+        for widget in stage.query("Input, Select, Button"):
+            if isinstance(widget, (Input, Select, Button)) and not widget.disabled:
+                widgets.append(widget)
+        return widgets
+
+    def _stage_buttons(self) -> list[Button]:
+        stage = self.query_one(f"#{self.current_stage}")
+        buttons: list[Button] = []
+        for widget in stage.query("Button"):
+            if isinstance(widget, Button) and not widget.disabled:
+                buttons.append(widget)
+        return buttons
+
+    def _resolve_focus_owner(self, focused: object, fields: list[Any]) -> Any:
+        if focused in fields:
+            return focused
+        node = focused
+        # If focus is in a child (e.g., Select overlay), walk up to an owning focusable.
+        while node is not None and hasattr(node, "parent"):
+            node = getattr(node, "parent")
+            if node in fields:
+                return node
+        return None
+
+    def _ensure_focus_visible_target(self) -> None:
+        fields = self._stage_focusables()
+        if not fields:
+            return
+        owner = self._resolve_focus_owner(self.focused, fields)
+        if owner is None:
+            self.set_focus(fields[0])
 
     def _input(self, widget_id: str) -> str:
         return self.query_one(f"#{widget_id}", Input).value.strip()
@@ -312,41 +442,111 @@ class OfflineSetupApp(App[None]):
 
     # -- navigation -------------------------------------------------------
     def action_focus_next_field(self) -> None:
+        self._ensure_focus_visible_target()
         fields = self._stage_focusables()
         if not fields:
             return
-        cur = self.focused if self.focused in fields else None
-        idx = fields.index(cur) if cur in fields else -1
-        self.set_focus(fields[(idx + 1) % len(fields)])
+        current = self._resolve_focus_owner(self.focused, fields)
+        if current in fields:
+            idx = fields.index(current)
+            self.set_focus(fields[(idx + 1) % len(fields)])
+        else:
+            self.set_focus(fields[0])
 
     def action_focus_prev_field(self) -> None:
+        self._ensure_focus_visible_target()
         fields = self._stage_focusables()
         if not fields:
             return
-        cur = self.focused if self.focused in fields else None
-        idx = fields.index(cur) if cur in fields else 0
-        self.set_focus(fields[(idx - 1) % len(fields)])
+        current = self._resolve_focus_owner(self.focused, fields)
+        if current in fields:
+            idx = fields.index(current)
+            self.set_focus(fields[(idx - 1) % len(fields)])
+        else:
+            self.set_focus(fields[-1])
+
+    def action_focus_button_right(self) -> None:
+        buttons = self._stage_buttons()
+        if len(buttons) < 2:
+            return
+        current = self.focused
+        if current in buttons:
+            idx = buttons.index(current)
+            self.set_focus(buttons[(idx + 1) % len(buttons)])
+
+    def action_focus_button_left(self) -> None:
+        buttons = self._stage_buttons()
+        if len(buttons) < 2:
+            return
+        current = self.focused
+        if current in buttons:
+            idx = buttons.index(current)
+            self.set_focus(buttons[(idx - 1) % len(buttons)])
+
+    def _move_open_select(self, select: Select, direction: int) -> None:
+        options = [opt for _, opt in select._options if opt is not Select.NULL]
+        if not options:
+            return
+        current = select.value
+        try:
+            idx = options.index(current)
+        except ValueError:
+            idx = 0
+        next_idx = (idx + direction) % len(options)
+        select.value = options[next_idx]
+        # Keep dropdown open while navigating with arrows.
+        select.action_show_overlay()
 
     def on_key(self, event: events.Key) -> None:
-        if event.key == "escape":
+        if event.key in {"escape"}:
+            # Mac and Windows terminals both send "escape" here.
             if isinstance(self.focused, Select) and bool(self.focused.expanded):
+                # Let Select close its own overlay.
                 return
             self.quit_armed = True
             self._refresh_controls()
             self.append_log("Quit armed. Press q to quit.")
             event.stop()
             return
-        if event.key == "q" and self.quit_armed:
+        if event.key in {"q"} and self.quit_armed:
             self.exit()
             event.stop()
             return
-        if event.key in {"down", "up"}:
+
+        # Up/Down navigate fields globally, except when a Select dropdown
+        # is expanded (in that case, navigate the open dropdown's options).
+        if event.key in {"down"}:
             self.quit_armed = False
             self._refresh_controls()
             if isinstance(self.focused, Select) and bool(self.focused.expanded):
+                self._move_open_select(self.focused, 1)
+                event.stop()
                 return
-            (self.action_focus_next_field if event.key == "down" else self.action_focus_prev_field)()
+            self.action_focus_next_field()
             event.stop()
+            return
+        if event.key in {"up"}:
+            self.quit_armed = False
+            self._refresh_controls()
+            if isinstance(self.focused, Select) and bool(self.focused.expanded):
+                self._move_open_select(self.focused, -1)
+                event.stop()
+                return
+            self.action_focus_prev_field()
+            event.stop()
+            return
+        if event.key in {"left"} and isinstance(self.focused, Button):
+            self.quit_armed = False
+            self._refresh_controls()
+            self.action_focus_button_left()
+            event.stop()
+            return
+        if event.key in {"right"} and isinstance(self.focused, Button):
+            self.quit_armed = False
+            self._refresh_controls()
+            self.action_focus_button_right()
+            event.stop()
+            return
 
     # -- stage handlers ---------------------------------------------------
     @on(Button.Pressed, "#next_domain")
