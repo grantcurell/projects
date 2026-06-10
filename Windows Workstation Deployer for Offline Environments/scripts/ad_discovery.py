@@ -5,25 +5,33 @@ The deployer is a workgroup Linux appliance. It NEVER joins the domain and never
 runs djoin. It only:
   * queries the operator-provided site DNS server(s) for AD SRV records to find DCs
     (the site DNS may or may not be the domain controller),
-  * binds over LDAP/LDAPS with the delegated join credential to read non-secret
-    domain metadata (domain FQDN, NetBIOS name, base DN, OUs, DC list), and
+  * binds over LDAP with the delegated join credential to read non-secret domain
+    metadata (domain FQDN, NetBIOS name, base DN, OUs, DC list), and
   * verifies (non-mutating) that the delegated account can create computer objects
     in the selected OU.
+
+Binding uses Kerberos (SASL/GSSAPI). This is the only method that satisfies a
+default-hardened AD DC: such DCs require LDAP signing and very often have no
+LDAPS certificate installed, so SIMPLE/NTLM binds over plain LDAP are refused
+with ``strongerAuthRequired`` and LDAPS is unavailable. GSSAPI negotiates an
+integrity/confidentiality layer (signing/sealing) over plain LDAP/389, exactly
+like Windows itself. The TGT is obtained directly from the supplied
+username/password, so no prior ``kinit``/ticket cache is required.
 
 No credentials are ever persisted by this module. Callers pass them in memory.
 """
 from __future__ import annotations
 
+import ipaddress
+import os
+import socket
+import tempfile
 from dataclasses import dataclass, field
 from typing import Any
 
-import ipaddress
-import socket
-
 import dns.resolver  # type: ignore
-import ldap3  # type: ignore
-from ldap3 import Connection, Server, Tls, ALL, SUBTREE
-import ssl
+import ldap  # type: ignore
+import ldap.sasl  # type: ignore
 
 
 # ---------------------------------------------------------------------------
@@ -143,73 +151,234 @@ def discover_dcs(dns_servers: list[str], domain_fqdn: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# LDAP / LDAPS
+# LDAP via Kerberos (SASL/GSSAPI)
 # ---------------------------------------------------------------------------
+class LdapConn:
+    """Lightweight handle around a bound python-ldap connection + RootDSE info."""
+
+    def __init__(self, handle: Any, base_dn: str, rootdse: dict[str, str],
+                 dc_fqdn: str, dc_ip: str) -> None:
+        self.handle = handle
+        self.base_dn = base_dn
+        self.rootdse = rootdse
+        self.dc_fqdn = dc_fqdn
+        self.dc_ip = dc_ip
+
+    def unbind(self) -> None:
+        try:
+            self.handle.unbind_s()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _ldap_err(exc: Exception) -> str:
+    """Extract the most useful message from a python-ldap exception."""
+    if getattr(exc, "args", None) and isinstance(exc.args[0], dict):
+        detail = exc.args[0]
+        return str(detail.get("info") or detail.get("desc") or detail)
+    return str(exc)
+
+
+def _decode(value: Any) -> str:
+    return value.decode("utf-8", "replace") if isinstance(value, (bytes, bytearray)) else str(value)
+
+
+def _realm_from_domain(domain_fqdn: str) -> str:
+    return domain_fqdn.strip(".").upper()
+
+
+def _kerberos_principal(username: str, realm: str) -> str:
+    """Turn DOMAIN\\sam, sam, or user@REALM into a Kerberos principal."""
+    user = (username or "").strip()
+    if not user:
+        raise DiscoveryError("No domain username provided.")
+    if "@" in user:
+        return user
+    sam = user.split("\\")[-1].split("/")[-1]
+    return f"{sam}@{realm}"
+
+
+def _write_krb5_conf(realm: str, domain_fqdn: str, kdc_ip: str) -> str:
+    """Write a self-contained krb5.conf pinned to the discovered KDC.
+
+    DNS-based KDC/realm discovery is disabled because the offline deployer's
+    system resolver is not pointed at the domain DNS; we hand krb5 the KDC IP
+    directly. rdns=false stops the library from reverse-resolving the KDC IP
+    (which would also need DNS) when building the service principal name.
+    """
+    dom = domain_fqdn.strip(".").lower()
+    conf = (
+        "[libdefaults]\n"
+        f"    default_realm = {realm}\n"
+        "    dns_lookup_realm = false\n"
+        "    dns_lookup_kdc = false\n"
+        "    rdns = false\n"
+        "    udp_preference_limit = 0\n"
+        "[realms]\n"
+        f"    {realm} = {{\n"
+        f"        kdc = {kdc_ip}\n"
+        f"        admin_server = {kdc_ip}\n"
+        "    }\n"
+        "[domain_realm]\n"
+        f"    .{dom} = {realm}\n"
+        f"    {dom} = {realm}\n"
+    )
+    path = os.path.join(tempfile.gettempdir(), "windep-krb5.conf")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(conf)
+    return path
+
+
+def _ensure_hosts_entry(ip: str, fqdn: str) -> None:
+    """Map the DC FQDN to its IP in /etc/hosts.
+
+    cyrus-sasl builds the GSSAPI service principal (ldap/<fqdn>) from, and opens
+    the TCP socket to, the LDAP URI host. We must therefore connect by FQDN, but
+    the deployer's system resolver may not answer for the domain. Pinning the
+    mapping here makes the FQDN resolve to the IP we already discovered via the
+    site DNS, without changing the deployer's resolver.
+    """
+    fqdn_l = fqdn.lower()
+    try:
+        with open("/etc/hosts", "r", encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+    except OSError:
+        return
+    kept = [
+        line for line in lines
+        if not (len(line.split()) >= 2
+                and any(part.lower() == fqdn_l for part in line.split()[1:]))
+    ]
+    kept.append(f"{ip}\t{fqdn}")
+    try:
+        with open("/etc/hosts", "w", encoding="utf-8") as handle:
+            handle.write("\n".join(kept) + "\n")
+    except OSError:
+        pass
+
+
+def _acquire_ticket(principal: str, password: str, krb5_conf: str) -> None:
+    """Obtain a TGT for principal from the password and store it in a private
+    credential cache that the subsequent SASL bind will use."""
+    import gssapi  # type: ignore  # lazy: only needed at bind time
+    from gssapi.raw import acquire_cred_with_password, store_cred_into  # type: ignore
+
+    os.environ["KRB5_CONFIG"] = krb5_conf
+    ccache = os.path.join(tempfile.gettempdir(), "windep-krb5cc")
+    os.environ["KRB5CCNAME"] = "FILE:" + ccache
+    try:
+        name = gssapi.Name(principal, gssapi.NameType.user)
+        creds = acquire_cred_with_password(
+            name, password.encode("utf-8"), usage="initiate"
+        ).creds
+        store_cred_into(
+            {"ccache": "FILE:" + ccache}, creds, usage="initiate", overwrite=True
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise DiscoveryError(
+            f"Kerberos authentication failed for {principal}: {exc}. "
+            "Verify the username and password, and that the domain controller is "
+            "reachable on port 88 (Kerberos)."
+        ) from exc
+
+
 def ldap_bind(
     dc_host: str,
     username: str,
     password: str,
-    use_ssl: bool = True,
+    use_ssl: bool = True,  # retained for API compatibility; GSSAPI is always used
     dns_servers: list[str] | None = None,
-    timeout: float = 8.0,
-) -> Connection:
-    """Bind to a DC with the delegated credential. Tries LDAPS, then LDAP.
+    timeout: int = 8,
+    domain_fqdn: str | None = None,
+) -> LdapConn:
+    """Bind to a DC using Kerberos (SASL/GSSAPI) with the delegated credential.
 
-    If dns_servers is provided and dc_host is a hostname, it is resolved via the
-    site DNS rather than the deployer's system resolver. This is critical on a
-    freshly-deployed deployer whose /etc/resolv.conf still points at an
-    unreachable build-network resolver - otherwise ldap3's hostname lookup hangs
-    indefinitely. connect/receive timeouts guarantee the bind never blocks
-    forever.
+    ``dc_host`` must be the DC's FQDN (as returned by SRV discovery) so the
+    Kerberos service principal ``ldap/<fqdn>`` can be formed. The KDC IP is
+    resolved via the operator-provided site DNS; the deployer's own resolver is
+    not relied upon.
     """
-    target = dc_host
+    if not dc_host:
+        raise DiscoveryError("No domain controller host provided for LDAP bind.")
+    try:
+        ipaddress.ip_address(dc_host)
+        raise DiscoveryError(
+            f"A domain controller FQDN is required for Kerberos discovery; got IP '{dc_host}'."
+        )
+    except ValueError:
+        pass  # dc_host is a hostname, as required
+
+    dc_fqdn = dc_host
+    domain = (domain_fqdn or "").strip(".")
+    if not domain:
+        if "." in dc_fqdn:
+            domain = dc_fqdn.split(".", 1)[1]
+        else:
+            raise DiscoveryError(
+                f"Cannot determine the Kerberos realm: '{dc_fqdn}' is not an FQDN "
+                "and no domain was provided."
+            )
+    realm = _realm_from_domain(domain)
+    principal = _kerberos_principal(username, realm)
+
     if dns_servers:
+        kdc_ip = resolve_host(dns_servers, dc_fqdn)
+    else:
         try:
-            ipaddress.ip_address(dc_host)  # already an IP -> use directly
-        except ValueError:
-            try:
-                target = resolve_host(dns_servers, dc_host)
-            except DiscoveryError:
-                target = dc_host  # let the connect fail fast under the timeout
-    last_exc: Exception | None = None
-    attempts = [(use_ssl, 636 if use_ssl else 389)]
-    if use_ssl:
-        attempts.append((False, 389))  # fall back to plain LDAP if LDAPS unavailable
-    for ssl_flag, port in attempts:
-        try:
-            tls = Tls(validate=ssl.CERT_NONE) if ssl_flag else None
-            server = Server(
-                target, port=port, use_ssl=ssl_flag, get_info=ALL, tls=tls,
-                connect_timeout=timeout,
-            )
-            conn = Connection(
-                server,
-                user=username,
-                password=password,
-                authentication=ldap3.NTLM if "\\" in username else ldap3.SIMPLE,
-                auto_bind=True,
-                receive_timeout=timeout,
-            )
-            return conn
-        except Exception as exc:  # noqa: BLE001
-            last_exc = exc
+            kdc_ip = socket.gethostbyname(dc_fqdn)
+        except OSError as exc:
+            raise DiscoveryError(
+                f"Could not resolve {dc_fqdn}: {exc}. Provide the site DNS server(s)."
+            ) from exc
+
+    krb5_conf = _write_krb5_conf(realm, domain, kdc_ip)
+    _acquire_ticket(principal, password, krb5_conf)
+    _ensure_hosts_entry(kdc_ip, dc_fqdn)
+
+    uri = f"ldap://{dc_fqdn}:389"
+    try:
+        handle = ldap.initialize(uri)
+        handle.set_option(ldap.OPT_REFERRALS, 0)
+        handle.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
+        handle.set_option(ldap.OPT_NETWORK_TIMEOUT, int(timeout))
+        handle.set_option(ldap.OPT_TIMEOUT, int(timeout))
+        # Require a SASL security layer (signing) so we never fall back to an
+        # unsigned/cleartext channel against a DC that demands signing.
+        handle.set_option(ldap.OPT_X_SASL_SSF_MIN, 1)
+        handle.sasl_interactive_bind_s("", ldap.sasl.gssapi(""))
+    except ldap.LDAPError as exc:  # type: ignore[attr-defined]
+        raise DiscoveryError(
+            f"LDAP GSSAPI bind to {dc_fqdn} failed for {principal}: {_ldap_err(exc)}"
+        ) from exc
+
+    rootdse = _read_rootdse(handle)
+    base_dn = rootdse.get("defaultNamingContext") or rootdse.get("rootDomainNamingContext") or ""
+    return LdapConn(handle, base_dn, rootdse, dc_fqdn, kdc_ip)
+
+
+def _read_rootdse(handle: Any) -> dict[str, str]:
+    try:
+        results = handle.search_s(
+            "", ldap.SCOPE_BASE, "(objectClass=*)",
+            ["defaultNamingContext", "rootDomainNamingContext", "dnsHostName"],
+        )
+    except ldap.LDAPError as exc:  # type: ignore[attr-defined]
+        raise DiscoveryError(f"LDAP bind succeeded but RootDSE was unreadable: {_ldap_err(exc)}") from exc
+    out: dict[str, str] = {}
+    for _dn, attrs in results:
+        if not isinstance(attrs, dict):
             continue
-    raise DiscoveryError(f"LDAP bind to {dc_host} failed for {username}: {last_exc}")
+        for key, values in attrs.items():
+            if values:
+                out[key] = _decode(values[0])
+    return out
 
 
-def discover_domain_metadata(conn: Connection, dns_servers: list[str]) -> DomainMetadata:
+def discover_domain_metadata(conn: LdapConn, dns_servers: list[str]) -> DomainMetadata:
     """Read non-secret domain metadata from a bound LDAP connection."""
-    info = conn.server.info
-    if info is None or not info.other:
-        raise DiscoveryError("LDAP bind succeeded but RootDSE info was unavailable.")
-
-    def _first(key: str) -> str:
-        values = info.other.get(key) or []
-        return str(values[0]) if values else ""
-
-    base_dn = _first("defaultNamingContext") or _first("rootDomainNamingContext")
+    base_dn = conn.base_dn
     if not base_dn:
-        raise DiscoveryError("Could not determine defaultNamingContext from the DC.")
+        raise DiscoveryError("LDAP bind succeeded but defaultNamingContext was unavailable.")
 
     domain_fqdn = ".".join(
         part[3:] for part in base_dn.split(",") if part.lower().startswith("dc=")
@@ -217,7 +386,7 @@ def discover_domain_metadata(conn: Connection, dns_servers: list[str]) -> Domain
 
     netbios = _query_netbios(conn, base_dn)
     ous = _list_ous(conn, base_dn)
-    dcs = []
+    dcs: list[str] = []
     if domain_fqdn:
         try:
             dcs = discover_dcs(dns_servers, domain_fqdn)
@@ -233,60 +402,58 @@ def discover_domain_metadata(conn: Connection, dns_servers: list[str]) -> Domain
     )
 
 
-def _query_netbios(conn: Connection, base_dn: str) -> str:
+def _query_netbios(conn: LdapConn, base_dn: str) -> str:
     config_dn = "CN=Partitions,CN=Configuration," + base_dn
     try:
-        conn.search(
-            config_dn,
-            "(&(objectClass=crossRef)(nCName=" + base_dn + "))",
-            search_scope=SUBTREE,
-            attributes=["nETBIOSName"],
+        results = conn.handle.search_s(
+            config_dn, ldap.SCOPE_SUBTREE,
+            f"(&(objectClass=crossRef)(nCName={base_dn}))", ["nETBIOSName"],
         )
-        for entry in conn.entries:
-            value = entry.entry_attributes_as_dict.get("nETBIOSName") or []
-            if value:
-                return str(value[0])
-    except Exception:  # noqa: BLE001
+    except ldap.LDAPError:  # type: ignore[attr-defined]
         return ""
+    for _dn, attrs in results:
+        if isinstance(attrs, dict):
+            values = attrs.get("nETBIOSName") or []
+            if values:
+                return _decode(values[0])
     return ""
 
 
-def _list_ous(conn: Connection, base_dn: str) -> list[str]:
+def _list_ous(conn: LdapConn, base_dn: str) -> list[str]:
     try:
-        conn.search(
-            base_dn,
-            "(objectClass=organizationalUnit)",
-            search_scope=SUBTREE,
-            attributes=["distinguishedName"],
+        results = conn.handle.search_s(
+            base_dn, ldap.SCOPE_SUBTREE,
+            "(objectClass=organizationalUnit)", ["distinguishedName"],
         )
-    except Exception as exc:  # noqa: BLE001
-        raise DiscoveryError(f"Failed to enumerate OUs under {base_dn}: {exc}") from exc
-    ous = []
-    for entry in conn.entries:
-        dn = str(entry.entry_dn)
-        if dn and dn not in ous:
+    except ldap.LDAPError as exc:  # type: ignore[attr-defined]
+        raise DiscoveryError(f"Failed to enumerate OUs under {base_dn}: {_ldap_err(exc)}") from exc
+    ous: list[str] = []
+    for dn, _attrs in results:
+        if dn and dn not in ous:  # referrals come back with dn=None
             ous.append(dn)
     return sorted(ous)
 
 
-def check_ou_create_rights(conn: Connection, ou_dn: str) -> bool:
+def check_ou_create_rights(conn: LdapConn, ou_dn: str) -> bool:
     """Non-mutating check that the bound account can create computer objects in ou_dn.
 
     Reads allowedChildClassesEffective on the OU; no test object is created in AD.
     """
     try:
-        ok = conn.search(
-            ou_dn,
-            "(objectClass=*)",
-            search_scope=ldap3.BASE,
-            attributes=["allowedChildClassesEffective"],
+        results = conn.handle.search_s(
+            ou_dn, ldap.SCOPE_BASE, "(objectClass=*)",
+            ["allowedChildClassesEffective"],
         )
-    except Exception as exc:  # noqa: BLE001
-        raise DiscoveryError(f"Could not read effective rights on {ou_dn}: {exc}") from exc
-    if not ok or not conn.entries:
+    except ldap.LDAPError as exc:  # type: ignore[attr-defined]
+        raise DiscoveryError(f"Could not read effective rights on {ou_dn}: {_ldap_err(exc)}") from exc
+    if not results:
         raise DiscoveryError(f"OU {ou_dn} was not found or is not readable by the join account.")
-    effective = conn.entries[0].entry_attributes_as_dict.get("allowedChildClassesEffective") or []
-    classes = {str(c).lower() for c in effective}
+    effective: list[Any] = []
+    for _dn, attrs in results:
+        if isinstance(attrs, dict):
+            effective = attrs.get("allowedChildClassesEffective") or []
+        break
+    classes = {_decode(item).lower() for item in effective}
     if "computer" not in classes:
         raise DiscoveryError(
             f"The delegated account lacks 'Create Computer Object' rights on {ou_dn}. "
@@ -308,21 +475,17 @@ def full_preflight(
     """
     dcs = site_dns_answers_ad(dns_servers, domain_fqdn)
     bind_target = dcs[0]
-    conn = ldap_bind(bind_target, username, password, dns_servers=dns_servers)
+    conn = ldap_bind(
+        bind_target, username, password,
+        dns_servers=dns_servers, domain_fqdn=domain_fqdn,
+    )
     try:
         metadata = discover_domain_metadata(conn, dns_servers)
         if ou_dn:
             check_ou_create_rights(conn, ou_dn)
         result = metadata.to_dict()
         result["bound_dc"] = bind_target
-        if metadata.domain_fqdn:
-            try:
-                result["domain_controller_ip"] = resolve_host(dns_servers, bind_target)
-            except DiscoveryError:
-                result["domain_controller_ip"] = ""
+        result["domain_controller_ip"] = conn.dc_ip or ""
         return result
     finally:
-        try:
-            conn.unbind()
-        except Exception:  # noqa: BLE001
-            pass
+        conn.unbind()
