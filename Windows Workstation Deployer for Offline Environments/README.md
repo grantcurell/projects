@@ -10,9 +10,8 @@
   - [Expected artifacts](#expected-artifacts)
   - [Portable hostname model](#portable-hostname-model)
   - [Offline Restore and Use](#offline-restore-and-use)
-  - [Unattended OOBE](#unattended-oobe)
-  - [Domain join (online first-boot)](#domain-join-online-first-boot)
-  - [Automated offline domain-join test](#automated-offline-domain-join-test)
+    - [Option 1 (recommended): guided field deployment script](#option-1-recommended-guided-field-deployment-script)
+    - [Option 2: manual restore](#option-2-manual-restore)
   - [How to Force Rebuild](#how-to-force-rebuild)
 
 Builds a deployer LXC which can be taken to offline environmment and used to deploy Windows workstations from a sysprepped golden image. Uses Proxmox for the workflow.
@@ -105,7 +104,21 @@ The exported deployer addresses itself by a **stable hostname** (`deployer.offli
 
 ## Offline Restore and Use
 
-When you are ready to export the deployer LXC container and bring it to an offline environment do the following.
+When you are ready to export the deployer LXC container and bring it to an offline environment, you have two options: the **guided field script** (recommended) or the **manual `pct` steps**.
+
+### Option 1 (recommended): guided field deployment script
+
+Carry the exported tarball (`artifacts/vzdump-lxc-<deployer-vmid>-*.tar.zst`) and `scripts/offline-deploy-deployer.sh` to a machine on the offline network that can reach the offline Proxmox host, then run:
+
+```bash
+./scripts/offline-deploy-deployer.sh
+```
+
+It walks you through everything:
+
+Requires `sshpass`, `jq`, and an SSH client on the machine running the script. After it finishes, run the offline setup TUI (it tells you exactly how) to configure the offline network and optional domain join.
+
+### Option 2: manual restore
 
 1) Copy the exported deployer backup from controller:
 - `artifacts/vzdump-lxc-<deployer-vmid>-*.tar.zst`
@@ -151,47 +164,6 @@ pct exec <new-vmid> -- offline-setup
 - Ensure target network can PXE boot from the restored deployer.
 - Boot target workstation(s) on that network.
 - They should chain through iPXE/wimboot and install from `/srv/deploy/images/deploy.wim`.
-
-## Unattended OOBE
-
-Deployed workstations complete Windows OOBE with **zero interaction** — no "Who's going to use this device?" prompt and no per-machine setup screens. This is a domain workstation, so all real settings come from **domain policy (GPO)**, not from a standalone first-run wizard.
-
-- `files/Unattend.xml` is templated by `05-sysprep-goldimage.yml` (via `win_template`) into the golden image's `oobeSystem` pass. It hides the EULA/online-account/wireless screens **and** silently creates one break-glass local administrator (`windows.workstation_local_admin.username`, password from `vault_workstation_local_admin_password`) with `HideLocalAccountScreen`. Windows 11 requires at least one local account; this satisfies that requirement so OOBE never has to prompt.
-- After OOBE auto-completes, the SYSTEM-context first-boot join (below) runs and the box reboots domain-joined. End users then sign in with their **domain** accounts.
-
-## Domain join (online first-boot)
-
-This deployer joins workstations to AD **online, at first boot**, using `Add-Computer` — there are **no ODJ blobs, no `djoin`, and no WinRM helper**. The deployer itself never joins the domain.
-
-Flow:
-
-1. On the deployer, run `offline-setup` and choose **Enable domain join? Yes**.
-2. Enter a **delegated** join account (UPN `user@domain` or `DOMAIN\user`) — **not Domain Admin**. It is stored in the deployer's Ansible Vault.
-3. Provide the **site DNS server(s)** (which may or may not be the domain controller). The TUI runs AD SRV + LDAP discovery, confirms the account can **create computer objects** in the chosen OU, and resolves the DC — all before any workstation is deployed. There is no manual fallback; the wizard cannot advance past a failed check.
-4. The TUI writes non-secret `domain.json` / `naming.json` to `/srv/deploy/site` and renders the join credential from the vault to the protected, off-web `[join]` SMB share (`/var/lib/windows-deployer/join`, mode `0700`).
-5. During PXE deploy, `deploy.ps1` reads the BIOS service tag and **stamps it as the computer name into the applied image's `specialize` pass** (`Set-OfflineComputerName`), so the box boots already named after its service tag — before OOBE. It also stages a SYSTEM-context `SetupComplete.cmd` + `first-boot-join.ps1` (plus the transient credential) into the image. No domain contact happens in WinPE.
-6. At first boot, after [unattended OOBE](#unattended-oobe) completes, `first-boot-join.ps1` runs as SYSTEM. Because the machine is already named after its service tag, it joins the **existing** computer account with `Add-Computer -DomainName ... -OUPath ... -Credential ... -Force` (no `-NewName`, never `-Restart`). This avoids the "account already exists" rename collision and makes **re-imaging the same machine idempotent**. It then **scrubs the credential and itself**, and only then calls `Restart-Computer -Force`. The machine reboots domain-joined and named after its service tag.
-
-The join credential lives off the nginx web root and is served only over authenticated SMB; it exists on the target for a single boot and is then scrubbed.
-
-## Automated offline domain-join test
-
-The pipeline can drive a **fully simulated air-gapped run end to end** and prove a brand-new workstation PXE-installs and joins an isolated AD domain — all instrumented **from the deployer** (the controller never touches the offline network). It is enabled by the `offline_test` block in [`group_vars/all/main.yml`](./inventories/windows-deployer/group_vars/all/main.yml) (and prompted for as **Stage 6** of the setup wizard) and runs via:
-
-```bash
-ansible-playbook -i inventories/windows-deployer/hosts.yml playbooks/offline-test.yml
-```
-
-What it does (orchestrated by `playbooks/offline-test.yml`):
-
-- **Fixtures (assumed pre-built):** the offline domain controller (VM `110`) and an admin workstation (VM `116`) already exist on the isolated bridge (`vmbr27`, `172.27.10.0/24`). `11-offline-fixture-preflight.yml` powers them on and health-checks the DC over WinRM (domain FQDN + target OU) — it never builds or re-IPs them.
-- **Builder:** for the first run you clone the DC to a standalone builder VM (`120`) and re-IP it; thereafter it is reused. `offline_test.run_build: false` reuses the existing built artifacts/deployer for the fastest validation; set it to `true` to rebuild `boot.wim`/`deploy.wim` first.
-- **Cleanup (pre-run):** `00c-offline-cleanup-leftovers.yml` idempotently purges leftovers from prior runs — the test workstation VM (`199`), its stale AD computer object + DNS record (removed **from the deployer**), and old local TARs.
-- **Restore deployer:** `12-restore-deployer-offline.yml` restores the exported deployer LXC (`132`) on the offline node, puts it on `vmbr27`, and runs the headless `offline_configure.py` to apply domain/naming/join config + `dnsmasq`.
-- **PXE test:** `13-offline-pxe-test.yml` recreates a blank UEFI+SecureBoot VM (`199`) with a stamped SMBIOS service tag (`TEST199`), boots it **disk-first with PXE fallback** (empty disk → PXE → WinPE → `deploy.ps1` → DISM; after install the disk boots, so there is no PXE re-deploy loop), then — from the deployer — waits for the DHCP lease, waits for WinRM, and **retries until the box has settled** (renamed to its service tag, domain-joined, and the transient join credential + first-boot script scrubbed). It then confirms the matching **AD computer object** exists on the DC.
-- **Teardown:** `14-offline-test-teardown.yml` prompts *"Image built and tested successfully. Would you like to clean up the artifacts from the test?"* (or honors `offline_test.auto_cleanup: true`) and, if accepted, destroys the test workstation, removes its AD object, and destroys the deployer LXC.
-
-The three offline secrets (DC WinRM, admin WinRM, and domain-join passwords) are stored in the project vault as `vault_offline_dc_winrm_password`, `vault_offline_admin_winrm_password`, and `vault_offline_domain_join_password` (prompted by the wizard). The deployer carries `offline_verify.py` (WinRM/AD checks; enables the OpenSSL legacy provider so NTLM's MD4 works on OpenSSL 3) and `offline_configure.py`, both baked into its image.
 
 ## How to Force Rebuild
 
