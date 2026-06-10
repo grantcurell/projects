@@ -7,5 +7,22 @@ INSTALL_DIR="{{ deployer.offline_tui.install_dir }}"
 CONFIG_FILE="{{ deployer.offline_tui.local_config }}"
 VENV_PYTHON="{{ deployer.offline_tui.venv }}/bin/python"
 
+# Force a locale that is guaranteed to exist in the container. SSH sessions often
+# forward the client's LANG/LC_* (e.g. en_US.UTF-8) which may not be generated
+# here, and Ansible aborts with "could not initialize the preferred locale".
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+unset LANGUAGE
+
+# 'pct exec' does not propagate a useful terminal type - it lands as TERM=linux
+# (16 colors) with COLORTERM unset, which makes Textual downsample the 24-bit
+# color scheme so it looks different from the online wizard. The deployer TUI is
+# reached over SSH or the Proxmox web console, both of which render truecolor, so
+# advertise full color support to match the online wizard exactly.
+if [[ "${TERM:-}" == "linux" || "${TERM:-}" == "dumb" || -z "${TERM:-}" ]]; then
+  export TERM=xterm-256color
+fi
+export COLORTERM=truecolor
+
 export WINDEPLOY_OFFLINE_CONFIG="$CONFIG_FILE"
 exec "$VENV_PYTHON" "$INSTALL_DIR/offline-deployer-tui.py" "$@"
