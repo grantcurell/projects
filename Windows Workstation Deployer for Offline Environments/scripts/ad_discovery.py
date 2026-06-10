@@ -17,6 +17,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+import ipaddress
+import socket
+
 import dns.resolver  # type: ignore
 import ldap3  # type: ignore
 from ldap3 import Connection, Server, Tls, ALL, SUBTREE
@@ -59,6 +62,25 @@ def _resolver(dns_servers: list[str], timeout: float = 5.0) -> dns.resolver.Reso
     resolver.lifetime = timeout
     resolver.timeout = timeout
     return resolver
+
+
+def dns_server_responds(server: str, timeout: float = 4.0) -> None:
+    """Confirm a host is actually a DNS server by connecting to TCP port 53.
+
+    We deliberately do NOT issue a recursive lookup: an isolated AD DNS server
+    (no internet access or root hints) times out trying to recurse on external
+    names, which makes a perfectly healthy DC look dead. A TCP/53 connection
+    proves a DNS service is listening without triggering recursion. ICMP ping is
+    also avoided - DNS servers frequently drop ICMP while still serving DNS.
+    Raises DiscoveryError if nothing is listening on port 53.
+    """
+    try:
+        with socket.create_connection((server, 53), timeout=timeout):
+            return
+    except OSError as exc:
+        raise DiscoveryError(
+            f"DNS server {server} is not listening on port 53 ({exc})."
+        ) from exc
 
 
 def resolve_srv(dns_servers: list[str], srv_name: str) -> list[tuple[str, int]]:
@@ -123,8 +145,32 @@ def discover_dcs(dns_servers: list[str], domain_fqdn: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # LDAP / LDAPS
 # ---------------------------------------------------------------------------
-def ldap_bind(dc_host: str, username: str, password: str, use_ssl: bool = True) -> Connection:
-    """Bind to a DC with the delegated credential. Tries LDAPS, then LDAP."""
+def ldap_bind(
+    dc_host: str,
+    username: str,
+    password: str,
+    use_ssl: bool = True,
+    dns_servers: list[str] | None = None,
+    timeout: float = 8.0,
+) -> Connection:
+    """Bind to a DC with the delegated credential. Tries LDAPS, then LDAP.
+
+    If dns_servers is provided and dc_host is a hostname, it is resolved via the
+    site DNS rather than the deployer's system resolver. This is critical on a
+    freshly-deployed deployer whose /etc/resolv.conf still points at an
+    unreachable build-network resolver - otherwise ldap3's hostname lookup hangs
+    indefinitely. connect/receive timeouts guarantee the bind never blocks
+    forever.
+    """
+    target = dc_host
+    if dns_servers:
+        try:
+            ipaddress.ip_address(dc_host)  # already an IP -> use directly
+        except ValueError:
+            try:
+                target = resolve_host(dns_servers, dc_host)
+            except DiscoveryError:
+                target = dc_host  # let the connect fail fast under the timeout
     last_exc: Exception | None = None
     attempts = [(use_ssl, 636 if use_ssl else 389)]
     if use_ssl:
@@ -132,13 +178,17 @@ def ldap_bind(dc_host: str, username: str, password: str, use_ssl: bool = True) 
     for ssl_flag, port in attempts:
         try:
             tls = Tls(validate=ssl.CERT_NONE) if ssl_flag else None
-            server = Server(dc_host, port=port, use_ssl=ssl_flag, get_info=ALL, tls=tls)
+            server = Server(
+                target, port=port, use_ssl=ssl_flag, get_info=ALL, tls=tls,
+                connect_timeout=timeout,
+            )
             conn = Connection(
                 server,
                 user=username,
                 password=password,
                 authentication=ldap3.NTLM if "\\" in username else ldap3.SIMPLE,
                 auto_bind=True,
+                receive_timeout=timeout,
             )
             return conn
         except Exception as exc:  # noqa: BLE001
@@ -258,7 +308,7 @@ def full_preflight(
     """
     dcs = site_dns_answers_ad(dns_servers, domain_fqdn)
     bind_target = dcs[0]
-    conn = ldap_bind(bind_target, username, password)
+    conn = ldap_bind(bind_target, username, password, dns_servers=dns_servers)
     try:
         metadata = discover_domain_metadata(conn, dns_servers)
         if ou_dn:
