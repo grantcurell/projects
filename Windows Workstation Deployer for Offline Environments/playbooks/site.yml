@@ -10,3 +10,4 @@
 - import_playbook: 07-load-deployment-artifacts.yml
 - import_playbook: 08-validate-deployer-lxc.yml
 - import_playbook: 09-export-deployer-lxc.yml
+- import_playbook: zz-deployer-summary.yml

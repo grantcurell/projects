@@ -166,6 +166,15 @@ class Input(TextInput):
             app.exit()
             event.stop()
             return
+        if event.key == "escape" and not self.selection.is_empty:
+            # Cancel the edit: deselect the highlighted value WITHOUT deleting it.
+            # (Fields auto-select-all on focus, so Esc here means "leave it alone".)
+            # Only fall through to the global Esc->q quit flow when nothing is
+            # highlighted.
+            self.cursor_position = self.cursor_position
+            event.stop()
+            event.prevent_default()
+            return
 
 
 class SetupApp(App[None]):
@@ -268,6 +277,7 @@ class SetupApp(App[None]):
         template_storage_default = str(get_in(self.group_vars, ["proxmox", "defaults", "template_storage"]) or "")
         self.available_nodes: list[str] = [v for v in [node_default] if v]
         self.available_storages: list[str] = [v for v in [storage_default, template_storage_default] if v]
+        self.available_template_storages: list[str] = [v for v in [template_storage_default] if v]
         self.current_stage = "stage-proxmox-auth"
         self.quit_armed = False
         self.launch_deploy_after_exit = False
@@ -311,10 +321,10 @@ class SetupApp(App[None]):
                     id="px_storage_pool",
                     classes="field",
                 )
-                yield Static("Template Storage (must exist)")
+                yield Static("Template Storage (must support container templates)")
                 yield PersistentSelect(
-                    options=[(s, s) for s in self.available_storages] or [("No storages discovered yet", "")],
-                    value=(str(get_in(self.group_vars, ["proxmox", "defaults", "template_storage"]) or "") if str(get_in(self.group_vars, ["proxmox", "defaults", "template_storage"]) or "") in self.available_storages else (self.available_storages[0] if self.available_storages else "")),
+                    options=[(s, s) for s in self.available_template_storages] or [("No storages discovered yet", "")],
+                    value=(str(get_in(self.group_vars, ["proxmox", "defaults", "template_storage"]) or "") if str(get_in(self.group_vars, ["proxmox", "defaults", "template_storage"]) or "") in self.available_template_storages else (self.available_template_storages[0] if self.available_template_storages else "")),
                     id="px_template_storage",
                     classes="field",
                 )
@@ -331,7 +341,7 @@ class SetupApp(App[None]):
                 yield Input(str(get_in(self.group_vars, ["windows", "goldimage", "username"]) or ""), id="gold_user", classes="field")
                 yield Static("Golden Image Password")
                 yield Input(str(self.vault.get("vault_goldimage_password") or ""), password=True, id="gold_pass", classes="field")
-                yield Static("Workstation local-admin username (break-glass account created silently during OOBE so it completes unattended; end users sign in with domain accounts)")
+                yield Static("Workstation local-admin username (this is the local admin that will be created on all your windows workstations)")
                 yield Input(str(get_in(self.group_vars, ["windows", "workstation_local_admin", "username"]) or ""), id="ws_admin_user", classes="field")
                 yield Static("Workstation local-admin password (vaulted)")
                 yield Input(str(self.vault.get("vault_workstation_local_admin_password") or ""), password=True, id="ws_admin_pass", classes="field")
@@ -370,13 +380,19 @@ class SetupApp(App[None]):
                 yield Static("Run the offline test as the main workflow?")
                 yield PersistentSelect(options=[("Yes - run the offline domain-join test", "true"), ("No - disable offline test", "false")], value="true" if bool(get_in(self.group_vars, ["offline_test", "enabled"])) else "false", id="off_enabled", classes="field")
                 yield Static("Offline Proxmox node (hosts the isolated bridge + fixtures)")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "proxmox_node"]) or ""), id="off_node", classes="field")
-                yield Static("Offline Proxmox host IP (SSH/API for the offline node)")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "proxmox_host"]) or ""), id="off_host", classes="field")
-                yield Static("Offline bridge (isolated, air-gapped)")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "bridge"]) or ""), id="off_bridge", classes="field")
-                yield Static("Offline subnet CIDR (e.g. 172.27.10.0/24)")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "subnet_cidr"]) or ""), id="off_subnet", classes="field")
+                yield PersistentSelect(
+                    options=[(n, n) for n in self.available_nodes] or [("No nodes discovered yet", "")],
+                    value=(str(get_in(self.group_vars, ["offline_test", "proxmox_node"]) or "") if str(get_in(self.group_vars, ["offline_test", "proxmox_node"]) or "") in self.available_nodes else (self.available_nodes[0] if self.available_nodes else "")),
+                    id="off_node",
+                    classes="field",
+                )
+                yield Static("Offline bridge (isolated, air-gapped; subnet/prefix/gateway are read from this bridge via the API)")
+                yield PersistentSelect(
+                    options=[("Select offline node first", "")],
+                    value="",
+                    id="off_bridge",
+                    classes="field",
+                )
                 yield Static("Rebuild artifacts online before the offline phase? (No = fastest reuse of an already-built deployer)")
                 yield PersistentSelect(options=[("No - reuse existing deployer/artifacts (fastest)", "false"), ("Yes - rebuild via site.yml first", "true")], value="true" if bool(get_in(self.group_vars, ["offline_test", "run_build"])) else "false", id="off_run_build", classes="field")
                 yield Static("Auto-clean test artifacts on success without prompting?")
@@ -385,25 +401,26 @@ class SetupApp(App[None]):
                 yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "vmid"]) or ""), id="off_dep_vmid", classes="field")
                 yield Static("Offline deployer IP (on the offline bridge)")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "ip"]) or ""), id="off_dep_ip", classes="field")
-                yield Static("Offline deployer CIDR prefix (e.g. 24)")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "cidr_prefix"]) or ""), id="off_dep_prefix", classes="field")
-                yield Static("Offline deployer gateway")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "gateway"]) or ""), id="off_dep_gw", classes="field")
                 yield Static("Offline DHCP range start")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "dhcp_start"]) or ""), id="off_dep_dhcp_start", classes="field")
                 yield Static("Offline DHCP range end")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "dhcp_end"]) or ""), id="off_dep_dhcp_end", classes="field")
                 yield Static("Offline deployer storage pool")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "deployer", "storage"]) or ""), id="off_dep_storage", classes="field")
+                yield PersistentSelect(
+                    options=[("Select offline node first", "")],
+                    value="",
+                    id="off_dep_storage",
+                    classes="field",
+                )
                 yield Static("Domain controller fixture VMID")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "domain_controller", "vmid"]) or ""), id="off_dc_vmid", classes="field")
-                yield Static("Domain controller IP (on the offline bridge)")
+                yield Static("Domain controller IP (on the offline bridge. This must already exist. For this test you must provide a domain already built out.)")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "domain_controller", "ip"]) or ""), id="off_dc_ip", classes="field")
                 yield Static("Domain controller WinRM username")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "domain_controller", "winrm_user"]) or ""), id="off_dc_user", classes="field")
                 yield Static("Domain controller WinRM password (vaulted)")
                 yield Input(str(self.vault.get("vault_offline_dc_winrm_password") or ""), password=True, id="off_dc_pass", classes="field")
-                yield Static("Admin workstation fixture VMID")
+                yield Static("Admin workstation fixture VMID (this must already be set up with an account that has access to the domain controller)")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "admin_workstation", "vmid"]) or ""), id="off_admin_vmid", classes="field")
                 yield Static("Admin workstation WinRM username")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "admin_workstation", "winrm_user"]) or ""), id="off_admin_user", classes="field")
@@ -425,25 +442,31 @@ class SetupApp(App[None]):
                 yield Input(str(get_in(self.group_vars, ["offline_test", "test_workstation", "vmid"]) or ""), id="off_tw_vmid", classes="field")
                 yield Static("Test workstation SMBIOS service tag (becomes the computer name)")
                 yield Input(str(get_in(self.group_vars, ["offline_test", "test_workstation", "smbios_serial"]) or ""), id="off_tw_serial", classes="field")
-                yield Static("Test workstation node")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "test_workstation", "node"]) or ""), id="off_tw_node", classes="field")
-                yield Static("Test workstation storage pool")
-                yield Input(str(get_in(self.group_vars, ["offline_test", "test_workstation", "storage"]) or ""), id="off_tw_storage", classes="field")
+                yield Static("Test workstation storage pool (created on the same node as the domain controller)")
+                yield PersistentSelect(
+                    options=[("Select offline node first", "")],
+                    value="",
+                    id="off_tw_storage",
+                    classes="field",
+                )
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_offline", classes="nav-button")
                     yield Button("Next", id="next_offline", variant="primary", classes="nav-button")
             with VerticalScroll(id="stage-network", classes="stage"):
                 yield Static("Stage 7: Deployer networking + DHCP safety checks + inventory write + bootstrap.")
-                yield Static("The deployer LXC is the container you will export and use to deploy windows workstations elsewhere")
+                yield Static("These settings are the BUILD-TIME network for the deployer LXC on THIS Proxmox/LAN, used only while it is built, validated, and exported. At the air-gapped destination you re-run the deployer's own offline-setup to reconfigure networking, so these values are NOT the offline target network.")
                 yield Static("Deployer LXC VMID (must be unused)")
                 yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "vmid"]) or ""), id="dep_vmid", classes="field")
                 yield Static("Deployer LXC Hostname")
                 yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "hostname"]) or ""), id="dep_hostname", classes="field")
-                yield Static("Deployer LXC IP")
+                yield Static("─" * 80)
+                yield Static("These settings are only for building out your deployer. These are not settings that must be used when the deployer is moved to your offline environment.")
+                yield Static("─" * 80)
+                yield Static("Deployer LXC IP (on this build LAN)")
                 yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "ip"]) or ""), id="dep_ip", classes="field")
                 yield Static("Deployer CIDR Prefix (example 24)")
                 yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "cidr_prefix"]) or ""), id="dep_prefix", classes="field")
-                yield Static("Default Gateway (must be reachable)")
+                yield Static("Default Gateway (build LAN gateway; must be reachable now so the build can pull packages + iPXE/wimboot)")
                 yield Input(str(get_in(self.group_vars, ["deployer", "lxc", "gateway"]) or ""), id="dep_gateway", classes="field")
                 yield Static("Deployer Bridge (live list from Proxmox after Stage 1)")
                 yield PersistentSelect(options=[(b, b) for b in self.bridges], value=self.bridges[0], id="dep_bridge", classes="field")
@@ -468,6 +491,7 @@ class SetupApp(App[None]):
                     yield Button("Run Setup", id="finish_setup_btn", variant="success", classes="nav-button")
             with Vertical(id="stage-deploy", classes="stage"):
                 with Horizontal(classes="deploy-center"):
+                    yield Button("Back", id="back_deploy", classes="nav-button")
                     yield Button("DEPLOY\n[dim](press enter)[/dim]", id="deploy_now")
 
         yield Log(id="log", highlight=True, auto_scroll=True)
@@ -491,7 +515,10 @@ class SetupApp(App[None]):
         self.set_status(stage_label)
         self._refresh_controls()
         self._update_progress()
-        next_target = self._stage_focusables()[0] if self._stage_focusables() else None
+        if stage_id == "stage-deploy":
+            next_target = self.query_one("#deploy_now", Button)
+        else:
+            next_target = self._stage_focusables()[0] if self._stage_focusables() else None
         if next_target is not None:
             self.set_focus(next_target)
             if isinstance(next_target, Select):
@@ -568,9 +595,6 @@ class SetupApp(App[None]):
             self.set_focus(fields[0])
 
     def action_focus_next_field(self) -> None:
-        if self.current_stage == "stage-deploy":
-            self.set_focus(self.query_one("#deploy_now", Button))
-            return
         self._ensure_focus_visible_target()
         fields = self._stage_focusables()
         if not fields:
@@ -583,9 +607,6 @@ class SetupApp(App[None]):
             self.set_focus(fields[0])
 
     def action_focus_prev_field(self) -> None:
-        if self.current_stage == "stage-deploy":
-            self.set_focus(self.query_one("#deploy_now", Button))
-            return
         self._ensure_focus_visible_target()
         fields = self._stage_focusables()
         if not fields:
@@ -598,9 +619,6 @@ class SetupApp(App[None]):
             self.set_focus(fields[-1])
 
     def action_focus_button_right(self) -> None:
-        if self.current_stage == "stage-deploy":
-            self.set_focus(self.query_one("#deploy_now", Button))
-            return
         buttons = self._stage_buttons()
         if len(buttons) < 2:
             return
@@ -610,9 +628,6 @@ class SetupApp(App[None]):
             self.set_focus(buttons[(idx + 1) % len(buttons)])
 
     def action_focus_button_left(self) -> None:
-        if self.current_stage == "stage-deploy":
-            self.set_focus(self.query_one("#deploy_now", Button))
-            return
         buttons = self._stage_buttons()
         if len(buttons) < 2:
             return
@@ -699,6 +714,17 @@ class SetupApp(App[None]):
             raise RuntimeError(f"VMID {vmid} is not running (node: {vm_node}, state: {vm_status}).")
         return vm_node
 
+    def _vm_node(self, api: ProxmoxAPI, vmid: int) -> str:
+        """Return the node a VMID currently lives on (cluster-wide lookup)."""
+        try:
+            resources = api.cluster.resources.get(type="vm")
+        except Exception as exc:  # noqa: BLE001
+            raise RuntimeError(f"Could not query cluster VM resources while locating VMID {vmid}: {exc}") from exc
+        vm = next((item for item in resources if int(item.get("vmid", -1)) == vmid and str(item.get("type")) == "qemu"), None)
+        if vm is None:
+            raise RuntimeError(f"VMID {vmid} was not found in cluster qemu resources.")
+        return str(vm.get("node", "")).strip()
+
     def _list_bridges(self, api: ProxmoxAPI, node: str) -> list[str]:
         try:
             networks = api.nodes(node).network.get()
@@ -708,6 +734,106 @@ class SetupApp(App[None]):
         if not bridges:
             raise RuntimeError("No network bridges were returned from Proxmox host.")
         return bridges
+
+    def _node_management_ip(self, api: ProxmoxAPI, node: str) -> str:
+        """Resolve a node's management/cluster IP via the API so the user never has
+        to type the offline Proxmox host address. Returns '' for single-node hosts
+        where cluster status carries no per-node IP (caller falls back to the API host)."""
+        try:
+            status = api.cluster.status.get()
+        except Exception as exc:  # noqa: BLE001
+            raise RuntimeError(f"Could not query cluster status to resolve node IP: {exc}") from exc
+        for item in status:
+            if str(item.get("type")) == "node" and str(item.get("name", "")) == node:
+                return str(item.get("ip", "")).strip()
+        return ""
+
+    def _bridge_network_info(self, api: ProxmoxAPI, node: str, bridge: str) -> dict[str, str]:
+        """Return the IPv4 CIDR/gateway Proxmox has configured on a bridge so the
+        offline subnet, prefix, and gateway can be derived instead of typed."""
+        try:
+            cfg = api.nodes(node).network(bridge).get()
+        except Exception as exc:  # noqa: BLE001
+            raise RuntimeError(f"Could not read bridge '{bridge}' config on node '{node}': {exc}") from exc
+
+        cidr = str(cfg.get("cidr", "")).strip()
+        address = str(cfg.get("address", "")).strip()
+        netmask = str(cfg.get("netmask", "")).strip()
+        gateway = str(cfg.get("gateway", "")).strip()
+
+        if not cidr and address and netmask:
+            try:
+                prefix = ipaddress.IPv4Network(f"0.0.0.0/{netmask}").prefixlen
+                cidr = f"{address}/{prefix}"
+            except ValueError:
+                cidr = ""
+        if not cidr:
+            raise RuntimeError(
+                f"Bridge '{bridge}' on node '{node}' has no IPv4 address/CIDR configured in Proxmox, "
+                f"so the offline subnet/prefix/gateway cannot be derived. Assign an address/CIDR to the "
+                f"bridge (Proxmox > node > System > Network) or pick a different bridge."
+            )
+
+        iface = ipaddress.ip_interface(cidr)
+        subnet = iface.network
+        # On an isolated bridge the node's own bridge address acts as the gateway for
+        # the offline LXC unless Proxmox has an explicit gateway set on the bridge.
+        resolved_gateway = gateway or str(iface.ip)
+        return {
+            "subnet_cidr": str(subnet),
+            "cidr_prefix": str(subnet.prefixlen),
+            "gateway": resolved_gateway,
+            "address": str(iface.ip),
+        }
+
+    def _largest_storage(self, rows: list[dict[str, Any]], names: set[str] | None = None) -> str:
+        """Pick the storage with the most total capacity (largest available)."""
+        candidates = [
+            r for r in rows
+            if str(r.get("storage", "")).strip()
+            and (names is None or str(r.get("storage", "")).strip() in names)
+        ]
+        if not candidates:
+            return ""
+        best = max(candidates, key=lambda r: int(r.get("total", 0) or 0))
+        return str(best.get("storage", "")).strip()
+
+    def _populate_offline_node_dependent(self, node: str) -> None:
+        """Refresh the offline bridge + storage dropdowns for the selected offline
+        node, defaulting storage to the largest available."""
+        if not node:
+            return
+        host = self._input("px_host")
+        ssh_user = self._input("px_ssh_user")
+        ssh_pass = self._input("px_ssh_pass")
+        skip_tls = self._select("px_skip_tls") == "true"
+        if not host or not ssh_user or not ssh_pass:
+            return
+        api = self._connect_proxmox_api(host, ssh_user, ssh_pass, skip_tls)
+
+        bridges = self._list_bridges(api, node)
+        bridge_select = self.query_one("#off_bridge", Select)
+        bridge_select.set_options([(b, b) for b in bridges])
+        preferred_bridge = str(get_in(self.group_vars, ["offline_test", "bridge"]) or "")
+        bridge_select.value = preferred_bridge if preferred_bridge in bridges else bridges[0]
+
+        storage_rows = api.nodes(node).storage.get()
+        storages = sorted({str(r.get("storage", "")).strip() for r in storage_rows if str(r.get("storage", "")).strip()})
+        if not storages:
+            raise RuntimeError(f"No storages were returned for offline node {node}.")
+        largest = self._largest_storage(storage_rows) or storages[0]
+
+        # Prefer a previously-saved selection; fall back to the largest storage when
+        # the inventory value is blank (first run) or no longer present on the node.
+        dep_storage_select = self.query_one("#off_dep_storage", Select)
+        dep_storage_select.set_options([(s, s) for s in storages])
+        preferred_dep_storage = str(get_in(self.group_vars, ["offline_test", "deployer", "storage"]) or "")
+        dep_storage_select.value = preferred_dep_storage if preferred_dep_storage in storages else largest
+
+        tw_storage_select = self.query_one("#off_tw_storage", Select)
+        tw_storage_select.set_options([(s, s) for s in storages])
+        preferred_tw_storage = str(get_in(self.group_vars, ["offline_test", "test_workstation", "storage"]) or "")
+        tw_storage_select.value = preferred_tw_storage if preferred_tw_storage in storages else largest
 
     def _ensure_ubuntu_template(self, api: ProxmoxAPI, node: str, template_storage: str, preferred_name: str) -> str:
         try:
@@ -723,7 +849,7 @@ class SetupApp(App[None]):
         chosen = preferred_name
         if chosen not in names:
             try:
-                available_rows = api.nodes(node).aplinfo.get(section="system", storage=template_storage)
+                available_rows = api.nodes(node).aplinfo.get()
             except Exception as exc:  # noqa: BLE001
                 raise RuntimeError(f"Unable to query available templates via API: {exc}") from exc
             ubuntu_candidates = [str(r.get("template", "")) for r in available_rows if str(r.get("template", "")).startswith("ubuntu-24.04-standard")]
@@ -757,6 +883,17 @@ class SetupApp(App[None]):
         missing = [name for name in [storage_pool, template_storage] if name not in storages]
         if missing:
             raise RuntimeError(f"Storage validation failed. Missing storages: {missing}. Available: {storages}")
+
+        template_capable = {
+            str(item.get("storage", ""))
+            for item in storages_info
+            if "vztmpl" in [c.strip() for c in str(item.get("content", "")).split(",")]
+        }
+        if template_storage not in template_capable:
+            raise RuntimeError(
+                f"Template storage '{template_storage}' does not support container templates (vztmpl). "
+                f"Storages that support templates: {sorted(template_capable) or 'none'}."
+            )
 
     def _validate_dhcp_unused(self, start_ip: str, end_ip: str) -> None:
         start = ipaddress.IPv4Address(start_ip)
@@ -792,6 +929,16 @@ class SetupApp(App[None]):
         self.append_log("  ansible-playbook -i inventories/windows-deployer/hosts.yml playbooks/site.yml")
         self.set_status("Stage 7 complete. Continue to Stage 8 to deploy.")
         self.switch_stage("stage-deploy", "Stage 8/8: Press DEPLOY to exit and start full deployment.")
+
+    @on(Select.Changed, "#off_node")
+    def on_off_node_changed(self, event: Select.Changed) -> None:
+        node = "" if event.value is None else str(event.value)
+        if not node:
+            return
+        try:
+            self._populate_offline_node_dependent(node)
+        except Exception as exc:  # noqa: BLE001
+            self.append_log(f"[WARN] Could not load bridges/storages for offline node {node}: {exc}")
 
     @on(Button.Pressed, "#next_auth")
     def on_next_auth(self) -> None:
@@ -844,6 +991,10 @@ class SetupApp(App[None]):
     @on(Button.Pressed, "#finish_setup_btn")
     def on_finish_setup_btn(self) -> None:
         self.finish_setup()
+
+    @on(Button.Pressed, "#back_deploy")
+    def on_back_deploy(self) -> None:
+        self.switch_stage("stage-network", "Stage 7/8: Validate deployer networking, write files, run bootstrap.")
 
     @on(Button.Pressed, "#deploy_now")
     def on_deploy_now(self) -> None:
@@ -937,6 +1088,11 @@ class SetupApp(App[None]):
             preferred_node = str(get_in(self.group_vars, ["proxmox", "node"]) or "")
             node_select.value = preferred_node if preferred_node in self.available_nodes else self.available_nodes[0]
 
+            off_node_select = self.query_one("#off_node", Select)
+            off_node_select.set_options([(n, n) for n in self.available_nodes])
+            preferred_off_node = str(get_in(self.group_vars, ["offline_test", "proxmox_node"]) or "")
+            off_node_select.value = preferred_off_node if preferred_off_node in self.available_nodes else self.available_nodes[0]
+
             self.append_log(f"Discovered nodes: {', '.join(self.available_nodes)}")
             self.set_status("Stage 1 passed. Continue to Stage 2.")
             self.switch_stage("stage-proxmox-node", "Stage 2/7: Select Proxmox node.")
@@ -960,15 +1116,32 @@ class SetupApp(App[None]):
             if not self.available_storages:
                 raise RuntimeError(f"No storages were returned for node {node}.")
 
+            self.available_template_storages = sorted({
+                str(item.get("storage", "")).strip()
+                for item in storages_info
+                if str(item.get("storage", "")).strip()
+                and "vztmpl" in [c.strip() for c in str(item.get("content", "")).split(",")]
+            })
+            if not self.available_template_storages:
+                raise RuntimeError(
+                    f"No storage on node {node} supports container templates (vztmpl content type). "
+                    f"Enable 'Container template' content on a storage in Proxmox and retry."
+                )
+
+            largest_storage = self._largest_storage(storages_info) or self.available_storages[0]
+            largest_template_storage = self._largest_storage(storages_info, set(self.available_template_storages)) or self.available_template_storages[0]
+
+            # Prefer a previously-saved selection; fall back to the largest storage
+            # when the inventory value is blank (first run) or no longer present.
             storage_select = self.query_one("#px_storage_pool", Select)
             storage_select.set_options([(s, s) for s in self.available_storages])
             preferred_storage = str(get_in(self.group_vars, ["proxmox", "defaults", "storage_pool"]) or "")
-            storage_select.value = preferred_storage if preferred_storage in self.available_storages else self.available_storages[0]
+            storage_select.value = preferred_storage if preferred_storage in self.available_storages else largest_storage
 
             template_storage_select = self.query_one("#px_template_storage", Select)
-            template_storage_select.set_options([(s, s) for s in self.available_storages])
+            template_storage_select.set_options([(s, s) for s in self.available_template_storages])
             preferred_template_storage = str(get_in(self.group_vars, ["proxmox", "defaults", "template_storage"]) or "")
-            template_storage_select.value = preferred_template_storage if preferred_template_storage in self.available_storages else self.available_storages[0]
+            template_storage_select.value = preferred_template_storage if preferred_template_storage in self.available_template_storages else largest_template_storage
 
             self.append_log(f"Node selected: {node}")
             self.append_log(f"Node {node} storages: {', '.join(self.available_storages)}")
@@ -1087,6 +1260,13 @@ class SetupApp(App[None]):
             self._validate_winrm_auth(ip, user, password)
             self.append_log("WinPE builder WinRM credentials validated successfully.")
 
+            off_node = self._select("off_node")
+            if off_node:
+                try:
+                    self._populate_offline_node_dependent(off_node)
+                except Exception as exc:  # noqa: BLE001
+                    self.append_log(f"[WARN] Could not load bridges/storages for offline node {off_node}: {exc}")
+
             self.set_status("Stage 5 passed. Continue to Stage 6.")
             self.switch_stage("stage-offline", "Stage 6/8: Offline domain-join test settings.")
         except Exception as exc:  # noqa: BLE001
@@ -1108,17 +1288,18 @@ class SetupApp(App[None]):
                 "enabled": enabled,
                 "run_build": self._select("off_run_build") == "true",
                 "auto_cleanup": self._select("off_auto_cleanup") == "true",
-                "proxmox_node": self._input("off_node"),
-                "proxmox_host": self._input("off_host"),
-                "bridge": self._input("off_bridge"),
-                "subnet_cidr": self._input("off_subnet"),
+                "proxmox_node": self._select("off_node"),
+                # Derived from the API below; never typed by the user.
+                "proxmox_host": "",
+                "bridge": self._select("off_bridge"),
+                "subnet_cidr": "",
                 "dep_vmid": self._input("off_dep_vmid"),
                 "dep_ip": self._input("off_dep_ip"),
-                "dep_prefix": self._input("off_dep_prefix"),
-                "dep_gw": self._input("off_dep_gw"),
+                "dep_prefix": "",
+                "dep_gw": "",
                 "dep_dhcp_start": self._input("off_dep_dhcp_start"),
                 "dep_dhcp_end": self._input("off_dep_dhcp_end"),
-                "dep_storage": self._input("off_dep_storage"),
+                "dep_storage": self._select("off_dep_storage"),
                 "dc_vmid": self._input("off_dc_vmid"),
                 "dc_ip": self._input("off_dc_ip"),
                 "dc_user": self._input("off_dc_user"),
@@ -1134,14 +1315,27 @@ class SetupApp(App[None]):
                 "join_pass": self._input("off_join_pass"),
                 "tw_vmid": self._input("off_tw_vmid"),
                 "tw_serial": self._input("off_tw_serial"),
-                "tw_node": self._input("off_tw_node"),
-                "tw_storage": self._input("off_tw_storage"),
+                # Forced to the domain controller's node below.
+                "tw_node": "",
+                "tw_storage": self._select("off_tw_storage"),
             }
             if enabled:
-                self._must_ipv4(offline["proxmox_host"], "Offline Proxmox host")
+                for label, value in [
+                    ("offline node", offline["proxmox_node"]),
+                    ("offline bridge", offline["bridge"]),
+                    ("offline deployer storage pool", offline["dep_storage"]),
+                    ("test workstation storage pool", offline["tw_storage"]),
+                    ("domain FQDN", offline["dom_fqdn"]),
+                    ("domain NetBIOS", offline["dom_netbios"]),
+                    ("target OU", offline["dom_ou"]),
+                    ("join account username", offline["join_user"]),
+                    ("test workstation SMBIOS serial", offline["tw_serial"]),
+                    ("domain controller VMID", offline["dc_vmid"]),
+                ]:
+                    if not value:
+                        raise RuntimeError(f"Offline test {label} is required.")
                 for label, value in [
                     ("Offline deployer IP", offline["dep_ip"]),
-                    ("Offline deployer gateway", offline["dep_gw"]),
                     ("Offline DHCP start", offline["dep_dhcp_start"]),
                     ("Offline DHCP end", offline["dep_dhcp_end"]),
                     ("Domain controller IP", offline["dc_ip"]),
@@ -1151,17 +1345,6 @@ class SetupApp(App[None]):
                     raise RuntimeError("At least one AD DNS server IP is required.")
                 for ip in offline["dom_dns"]:
                     self._must_ipv4(ip, "AD DNS server")
-                for label, value in [
-                    ("offline bridge", offline["bridge"]),
-                    ("offline node", offline["proxmox_node"]),
-                    ("domain FQDN", offline["dom_fqdn"]),
-                    ("domain NetBIOS", offline["dom_netbios"]),
-                    ("target OU", offline["dom_ou"]),
-                    ("join account username", offline["join_user"]),
-                    ("test workstation SMBIOS serial", offline["tw_serial"]),
-                ]:
-                    if not value:
-                        raise RuntimeError(f"Offline test {label} is required.")
                 for secret_label, secret_value in [
                     ("DC WinRM password", offline["dc_pass"]),
                     ("Admin WinRM password", offline["admin_pass"]),
@@ -1169,6 +1352,85 @@ class SetupApp(App[None]):
                 ]:
                     if not secret_value:
                         raise RuntimeError(f"Offline test {secret_label} is required (stored in the vault).")
+
+                # Everything network-related is resolved from the API so the user
+                # never types the offline host IP, subnet, prefix, or gateway.
+                host = self._input("px_host")
+                ssh_user = self._input("px_ssh_user")
+                ssh_pass = self._input("px_ssh_pass")
+                skip_tls = self._select("px_skip_tls") == "true"
+                api = self._connect_proxmox_api(host, ssh_user, ssh_pass, skip_tls)
+
+                node = offline["proxmox_node"]
+                # Cluster status carries per-node IPs; single-node hosts fall back
+                # to the API address the user already authenticated against.
+                offline["proxmox_host"] = self._node_management_ip(api, node) or host
+                self.append_log(f"Resolved offline node {node} management IP: {offline['proxmox_host']}")
+
+                bridge_info = self._bridge_network_info(api, node, offline["bridge"])
+                offline["subnet_cidr"] = bridge_info["subnet_cidr"]
+                offline["dep_prefix"] = bridge_info["cidr_prefix"]
+                offline["dep_gw"] = bridge_info["gateway"]
+                self.append_log(
+                    f"Derived offline network from bridge {offline['bridge']}: "
+                    f"subnet {offline['subnet_cidr']}, prefix /{offline['dep_prefix']}, gateway {offline['dep_gw']}."
+                )
+
+                subnet = ipaddress.ip_network(offline["subnet_cidr"])
+                for label, value in [
+                    ("Offline deployer IP", offline["dep_ip"]),
+                    ("Domain controller IP", offline["dc_ip"]),
+                    ("Offline DHCP start", offline["dep_dhcp_start"]),
+                    ("Offline DHCP end", offline["dep_dhcp_end"]),
+                ]:
+                    if ipaddress.ip_address(value) not in subnet:
+                        raise RuntimeError(f"{label} {value} is not within the offline subnet {subnet}.")
+
+                # DHCP range safety scan: the range must be ordered and must not
+                # overlap any static address already in use on the offline net
+                # (deployer, gateway, domain controller). The controller cannot
+                # ping the air-gapped subnet, so this is a static-conflict scan.
+                dhcp_start = ipaddress.IPv4Address(offline["dep_dhcp_start"])
+                dhcp_end = ipaddress.IPv4Address(offline["dep_dhcp_end"])
+                if int(dhcp_end) < int(dhcp_start):
+                    raise RuntimeError("Offline DHCP range end must be greater than or equal to range start.")
+                dhcp_range = {
+                    str(ipaddress.IPv4Address(i)) for i in range(int(dhcp_start), int(dhcp_end) + 1)
+                }
+                reserved = {
+                    "offline deployer IP": offline["dep_ip"],
+                    "offline gateway": offline["dep_gw"],
+                    "domain controller IP": offline["dc_ip"],
+                }
+                conflicts = [f"{name} ({ip})" for name, ip in reserved.items() if ip in dhcp_range]
+                if conflicts:
+                    raise RuntimeError(
+                        "Offline DHCP range overlaps addresses already in use: "
+                        + ", ".join(conflicts)
+                        + ". Choose a DHCP range that excludes these static addresses."
+                    )
+                self.append_log(
+                    f"Offline DHCP range {offline['dep_dhcp_start']}-{offline['dep_dhcp_end']} "
+                    f"validated (within subnet, no static conflicts)."
+                )
+
+                # The test workstation must live on the same node as the domain
+                # controller fixture, so derive the node from the DC VMID.
+                dc_node = self._vm_node(api, int(offline["dc_vmid"]))
+                offline["tw_node"] = dc_node
+                self.append_log(f"Test workstation pinned to domain controller node: {dc_node}.")
+            else:
+                # Offline test disabled: keep existing inventory values so the save
+                # step writes them back unchanged (no API derivation needed).
+                offline["proxmox_node"] = offline["proxmox_node"] or str(get_in(self.group_vars, ["offline_test", "proxmox_node"]) or "")
+                offline["proxmox_host"] = str(get_in(self.group_vars, ["offline_test", "proxmox_host"]) or "")
+                offline["bridge"] = offline["bridge"] or str(get_in(self.group_vars, ["offline_test", "bridge"]) or "")
+                offline["subnet_cidr"] = str(get_in(self.group_vars, ["offline_test", "subnet_cidr"]) or "")
+                offline["dep_prefix"] = str(get_in(self.group_vars, ["offline_test", "deployer", "cidr_prefix"]) or "")
+                offline["dep_gw"] = str(get_in(self.group_vars, ["offline_test", "deployer", "gateway"]) or "")
+                offline["dep_storage"] = offline["dep_storage"] or str(get_in(self.group_vars, ["offline_test", "deployer", "storage"]) or "")
+                offline["tw_node"] = str(get_in(self.group_vars, ["offline_test", "test_workstation", "node"]) or "")
+                offline["tw_storage"] = offline["tw_storage"] or str(get_in(self.group_vars, ["offline_test", "test_workstation", "storage"]) or "")
             self._offline_values = offline
             self.append_log("Offline test settings captured; they are written with the rest on Run Setup.")
             self.switch_stage("stage-network", "Stage 7/8: Validate deployer networking, write files, run bootstrap.")

@@ -1,18 +1,19 @@
-controller_artifacts_dir: "{{ inventory_dir | dirname | dirname }}/artifacts"
-
+controller_artifacts_dir: '{{ inventory_dir | dirname | dirname }}/artifacts'
 proxmox:
   host: 192.168.5.2
   user: root
-  root_password: "{{ vault_proxmox_root_password }}"
-  node: proxmox1
+  root_password: '{{ vault_proxmox_root_password }}'
+  node: proxmox2
   token: ''
   automation_token_id: ''
   insecure_skip_tls_verify: true
   defaults:
     network_bridge: vmbr0
     storage: zfs_1
-    storage_pool: zfs_1
-    template_storage: local
+    # Blank by default: the setup wizard defaults to the largest available storage
+    # until a selection is made, then records the chosen value here.
+    storage_pool: ''
+    template_storage: ''
     ostemplate: ubuntu-24.04-standard_24.04-2_amd64.tar.zst
 windows:
   deploy_debug:
@@ -29,28 +30,28 @@ windows:
     name: goldimage
     ip: 192.168.5.172
     username: Admin
-    password: "{{ vault_goldimage_password }}"
+    password: '{{ vault_goldimage_password }}'
     unattend_path: C:\Windows\Panther\Unattend.xml
     capture_boot_order: order=ide2
     normal_boot_order: order=sata1;ide2
   winpe_builder:
     vmid: 110
     name: WinServ2025
-    ip: 192.168.5.171
+    ip: 192.168.5.176
     username: Administrator
-    password: "{{ vault_winpe_builder_password }}"
+    password: '{{ vault_winpe_builder_password }}'
     force_rebuild: false
     build_dir: C:\DeployBuild
     drivers_dir: C:\Drivers
     storage_drivers:
-      - name: dell-pro-max-t2-intel-rst
-        models:
-          - Dell Pro Max Tower T2 FCT2250
-        release_id: 7WNN0
-        version: 20.2.1.1016, A01
-        url: https://dl.dell.com/FOLDER12407846M/2/Intel-Rapid-Storage-Technology-Driver-and-Application_7WNN0_WIN64_20.2.1.1016_A01.EXE
-        filename: Intel-RST-7WNN0.exe
-        extract_subdir: IntelRST
+    - name: dell-pro-max-t2-intel-rst
+      models:
+      - Dell Pro Max Tower T2 FCT2250
+      release_id: 7WNN0
+      version: 20.2.1.1016, A01
+      url: https://dl.dell.com/FOLDER12407846M/2/Intel-Rapid-Storage-Technology-Driver-and-Application_7WNN0_WIN64_20.2.1.1016_A01.EXE
+      filename: Intel-RST-7WNN0.exe
+      extract_subdir: IntelRST
     winpe_deploy_dir: C:\winpe_deploy
     winpe_capture_dir: C:\winpe_capture
     adk_dir: C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit
@@ -77,12 +78,9 @@ windows:
     boot_order: order=net0
     post_deploy_boot_order: order=sata0;net0
     expect_winrm: true
-  # Break-glass local administrator created silently by Unattend.xml so OOBE completes
-  # with zero interaction. End users sign in with DOMAIN accounts (policy via GPO); this
-  # local account exists only because Windows requires at least one local account.
   workstation_local_admin:
     username: wsadmin
-    password: "{{ vault_workstation_local_admin_password }}"
+    password: '{{ vault_workstation_local_admin_password }}'
 deployer:
   lxc:
     vmid: 131
@@ -92,7 +90,7 @@ deployer:
     cidr_prefix: 24
     netmask: 255.255.255.0
     gateway: 192.168.5.1
-    password: "{{ vault_deployer_lxc_password }}"
+    password: '{{ vault_deployer_lxc_password }}'
     cores: 2
     memory: 4096
     memory_mb: 4096
@@ -145,7 +143,7 @@ deployer:
     dns_server: 1.1.1.1
   samba:
     username: deployer
-    password: "{{ vault_deploy_smb_password }}"
+    password: '{{ vault_deploy_smb_password }}'
   capture:
     wait_retries: 120
     wait_delay_seconds: 30
@@ -160,9 +158,9 @@ deployer:
     secure_boot_subdir: ipxeboot/x86_64-sb
     secure_boot_shim: ipxeboot/x86_64-sb/shimx64.efi
     secure_boot_binaries:
-      - shimx64.efi
-      - ipxe.efi
-      - snponly.efi
+    - shimx64.efi
+    - ipxe.efi
+    - snponly.efi
   paths:
     root: /srv/deploy
     images: /srv/deploy/images
@@ -182,44 +180,23 @@ deployer:
     bootx64_efi: /srv/deploy/winpe/EFI/Boot/bootx64.efi
     deploy_wim: /srv/deploy/images/deploy.wim
   artifacts:
-    local_dir: "{{ controller_artifacts_dir }}"
-    boot_wim: "{{ controller_artifacts_dir }}/boot.wim"
-    bootmgr: "{{ controller_artifacts_dir }}/bootmgr"
-    boot_bcd: "{{ controller_artifacts_dir }}/boot/BCD"
-    boot_sdi: "{{ controller_artifacts_dir }}/boot/boot.sdi"
-    boot_bcd_efi: "{{ controller_artifacts_dir }}/efi/microsoft/boot/BCD"
-    bootx64_efi: "{{ controller_artifacts_dir }}/efi/boot/bootx64.efi"
-    capture_iso: "{{ controller_artifacts_dir }}/winpe_capture.iso"
-    deploy_wim: "{{ controller_artifacts_dir }}/deploy.wim"
-
-# ---------------------------------------------------------------------------
-# Automated offline domain-join test.
-#
-# This is the END-TO-END test workflow that replaces the online-only test. It
-# proves a freshly PXE-installed workstation joins the offline Active Directory
-# domain. The offline network (vmbr27 / subnet_cidr) is an isolated, air-gapped
-# bridge: the controller is NOT on it. The DEPLOYER LXC is the only orchestration
-# jumpbox on the offline net, so every probe that must reach an offline Windows
-# guest (DC/admin/workstation WinRM, LDAP/OU, DHCP lease) runs FROM the deployer.
-#
-# Pre-existing fixtures the automation only powers-on + health-checks (never
-# rebuilds): the domain controller, the admin workstation, and a standalone
-# WinPE builder. Per the no-defaults policy every value below is explicit.
-# ---------------------------------------------------------------------------
+    local_dir: '{{ controller_artifacts_dir }}'
+    boot_wim: '{{ controller_artifacts_dir }}/boot.wim'
+    bootmgr: '{{ controller_artifacts_dir }}/bootmgr'
+    boot_bcd: '{{ controller_artifacts_dir }}/boot/BCD'
+    boot_sdi: '{{ controller_artifacts_dir }}/boot/boot.sdi'
+    boot_bcd_efi: '{{ controller_artifacts_dir }}/efi/microsoft/boot/BCD'
+    bootx64_efi: '{{ controller_artifacts_dir }}/efi/boot/bootx64.efi'
+    capture_iso: '{{ controller_artifacts_dir }}/winpe_capture.iso'
+    deploy_wim: '{{ controller_artifacts_dir }}/deploy.wim'
 offline_test:
   enabled: true
-  # Isolated offline bridge + subnet (exists only on the offline Proxmox node).
   bridge: vmbr27
   subnet_cidr: 172.27.10.0/24
-  # Offline Proxmox node that hosts the deployer + fixtures + test workstation.
   proxmox_node: proxmox2
   proxmox_host: 192.168.5.3
-  # When true the post-success teardown prompt is skipped (unattended cleanup).
   auto_cleanup: false
-  # When true the orchestrator rebuilds artifacts online (site.yml) before the
-  # offline phases. False = "fastest" reuse of the already-built deployer/artifacts.
   run_build: false
-  # Restored offline deployer LXC (jumpbox + PXE/DHCP/SMB server on vmbr27).
   deployer:
     vmid: 132
     hostname: win-deploy-lxc
@@ -228,36 +205,28 @@ offline_test:
     gateway: 172.27.10.2
     dhcp_start: 172.27.10.30
     dhcp_end: 172.27.10.50
-    storage: zfs_1
-    # Optional explicit TAR to restore; empty selects the newest exported
-    # vzdump for the build-side deployer vmid under restore_dir.
+    storage: ''
     source_tar: ''
     restore_dir: /tank/zfs_1/restore
-  # Pre-existing domain controller fixture (powered on + health-checked only).
   domain_controller:
     vmid: 110
     ip: 172.27.10.10
     winrm_user: Administrator
-    winrm_password: "{{ vault_offline_dc_winrm_password }}"
-  # Pre-existing offline admin workstation fixture (powered on + checked only).
+    winrm_password: '{{ vault_offline_dc_winrm_password }}'
   admin_workstation:
     vmid: 116
-    # Discovered from the deployer's dnsmasq leases / ARP after power-on.
     ip: ''
     winrm_user: Administrator
-    winrm_password: "{{ vault_offline_admin_winrm_password }}"
-  # Offline Active Directory domain the workstation must join.
+    winrm_password: '{{ vault_offline_admin_winrm_password }}'
   domain:
     fqdn: identity.lab.example.com
     netbios: IDENTITY
     ou: OU=Workstations,DC=identity,DC=lab,DC=example,DC=com
     dns_servers:
-      - 172.27.10.10
-  # Delegated account used by the workstation first-boot Add-Computer join.
+    - 172.27.10.10
   join_account:
     username: IDENTITY\administrator
-    password: "{{ vault_offline_domain_join_password }}"
-  # Blank VM that gets PXE-installed and proven domain-joined each run.
+    password: '{{ vault_offline_domain_join_password }}'
   test_workstation:
     vmid: 199
     name: windows-install-test
@@ -273,14 +242,7 @@ offline_test:
     machine: q35
     bios: ovmf
     secure_boot: true
-    storage: local-lvm
-    # Disk-first with PXE fallback. A freshly created VM has an empty sata0 with no EFI
-    # bootloader, so OVMF falls through to net0 (PXE -> WinPE -> deploy.ps1). After the
-    # image is applied and bcdboot writes the EFI entry, every subsequent reboot
-    # (specialize/OOBE, first-boot domain join, normal use) boots straight from disk.
-    # This is what prevents the post-install PXE loop, since the iPXE script always
-    # serves WinPE and deploy.ps1 ends with `wpeutil reboot` (it cannot change the
-    # Proxmox boot order itself).
+    storage: ''
     boot_order: order=sata0;net0
     post_deploy_boot_order: order=sata0;net0
     expect_winrm: true
