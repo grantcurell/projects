@@ -36,3 +36,7 @@
 - import_playbook: 12-restore-deployer-offline.yml
 - import_playbook: 13-offline-pxe-test.yml
 - import_playbook: 14-offline-test-teardown.yml
+
+# Always-last: where the deployer is + exactly how to pull it down. Runs at the
+# very end so it is the final thing the user sees, whether or not the test ran.
+- import_playbook: zz-deployer-summary.yml

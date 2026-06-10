@@ -30,6 +30,6 @@ echo "==> Step 2/2: Running the end-to-end automated offline domain-join test"
 # configures the offline deployer, PXE-installs a workstation, proves the domain
 # join from the deployer, and prompts for cleanup on success.
 ansible-playbook -i inventories/windows-deployer/hosts.yml playbooks/offline-test.yml
-
-echo
-echo "Pipeline completed successfully."
+# NOTE: do not print anything after this point. The final Ansible play
+# (zz-deployer-summary.yml) prints the deployer location + pull-down instructions,
+# and that must remain the last thing the user sees.

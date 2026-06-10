@@ -1,0 +1,81 @@
+---
+# Always-last summary: tells the user exactly where the built deployer is and how
+# to pull it down. Imported at the END of both site.yml (build-only runs) and
+# offline-test.yml (test runs) so it is the final thing printed regardless of path.
+# It is self-contained: it locates the exported archive itself rather than relying
+# on facts set by the export play.
+- name: Final deployer location + pull-down instructions
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Locate the exported deployer archive on this controller
+      ansible.builtin.find:
+        paths: "{{ deployer.artifacts.local_dir }}"
+        patterns: "vzdump-lxc-{{ deployer.lxc.vmid }}-*.tar.zst"
+        file_type: file
+      register: deployer_summary_backups
+
+    - name: Resolve the newest archive (if one exists)
+      ansible.builtin.set_fact:
+        deployer_archive_path: >-
+          {{ (deployer_summary_backups.files | sort(attribute='mtime'))[-1].path
+             if (deployer_summary_backups.files | length) > 0 else '' }}
+        deployer_archive_size_bytes: >-
+          {{ (deployer_summary_backups.files | sort(attribute='mtime'))[-1].size
+             if (deployer_summary_backups.files | length) > 0 else 0 }}
+
+    - name: Derive the archive filename
+      ansible.builtin.set_fact:
+        deployer_archive_basename: >-
+          {{ (deployer_archive_path | basename) if (deployer_archive_path | length) > 0
+             else ('vzdump-lxc-' ~ (deployer.lxc.vmid | string) ~ '-<timestamp>.tar.zst') }}
+
+    - name: Print deployer location + pull-down instructions
+      ansible.builtin.debug:
+        msg:
+          - "===================================================================================="
+          - "  DEPLOYER READY - the deployer LXC is built, validated, and exported."
+          - "===================================================================================="
+          - ""
+          - "WHERE THE DEPLOYER IS (build-time / online Proxmox):"
+          - "  Proxmox node .......... {{ proxmox.node }}"
+          - "  Proxmox API host ...... {{ proxmox.host }}"
+          - "  Deployer LXC VMID ..... {{ deployer.lxc.vmid }}"
+          - "  Deployer hostname ..... {{ deployer.lxc.hostname }}  (portable name: {{ deployer.offline.hostname }})"
+          - "  Build-LAN IP .......... {{ deployer.lxc.ip }}/{{ deployer.lxc.cidr_prefix }}  (gateway {{ deployer.lxc.gateway }}, bridge {{ deployer.lxc.bridge }})"
+          - "  NOTE: this IP/gateway is the BUILD network only. The offline network is set"
+          - "        later on the deployer itself via 'offline-setup'."
+          - ""
+          - "THE EXPORTED ARCHIVE (this is what you carry to the offline site):"
+          - "  On Proxmox node '{{ proxmox.node }}':"
+          - "    /var/lib/vz/dump/{{ deployer_archive_basename }}"
+          - "{{ '  Copied to this controller at:' if (deployer_archive_path | length) > 0 else '  (No controller copy found yet - run the full build to export it.)' }}"
+          - "{{ ('    ' ~ deployer_archive_path) if (deployer_archive_path | length) > 0 else '' }}"
+          - "{{ ('  Approx size ........... ' ~ ((deployer_archive_size_bytes | int / 1073741824) | round(2) | string) ~ ' GiB') if (deployer_archive_path | length) > 0 else '' }}"
+          - ""
+          - "  >> DIRECT DOWNLOAD (click this link to grab the exported deployer):"
+          - "{{ ('       file://' ~ deployer_archive_path) if (deployer_archive_path | length) > 0 else ('       (Archive not on this controller yet. After a build it appears in ' ~ deployer.artifacts.local_dir ~ '/)') }}"
+          - "     (Most terminals make the link above clickable. If yours does not, copy the"
+          - "      path and open it, or use the scp command in step 1 below.)"
+          - ""
+          - "HOW TO PULL THE DEPLOYER DOWN (exact steps):"
+          - "  1) From your workstation, copy the archive off Proxmox (or use the controller copy above):"
+          - "       scp root@{{ proxmox.host }}:/var/lib/vz/dump/{{ deployer_archive_basename }} ."
+          - "     (or copy {{ deployer.artifacts.local_dir }}/{{ deployer_archive_basename }} to a USB drive)."
+          - ""
+          - "  2) Move that single .tar.zst file to a Proxmox node ON THE OFFLINE/AIR-GAPPED network,"
+          - "     for example into /var/lib/vz/dump or any path on that node:"
+          - "       scp {{ deployer_archive_basename }} root@<OFFLINE_PROXMOX_IP>:/var/lib/vz/dump/"
+          - ""
+          - "  3) On the OFFLINE Proxmox node, restore it as a new LXC (pick an unused VMID + storage):"
+          - "       pct restore <NEW_VMID> /var/lib/vz/dump/{{ deployer_archive_basename }} \\"
+          - "         --storage <offline-storage> --hostname {{ deployer.offline.hostname }}"
+          - ""
+          - "  4) Start it, then run the deployer's own offline setup to configure the air-gapped"
+          - "     network (IP/DHCP/DNS) - no rebuild needed because it addresses itself by hostname:"
+          - "       pct start <NEW_VMID>"
+          - "       pct exec <NEW_VMID> -- {{ deployer.offline_tui.entrypoint }}"
+          - ""
+          - "  After offline-setup finishes, the deployer serves PXE/WinPE + deploy.wim on the offline"
+          - "  network and is ready to image workstations."
+          - "===================================================================================="
