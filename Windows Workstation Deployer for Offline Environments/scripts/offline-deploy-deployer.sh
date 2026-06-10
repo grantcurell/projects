@@ -215,41 +215,86 @@ select_storage() {
   ok "  Selected storage: ${STORAGE}"
 }
 
+# Let the user choose the temporary staging filesystem for the tarball. The
+# selected *restore* storage (e.g. a ZFS/LVM pool) usually is not a plain
+# directory we can scp into, so the tarball needs a staging path on a filesystem
+# that actually has room. Sets UPLOAD_DIR and UPLOAD_AVAIL.
+# Args: $1 = bytes needed.
+select_staging() {
+  local need="$1" df_out line avail mount
+  hr
+  info "${BOLD}Step 5: Choose where to stage the tarball on '${NODE}'${RESET}"
+  printf "%s\n" "${DIM}  This is a temporary copy used only for the restore, then deleted.${RESET}"
+  # All filesystem parsing is done locally; Proxmox nodes do not ship jq, but df
+  # is always present. -P gives stable single-line columns; -B1 = bytes.
+  df_out="$(node_ssh "df -PB1 -x tmpfs -x devtmpfs -x overlay -x squashfs 2>/dev/null | tail -n +2" 2>/dev/null || true)"
+
+  local mounts=() avails=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    avail="$(awk '{print $4}' <<<"$line")"
+    # Mount point is column 6 onward (may legitimately contain spaces).
+    mount="$(awk '{out=$6; for(i=7;i<=NF;i++) out=out" "$i; print out}' <<<"$line")"
+    [[ "$avail" =~ ^[0-9]+$ && -n "$mount" ]] || continue
+    mounts+=("$mount"); avails+=("$avail")
+  done <<<"$df_out"
+  (( ${#mounts[@]} > 0 )) || die "Could not enumerate filesystems on ${NODE}."
+
+  local i fits
+  for (( i=0; i<${#mounts[@]}; i++ )); do
+    if (( need > 0 && avails[i] < need )); then fits="${RED}too small${RESET}"; else fits="${GREEN}fits${RESET}"; fi
+    printf "   %s) %s ${DIM}(%s GiB free)${RESET} - %s\n" "$((i+1))" "${mounts[i]}" "$((avails[i]/1073741824))" "$fits"
+  done
+
+  while true; do
+    local sel
+    sel="$(read_choice "Select staging filesystem [1-${#mounts[@]}]: " "${#mounts[@]}")"
+    local idx=$((sel-1))
+    if (( need > 0 && avails[idx] < need )); then
+      err "That filesystem only has $((avails[idx]/1073741824)) GiB free; the tarball needs $((need/1073741824)) GiB. Pick another."
+      continue
+    fi
+    UPLOAD_DIR="${mounts[idx]}"
+    UPLOAD_AVAIL="${avails[idx]}"
+    break
+  done
+  ok "  Staging filesystem: ${UPLOAD_DIR} ($((UPLOAD_AVAIL/1073741824)) GiB free)"
+}
+
 # --------------------------------------------------------------------------
-# 5. Push + restore + start, then print finishing instructions
+# 6. Push + restore + start, then print finishing instructions
 # --------------------------------------------------------------------------
 deploy_deployer() {
+  local tarball_base remote_path tarball_size
+  tarball_base="$(basename "$TARBALL")"
+  tarball_size="$(stat -c%s "$TARBALL" 2>/dev/null || echo 0)"
+
+  # Let the user choose where to stage the tarball (the chosen restore storage is
+  # often a pool we can't scp a file into).
+  select_staging "$tarball_size"
+  local upload_dir="${UPLOAD_DIR%/}/deployer-staging"
+  remote_path="${upload_dir}/${tarball_base}"
+
   hr
-  info "${BOLD}Step 5: Pushing and starting the deployer${RESET}"
+  info "${BOLD}Step 6: Pushing and starting the deployer${RESET}"
 
   VMID="$(prox_ssh 'pvesh get /cluster/nextid' 2>/dev/null | tr -dc '0-9')"
   [[ -n "$VMID" ]] || die "Could not obtain a free VMID from Proxmox."
-
-  local tarball_base remote_path tarball_size
-  tarball_base="$(basename "$TARBALL")"
-  remote_path="/var/lib/vz/dump/${tarball_base}"
-  tarball_size="$(stat -c%s "$TARBALL" 2>/dev/null || echo 0)"
 
   printf '\n'
   info "About to deploy:"
   printf '   Tarball ...... %s (%s)\n' "$TARBALL" "$(du -h "$TARBALL" | cut -f1)"
   printf '   Node ......... %s (%s)\n' "$NODE" "$NODE_IP"
-  printf '   Storage ...... %s\n' "$STORAGE"
+  printf '   Restore to ... %s\n' "$STORAGE"
+  printf "   Staging at ... %s ${DIM}(%s GiB free, temporary - deleted after restore)${RESET}\n" "$upload_dir" "$((UPLOAD_AVAIL/1073741824))"
   printf '   New VMID ..... %s\n' "$VMID"
   printf '   Hostname ..... %s\n' "$DEPLOYER_HOSTNAME"
   printf '\n'
   read -r -p "Proceed? [y/N]: " confirm
   [[ "$confirm" =~ ^[Yy]$ ]] || { warn "Aborted by user."; exit 0; }
 
-  info "  Ensuring upload directory exists on ${NODE}..."
-  node_ssh "mkdir -p /var/lib/vz/dump"
-
-  # Space check on the upload filesystem.
-  local avail
-  avail="$(node_ssh "df -B1 --output=avail /var/lib/vz/dump | tail -1 | tr -dc '0-9'" 2>/dev/null || echo 0)"
-  if (( avail > 0 && tarball_size > 0 && avail < tarball_size )); then
-    die "Not enough space in /var/lib/vz/dump on ${NODE}: need $((tarball_size/1073741824)) GiB, have $((avail/1073741824)) GiB."
-  fi
+  info "  Ensuring staging directory exists on ${NODE}..."
+  node_ssh "mkdir -p '${upload_dir}'"
 
   info "  Copying tarball to ${NODE}:${remote_path} (this can take a while for large images)..."
   node_scp "$TARBALL" "$remote_path"
@@ -258,6 +303,10 @@ deploy_deployer() {
   info "  Restoring LXC ${VMID} from the tarball onto storage '${STORAGE}'..."
   node_ssh "pct restore ${VMID} ${remote_path} --storage ${STORAGE} --hostname ${DEPLOYER_HOSTNAME}"
   ok "  Restore complete."
+
+  # The tarball was only needed for the restore; reclaim the staging space now.
+  info "  Cleaning up the staged tarball on ${NODE}..."
+  node_ssh "rm -f '${remote_path}'; rmdir '${upload_dir}' 2>/dev/null || true" || warn "  Could not remove staged tarball at ${remote_path}; delete it manually if needed."
 
   # Make sure the restored network bridge exists on this node, otherwise the
   # container cannot start. The real network is configured later by offline-setup.
@@ -324,9 +373,9 @@ choose, the domain-join settings. After it finishes, the deployer serves
 PXE/WinPE + deploy.wim on your offline network and is ready to image
 workstations - no rebuild needed (it addresses itself by hostname).
 
-NOTE: The uploaded tarball is still on the node at:
-  ${NODE_IP}:/var/lib/vz/dump/$(basename "$TARBALL")
-You can delete it once you have confirmed the deployer works.
+NOTE: The staged tarball was removed from the node after the restore; the
+deployer now lives on storage '${STORAGE}'. Your local copy of the tarball is
+untouched.
 
 EOF
   hr
