@@ -363,7 +363,8 @@ class OfflineSetupApp(App[None]):
                     yield Button("Back", id="back_network", classes="nav-button")
                     yield Button("Next", id="next_network", variant="primary", classes="nav-button")
             with VerticalScroll(id="stage-done", classes="stage"):
-                yield Static("Setup complete. The deployer is ready. Press q to quit.")
+                yield Static("Setup complete. The deployer is ready.", id="done_title")
+                yield Static("", id="done_summary")
         yield Log(id="log", highlight=True, auto_scroll=True)
         yield Footer()
 
@@ -667,6 +668,17 @@ class OfflineSetupApp(App[None]):
             dns_servers = [s.strip() for s in self._input("dns_servers").replace(",", " ").split() if s.strip()]
             if not domain_fqdn:
                 raise RuntimeError("Domain FQDN is required.")
+            if "\\" in domain_fqdn or "@" in domain_fqdn:
+                raise RuntimeError(
+                    f"'{domain_fqdn}' looks like a username, not a domain. Enter the "
+                    "domain DNS name here (e.g. corp.example.com); the join account "
+                    "was already entered in Stage 3."
+                )
+            if "." not in domain_fqdn or " " in domain_fqdn:
+                raise RuntimeError(
+                    f"'{domain_fqdn}' is not a valid domain FQDN. Use the dotted DNS "
+                    "name, e.g. corp.example.com."
+                )
             if not dns_servers:
                 raise RuntimeError("At least one site DNS server IP is required.")
             for ip in dns_servers:
@@ -859,7 +871,33 @@ class OfflineSetupApp(App[None]):
 
     def _finish_setup_ui(self) -> None:
         self.set_status("Setup complete.")
+        self.query_one("#done_summary", Static).update(self._done_summary_text())
         self.switch_stage("stage-done", "Setup complete. Press q to quit.")
+
+    def _done_summary_text(self) -> str:
+        """Operator next-steps shown on the final screen: where the deployer is
+        listening, what clients will get, a browser self-test, and how to PXE
+        boot the workstations."""
+        net = self.net or {}
+        ip = net.get("ip", "?")
+        dhcp_start = net.get("dhcp_start", "?")
+        dhcp_end = net.get("dhcp_end", "?")
+        return (
+            "\n"
+            f"Deployer IP        : {ip}\n"
+            f"DHCP range         : {dhcp_start} - {dhcp_end}  (workstations lease an address from here)\n"
+            f"HTTP self-test     : http://{ip}/ipxe/boot.ipxe\n"
+            "                     Open that URL in a browser - it should return the iPXE boot script.\n"
+            "                     If it downloads/displays text, HTTP hosting is working.\n"
+            "\n"
+            "Next step - PXE boot your workstations:\n"
+            "  1. Put each workstation on this same offline network/VLAN as the deployer.\n"
+            "  2. In firmware (UEFI), enable network/PXE boot over IPv4 and set it first in the boot order.\n"
+            "  3. Power them on. They will DHCP from this deployer, chainload iPXE over HTTP,\n"
+            "     and begin the Windows deployment automatically - no per-machine input needed.\n"
+            "\n"
+            "Press q to quit."
+        )
 
     @on(Button.Pressed, "#back_network")
     def on_back_network(self) -> None:
