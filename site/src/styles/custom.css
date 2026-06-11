@@ -1,0 +1,19 @@
+/* Expandable sidebar folders should match regular nav links (Rapide only
+   styles .top-level > li > .large on direct links, not summary labels). */
+.sidebar-pane summary .large {
+	font-size: var(--sl-text-sm);
+	font-weight: inherit;
+	color: var(--sl-color-gray-2);
+}
+
+.sidebar-pane summary:is(:hover, :focus-visible) .large {
+	color: var(--sl-color-accent-high);
+}
+
+:root[data-theme='light'] .sidebar-pane summary .large {
+	color: var(--sl-color-gray-2);
+}
+
+:root[data-theme='light'] .sidebar-pane summary:is(:hover, :focus-visible) .large {
+	color: var(--sl-color-accent-high);
+}
