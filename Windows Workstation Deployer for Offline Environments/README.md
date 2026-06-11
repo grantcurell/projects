@@ -2,16 +2,14 @@
 
 - [Windows Workstation Deployer for Offline Environment](#windows-workstation-deployer-for-offline-environment)
   - [Getting Started](#getting-started)
-  - [Credentials and Ansible Vault](#credentials-and-ansible-vault)
   - [Quickstart](#quickstart)
     - [Clone repository](#clone-repository)
     - [Run setup wizard](#run-setup-wizard)
     - [Manually run full pipeline without using setup](#manually-run-full-pipeline-without-using-setup)
   - [Expected artifacts](#expected-artifacts)
-  - [Portable hostname model](#portable-hostname-model)
   - [Offline Restore and Use](#offline-restore-and-use)
     - [Option 1 (recommended): guided field deployment script](#option-1-recommended-guided-field-deployment-script)
-    - [Option 2: manual restore](#option-2-manual-restore)
+    - [Option 2: fully manual restore](#option-2-fully-manual-restore)
   - [How to Force Rebuild](#how-to-force-rebuild)
 
 Builds a deployer LXC which can be taken to offline environmment and used to deploy Windows workstations from a sysprepped golden image. Uses Proxmox for the workflow.
@@ -32,6 +30,12 @@ Before running the setup you will need:
   - Download URL: [Intel Rapid Storage Technology Driver and Application 7WNN0 (Dell)](https://dl.dell.com/FOLDER12407846M/2/Intel-Rapid-Storage-Technology-Driver-and-Application_7WNN0_WIN64_20.2.1.1016_A01.EXE)
     - You must manually download this. Dell blocks automation against this website
 
+**FOR A FULL OFFLINE TEST**
+
+- If you want to run a full offline test you will additionally need:
+  - Proxmox configured with a separate bridge not connected to the internet
+  - a Domain Controller
+  - An administrator workstation joined to the domain with a domain-valid user that has permissions to do things like add computers to the domain
 
 This project builds for you:
 - **Deployer LXC** on Proxmox (PXE, iPXE, DHCP/TFTP/HTTP/SMB services).
@@ -42,16 +46,6 @@ This project builds for you:
   - At the end, the code will do a test against a secureboot-enabled, UEFI, Proxmox VM from Deployer LXC just to make sure everything is working
 
 Before you start make sure you have the Windows Server box, the golden image VM, and what will become your controller, up and running.
-
-## Credentials and Ansible Vault
-
-Every secret in this project is stored in **Ansible Vault — always**. There is no plaintext-credential path.
-
-- The setup wizard (`./setup`) **prompts** for each secret (Proxmox root, gold image, WinPE builder, deployer LXC, the deploy-share SMB password, and the workstation break-glass local-admin password) and **encrypts** them into `inventories/windows-deployer/group_vars/all/vault.yml`.
-- A vault password file `.vault_pass` is auto-created (`chmod 600`) and referenced by `ansible.cfg` (`vault_password_file = .vault_pass`), so playbooks decrypt automatically with no `--ask-vault-pass`.
-- `.vault_pass` and the populated `vault.yml` are **git-ignored**. A fresh clone has no secrets; re-run the wizard to repopulate them. `group_vars/all/main.yml` only references them as `{{ vault_* }}`.
-- The **workstation local-admin** is a single break-glass account (username in `windows.workstation_local_admin.username`, password in `vault_workstation_local_admin_password`). It is created silently by `Unattend.xml` so the deployed workstation's OOBE completes with **zero interaction** — see [Unattended OOBE](#unattended-oobe). Real users sign in with **domain** accounts; this account is only a local recovery credential.
-- The **delegated domain-join credential** is collected later by the offline TUI (`offline-setup`) on the deployer and stored in the deployer's own vault (`/etc/windows-deployer/secrets.vault.yml`). The deployer validates it by binding to a domain controller with **Kerberos (SASL/GSSAPI)**, which works against default-hardened DCs that require LDAP signing and have no LDAPS certificate. The chosen DC must therefore be reachable on Kerberos (TCP 88) and LDAP (TCP 389), and the account needs delegated *Create Computer Object* rights on the target OU.
 
 ## Quickstart
 
@@ -94,14 +88,6 @@ Controller `artifacts/` should contain:
 
 `deploy.wim` is kept on deployer LXC at `/srv/deploy/images/deploy.wim`.
 
-## Portable hostname model
-
-The exported deployer addresses itself by a **stable hostname** (`deployer.offline.hostname`, default `win-deploy`), never a baked IP:
-
-- `deploy.ps1` / `capture.ps1` in `boot.wim` reference `win-deploy`, and the iPXE scripts use `${next-server}`. None of them contain the build IP.
-- The deployer's `dnsmasq` is the clients' **only** DNS server (DHCP option 6) and resolves `win-deploy` to its current IP, forwarding everything else upstream.
-- Moving the deployer to a new offline IP only requires re-running `offline-setup` (network reconfigure). **No `boot.wim` rebuild is needed.**
-
 ## Offline Restore and Use
 
 When you are ready to export the deployer LXC container and bring it to an offline environment, you have two options: the **guided field script** (recommended) or the **manual `pct` steps**.
@@ -114,17 +100,11 @@ Carry the exported tarball (`artifacts/vzdump-lxc-<deployer-vmid>-*.tar.zst`) an
 ./scripts/offline-deploy-deployer.sh
 ```
 
-It walks you through everything:
+Follow the prompts.
 
-- Prompts for the offline Proxmox host IP + root credentials and verifies connectivity over the API.
-- Lets you pick the target node, the storage to restore onto, and a staging filesystem with enough free space for the tarball.
-- Lets you pick the offline bridge and choose DHCP or a static IP for the deployer, validating the choice (a real DHCP lease, or a reachable static gateway) before continuing.
-- Uploads the tarball with a live progress/throughput meter, restores the LXC, applies the network config via `pct set --net0`, starts it, and verifies connectivity.
-- Cleans up its staging copy and prints the exact command to launch the offline setup TUI.
+Requires `sshpass`, `jq`, and an SSH client on the machine running the script. After the BASH script finishes, run the offline setup TUI (the BASH script will tell you what to do)
 
-Requires `sshpass`, `jq`, and an SSH client on the machine running the script. After it finishes, run the offline setup TUI (it tells you exactly how) to configure the offline network and optional domain join.
-
-### Option 2: manual restore
+### Option 2: fully manual restore
 
 1) Copy the exported deployer backup from controller:
 - `artifacts/vzdump-lxc-<deployer-vmid>-*.tar.zst`
