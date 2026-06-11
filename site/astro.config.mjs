@@ -13,6 +13,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			plugins: [starlightThemeRapide()],
+			customCss: ['./src/styles/custom.css'],
 			title: "Grant Curell's Projects",
 			description:
 				'Notes and walkthroughs from every time I had to figure something out: networking, storage, servers, Linux internals, and more.',
