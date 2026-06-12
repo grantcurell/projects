@@ -4,6 +4,89 @@
 # them and confirms readiness. All Windows probes run FROM the deployer (the only
 # orchestration node on the isolated offline net); the controller only drives the
 # Proxmox API over the main network.
+
+# The deployer LXC is reached via `pct exec` on the offline node (the
+# proxmox_pct_remote connection), NOT over the network. If the container is
+# stopped, `pct exec` exits 2 and Ansible reports the deployer as UNREACHABLE with
+# a cryptic "Failed to create temporary directory" message. Verify it is present
+# and running up front so a stopped jumpbox produces a clear, early failure (and is
+# auto-started in the common "it was just stopped" case) instead of that error
+# later in the run.
+- name: Ensure the offline deployer LXC (jumpbox) is present and running
+  hosts: offline_proxmox_node
+  gather_facts: false
+  tasks:
+    - name: Query the offline deployer LXC status
+      ansible.builtin.command:
+        argv:
+          - pct
+          - status
+          - "{{ offline_test.deployer.vmid | string }}"
+      register: deployer_pct_status
+      changed_when: false
+      failed_when: false
+
+    - name: Fail clearly if the offline deployer LXC does not exist yet
+      ansible.builtin.fail:
+        msg: >-
+          The offline deployer LXC (vmid {{ offline_test.deployer.vmid }}) does not exist on
+          {{ offline_test.proxmox_host }}, so it cannot be used as the offline jumpbox. Restore it
+          first with scripts/offline-deploy-deployer.sh (field) or by running
+          playbooks/12-restore-deployer-offline.yml, then re-run the test.
+      when: deployer_pct_status.rc != 0
+
+    - name: Start the offline deployer LXC if it is stopped
+      ansible.builtin.command:
+        argv:
+          - pct
+          - start
+          - "{{ offline_test.deployer.vmid | string }}"
+      register: deployer_pct_start
+      changed_when: deployer_pct_start.rc == 0
+      when:
+        - deployer_pct_status.rc == 0
+        - "'status: running' not in deployer_pct_status.stdout"
+
+    - name: Wait until the offline deployer LXC reports running
+      ansible.builtin.command:
+        argv:
+          - pct
+          - status
+          - "{{ offline_test.deployer.vmid | string }}"
+      register: deployer_pct_status_wait
+      changed_when: false
+      until: "'status: running' in deployer_pct_status_wait.stdout"
+      retries: 12
+      delay: 5
+      when: deployer_pct_status.rc == 0
+
+    - name: Wait until the offline deployer LXC accepts pct exec (init finished)
+      ansible.builtin.command:
+        argv:
+          - pct
+          - exec
+          - "{{ offline_test.deployer.vmid | string }}"
+          - --
+          - "true"
+      register: deployer_exec_probe
+      changed_when: false
+      failed_when: false
+      until: deployer_exec_probe.rc == 0
+      retries: 12
+      delay: 5
+      when: deployer_pct_status.rc == 0
+
+    - name: Fail clearly if the offline deployer LXC never became exec-reachable
+      ansible.builtin.fail:
+        msg: >-
+          The offline deployer LXC (vmid {{ offline_test.deployer.vmid }}) is running but never became
+          reachable via `pct exec` after starting. Inspect it on the offline node:
+          `pct status {{ offline_test.deployer.vmid }}` and
+          `pct exec {{ offline_test.deployer.vmid }} -- true`.
+      when:
+        - deployer_pct_status.rc == 0
+        - deployer_exec_probe.rc | default(1) != 0
+
 - name: Power on offline DC + admin fixtures via the Proxmox API
   hosts: localhost
   gather_facts: false
