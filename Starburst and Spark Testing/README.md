@@ -48,7 +48,7 @@ WebApp MySQL source ───┘                                      │
 ## Project layout
 
 ```text
-spark-trino-schema-demo/
+Starburst and Spark Testing/
   .env                          # image tags, ports, demo credentials
   docker-compose.yml            # Trino, Spark, and database services
   Makefile                      # make up, pipeline, demo, assert, ...
@@ -157,7 +157,7 @@ Iceberg metadata is stored in Nessie; Parquet data files are written under `data
 ## Quick start
 
 ```bash
-cd spark-trino-schema-demo
+cd "Starburst and Spark Testing"
 chmod +x scripts/*.sh
 make all
 ```
@@ -179,7 +179,7 @@ sg docker -c "make all"
 ## Manual run order
 
 ```bash
-cd spark-trino-schema-demo
+cd "Starburst and Spark Testing"
 chmod +x scripts/*.sh
 make check-ports
 make pull
@@ -215,7 +215,7 @@ Or run everything at once: `make all` (same steps in order).
 ### Step 1 — Start the stack
 
 ```bash
-cd spark-trino-schema-demo
+cd "Starburst and Spark Testing"
 chmod +x scripts/*.sh
 make up
 make wait
@@ -593,7 +593,7 @@ The 4 accepted rows (`crm-1001`, `crm-1002`, `app-2001`, `app-2002`) are the onl
 If you do want to reproduce the output above:
 
 ```bash
-cd spark-trino-schema-demo
+cd "Starburst and Spark Testing"
 chmod +x scripts/*.sh
 make all          # or the manual steps in "Manual run order"
 ```
