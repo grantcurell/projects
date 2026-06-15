@@ -52,10 +52,20 @@ services:
       - postgres-crm
       - mysql-webapp
       - postgres-governed
+      - nessie
     ports:
       - "${TRINO_HOST_PORT}:8080"
     volumes:
       - ./trino/etc:/etc/trino:ro
+      - ./data/iceberg:/data/iceberg
+    networks:
+      - demo-net
+
+  nessie:
+    image: ghcr.io/projectnessie/nessie:0.100.0
+    container_name: nessie
+    ports:
+      - "19120:19120"
     networks:
       - demo-net
 

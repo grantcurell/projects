@@ -23,6 +23,7 @@ run_sql "SHOW CATALOGS"
 run_sql "SHOW SCHEMAS FROM crm"
 run_sql "SHOW SCHEMAS FROM webapp"
 run_sql "SHOW SCHEMAS FROM governed"
+run_sql "SHOW SCHEMAS FROM iceberg"
 
 run_sql "SELECT count(*) AS crm_rows FROM crm.public.customers"
 run_sql "SELECT count(*) AS webapp_rows FROM webapp.appdb.user_profiles"

@@ -106,12 +106,46 @@ FROM governed.public.customer_rejects
 ORDER BY customer_id NULLS LAST, reject_id
 "
 
-run_sql "7. Final accepted vs rejected counts" "
+run_sql "7. Final accepted vs rejected counts (Postgres governed)" "
 SELECT 'accepted' AS result_type, count(*) AS row_count
 FROM governed.public.customer_standard
 UNION ALL
 SELECT 'rejected' AS result_type, count(*) AS row_count
 FROM governed.public.customer_rejects
+ORDER BY result_type
+"
+
+run_sql "8. Trino reads accepted canonical rows from Iceberg" "
+SELECT
+  customer_id,
+  email,
+  CAST(created_at AS varchar) AS created_at,
+  country,
+  status,
+  source_system
+FROM iceberg.governed.customer_standard
+ORDER BY customer_id
+"
+
+run_sql "9. Trino reads rejected rows and reasons from Iceberg" "
+SELECT
+  customer_id,
+  email,
+  CAST(created_at AS varchar) AS created_at,
+  country,
+  status,
+  source_system,
+  rejection_reasons
+FROM iceberg.governed.customer_rejects
+ORDER BY customer_id NULLS LAST, reject_id
+"
+
+run_sql "10. Final accepted vs rejected counts (Iceberg governed)" "
+SELECT 'accepted' AS result_type, count(*) AS row_count
+FROM iceberg.governed.customer_standard
+UNION ALL
+SELECT 'rejected' AS result_type, count(*) AS row_count
+FROM iceberg.governed.customer_rejects
 ORDER BY result_type
 "
 
