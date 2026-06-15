@@ -1,0 +1,67 @@
+{
+  "name": "canonical_customer_schema",
+  "version": "1.0.0",
+  "description": "Central customer schema contract for the Spark + Trino data quality demonstration.",
+  "target_catalog": "governed",
+  "target_schema": "public",
+  "accepted_table": "customer_standard",
+  "rejected_table": "customer_rejects",
+  "columns": [
+    {
+      "name": "customer_id",
+      "spark_type": "string",
+      "nullable": false,
+      "description": "Globally unique customer identifier."
+    },
+    {
+      "name": "email",
+      "spark_type": "string",
+      "nullable": false,
+      "description": "Customer email address. Must be syntactically valid."
+    },
+    {
+      "name": "created_at",
+      "spark_type": "timestamp",
+      "nullable": false,
+      "description": "Customer creation timestamp."
+    },
+    {
+      "name": "country",
+      "spark_type": "string",
+      "nullable": false,
+      "description": "ISO-like two-letter uppercase country code."
+    },
+    {
+      "name": "status",
+      "spark_type": "string",
+      "nullable": false,
+      "allowed_values": ["ACTIVE", "INACTIVE"],
+      "description": "Canonical customer status."
+    },
+    {
+      "name": "source_system",
+      "spark_type": "string",
+      "nullable": false,
+      "allowed_values": ["CRM", "WEBAPP"],
+      "description": "System from which the row originated."
+    },
+    {
+      "name": "ingested_at",
+      "spark_type": "timestamp",
+      "nullable": false,
+      "description": "Timestamp when Spark processed the record."
+    }
+  ],
+  "validation_rules": {
+    "email_regex": "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
+    "country_regex": "^[A-Z]{2}$",
+    "status_allowed_values": ["ACTIVE", "INACTIVE"],
+    "source_system_allowed_values": ["CRM", "WEBAPP"]
+  },
+  "expected_demo_counts": {
+    "source_crm_rows": 6,
+    "source_webapp_rows": 7,
+    "accepted_rows": 4,
+    "rejected_rows": 9
+  }
+}

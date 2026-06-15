@@ -1,0 +1,8 @@
+bin/
+tmp/
+logs/
+.DS_Store
+.env.local
+target/
+__pycache__/
+*.pyc
