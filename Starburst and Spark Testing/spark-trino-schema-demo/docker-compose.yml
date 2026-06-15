@@ -1,0 +1,137 @@
+services:
+  postgres-crm:
+    image: ${POSTGRES_IMAGE}
+    container_name: postgres-crm
+    environment:
+      POSTGRES_DB: ${CRM_POSTGRES_DB}
+      POSTGRES_USER: ${DEMO_DB_USER}
+      POSTGRES_PASSWORD: ${DEMO_DB_PASSWORD}
+    ports:
+      - "${CRM_POSTGRES_HOST_PORT}:5432"
+    volumes:
+      - postgres_crm_data:/var/lib/postgresql/data
+      - ./docker/init/postgres-crm:/docker-entrypoint-initdb.d:ro
+    networks:
+      - demo-net
+
+  mysql-webapp:
+    image: ${MYSQL_IMAGE}
+    container_name: mysql-webapp
+    environment:
+      MYSQL_DATABASE: ${MYSQL_APP_DB}
+      MYSQL_USER: ${DEMO_DB_USER}
+      MYSQL_PASSWORD: ${DEMO_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "${MYSQL_HOST_PORT}:3306"
+    volumes:
+      - mysql_webapp_data:/var/lib/mysql
+      - ./docker/init/mysql-webapp:/docker-entrypoint-initdb.d:ro
+    networks:
+      - demo-net
+
+  postgres-governed:
+    image: ${POSTGRES_IMAGE}
+    container_name: postgres-governed
+    environment:
+      POSTGRES_DB: ${GOVERNED_POSTGRES_DB}
+      POSTGRES_USER: ${DEMO_DB_USER}
+      POSTGRES_PASSWORD: ${DEMO_DB_PASSWORD}
+    ports:
+      - "${GOVERNED_POSTGRES_HOST_PORT}:5432"
+    volumes:
+      - postgres_governed_data:/var/lib/postgresql/data
+      - ./docker/init/postgres-governed:/docker-entrypoint-initdb.d:ro
+    networks:
+      - demo-net
+
+  trino:
+    image: ${TRINO_IMAGE}
+    container_name: trino
+    depends_on:
+      - postgres-crm
+      - mysql-webapp
+      - postgres-governed
+    ports:
+      - "${TRINO_HOST_PORT}:8080"
+    volumes:
+      - ./trino/etc:/etc/trino:ro
+    networks:
+      - demo-net
+
+  spark-master:
+    image: ${SPARK_IMAGE}
+    container_name: spark-master
+    hostname: spark-master
+    user: root
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.master.Master
+      - --host
+      - spark-master
+      - --port
+      - "7077"
+      - --webui-port
+      - "8080"
+    ports:
+      - "7077:7077"
+      - "${SPARK_MASTER_UI_PORT}:8080"
+    networks:
+      - demo-net
+
+  spark-worker-1:
+    image: ${SPARK_IMAGE}
+    container_name: spark-worker-1
+    hostname: spark-worker-1
+    user: root
+    depends_on:
+      - spark-master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - spark://spark-master:7077
+      - --webui-port
+      - "8081"
+      - --cores
+      - "2"
+      - --memory
+      - 2g
+    ports:
+      - "${SPARK_WORKER_UI_PORT}:8081"
+    networks:
+      - demo-net
+
+  spark-submit:
+    image: ${SPARK_IMAGE}
+    container_name: spark-submit
+    user: root
+    profiles:
+      - tools
+    depends_on:
+      - spark-master
+      - spark-worker-1
+      - trino
+      - postgres-governed
+    volumes:
+      - ./jobs:/opt/spark-apps/jobs:ro
+      - ./contracts:/opt/spark-apps/contracts:ro
+      - spark_ivy_cache:/root/.ivy2
+    environment:
+      TRINO_JDBC_URL: jdbc:trino://trino:8080
+      TRINO_USER: demo
+      GOVERNED_JDBC_URL: jdbc:postgresql://postgres-governed:5432/governed
+      GOVERNED_DB_USER: ${DEMO_DB_USER}
+      GOVERNED_DB_PASSWORD: ${DEMO_DB_PASSWORD}
+      CONTRACT_PATH: /opt/spark-apps/contracts/customer_canonical_schema.json
+    networks:
+      - demo-net
+
+networks:
+  demo-net:
+    name: spark-trino-demo-net
+
+volumes:
+  postgres_crm_data:
+  mysql_webapp_data:
+  postgres_governed_data:
+  spark_ivy_cache:
