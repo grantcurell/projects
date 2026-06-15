@@ -25,4 +25,7 @@ docker compose run --rm spark-submit \
   --packages io.trino:trino-jdbc:${TRINO_CLIENT_VERSION},org.postgresql:postgresql:${POSTGRES_JDBC_VERSION} \
   /opt/spark-apps/jobs/enforce_customer_schema.py
 
+echo "Syncing governed outputs to Iceberg..."
+./scripts/07b_sync_iceberg_governed.sh
+
 echo "Pipeline run completed."

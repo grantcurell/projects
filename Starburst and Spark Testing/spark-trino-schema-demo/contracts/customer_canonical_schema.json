@@ -6,6 +6,10 @@
   "target_schema": "public",
   "accepted_table": "customer_standard",
   "rejected_table": "customer_rejects",
+  "iceberg_catalog": "iceberg",
+  "iceberg_schema": "governed",
+  "iceberg_accepted_table": "customer_standard",
+  "iceberg_rejected_table": "customer_rejects",
   "columns": [
     {
       "name": "customer_id",

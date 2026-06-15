@@ -1,6 +1,7 @@
 bin/
 tmp/
 logs/
+data/
 .DS_Store
 .env.local
 target/
