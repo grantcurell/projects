@@ -17,3 +17,51 @@
 :root[data-theme='light'] .sidebar-pane summary:is(:hover, :focus-visible) .large {
 	color: var(--sl-color-accent-high);
 }
+
+/* GitHub source folder link shown under each page title. */
+.source-repo-link {
+	margin: -0.25rem 0 1.75rem;
+	font-size: var(--sl-text-sm);
+}
+
+.source-repo-link a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.35rem 0.65rem;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.5rem;
+	color: var(--sl-color-gray-2);
+	text-decoration: none;
+	transition:
+		border-color 0.15s ease,
+		color 0.15s ease,
+		background-color 0.15s ease;
+}
+
+.source-repo-link a:is(:hover, :focus-visible) {
+	border-color: var(--sl-color-accent);
+	color: var(--sl-color-accent-high);
+	background-color: var(--sl-color-accent-low);
+}
+
+.source-repo-link__icon {
+	flex-shrink: 0;
+	opacity: 0.85;
+}
+
+.source-repo-link__text {
+	font-weight: 500;
+}
+
+.source-repo-link__path {
+	font-size: 0.92em;
+	padding: 0.1rem 0.35rem;
+	border-radius: 0.25rem;
+	background: var(--sl-color-gray-7);
+	color: var(--sl-color-gray-1);
+}
+
+.source-repo-link a:is(:hover, :focus-visible) .source-repo-link__path {
+	background: var(--sl-color-black);
+}
