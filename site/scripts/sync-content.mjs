@@ -19,6 +19,8 @@ const DOCS_OUT = path.join(SITE_DIR, 'src/content/docs');
 const FILES_OUT = path.join(SITE_DIR, 'public/files');
 const GENERATED = path.join(SITE_DIR, '.generated');
 const SITE_URL = 'https://grantcurell.com';
+const GITHUB_REPO = 'https://github.com/grantcurell/projects';
+const GITHUB_BRANCH = 'main';
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.avif', '.bmp', '.ico']);
 const MAX_ASSET_BYTES = 50 * 1024 * 1024;
@@ -173,6 +175,28 @@ const findByBasename = (rootDir, basename) => {
 };
 
 const yamlStr = (s) => JSON.stringify(s ?? '');
+
+const escapeHtml = (s) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Folder on GitHub that contains this page's source README or markdown file. */
+const githubFolderUrl = (sourceFile) => {
+  const rel = path.relative(ROOT, path.dirname(sourceFile));
+  if (!rel || rel === '.') return `${GITHUB_REPO}/tree/${GITHUB_BRANCH}`;
+  return `${GITHUB_REPO}/tree/${GITHUB_BRANCH}/${rel.split(path.sep).map(encodeURIComponent).join('/')}`;
+};
+
+const githubFolderLabel = (sourceFile) => {
+  const rel = path.relative(ROOT, path.dirname(sourceFile));
+  if (!rel || rel === '.') return 'projects';
+  return rel.split(path.sep).join('/');
+};
+
+const githubSourceLinkHtml = (sourceFile) => {
+  const url = githubFolderUrl(sourceFile);
+  const label = githubFolderLabel(sourceFile);
+  return `<p class="source-repo-link"><a href="${url}" target="_blank" rel="noopener noreferrer" aria-label="View ${escapeHtml(label)} on GitHub"><svg class="source-repo-link__icon" aria-hidden="true" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="source-repo-link__text">View on GitHub</span><code class="source-repo-link__path">${escapeHtml(label)}</code></a></p>`;
+};
 
 const pageUrl = (slugParts) => (slugParts.length ? `/${slugParts.join('/')}/` : '/');
 
@@ -351,7 +375,8 @@ const transformPage = (page) => {
     .join('\n');
 
   body = unmask(body);
-  fs.writeFileSync(outFile, `${frontmatter}\n\n${body.trimStart()}`);
+  const sourceLink = githubSourceLinkHtml(page.sourceFile);
+  fs.writeFileSync(outFile, `${frontmatter}\n\n${sourceLink}\n\n${body.trimStart()}`);
   return { title };
 };
 
