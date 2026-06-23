@@ -23,8 +23,20 @@ function Get-ProjectState {
     param([Parameter(Mandatory = $true)][pscustomobject]$Config)
 
     $file = Join-Path $Config.execution.statePath 'current-phase.json'
-    if (-not (Test-Path -LiteralPath $file)) { return @{} }
-    return (Get-Content -LiteralPath $file -Raw | ConvertFrom-Json)
+    if (-not (Test-Path -LiteralPath $file)) {
+        return @{ currentPhase = $null }
+    }
+
+    $raw = Get-Content -LiteralPath $file -Raw | ConvertFrom-Json
+    $phase = $null
+    if ($raw -is [System.Collections.IDictionary]) {
+        if ($raw.Contains('currentPhase')) { $phase = $raw['currentPhase'] }
+    }
+    elseif ($null -ne $raw -and ($raw.PSObject.Properties.Name -contains 'currentPhase')) {
+        $phase = $raw.currentPhase
+    }
+
+    return @{ currentPhase = $phase }
 }
 
 function Set-ProjectState {

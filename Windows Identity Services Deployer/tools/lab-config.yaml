@@ -1,0 +1,486 @@
+schemaVersion: 1
+
+environment:
+  name: "windows-server-2025-lab"
+  purpose: "identity-and-ca"
+  changeId: "AUTO-VALIDATION-RUN"
+  approvedBy: "ADMINISTRATOR"
+  maintenanceWindow: "2026-05-09T06:00:00-07:00/2026-05-09T12:00:00-07:00"
+
+execution:
+  statePath: "C:\\ProgramData\\Configure-WindowsIdentityServices"
+  logPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs"
+  transcriptPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs\\transcript.log"
+  jsonLogPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs\\operations.jsonl"
+  evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence"
+  allowModuleInstall: false
+  requiredPowerShellModules:
+    - name: "powershell-yaml"
+      minimumVersion: "0.4.7"
+      installCommand: "Install-Module powershell-yaml -Scope AllUsers"
+  requireCleanPendingReboot: true
+  stopOnFirstValidationFailure: true
+  planOnlyRequiresNoChanges: true
+  resumeScheduledTaskName: "Configure-WindowsIdentityServices-Resume"
+
+proxmoxGuest:
+  enabled: true
+  requireVirtioDrivers: true
+  requireQemuGuestAgent: false
+  qemuGuestAgentServiceName: "QEMU-GA"
+  virtioIsoDriveLetter: "D:"
+  guestToolsInstallerPath: "D:\\virtio-win-guest-tools.exe"
+  allowSilentGuestToolsInstall: false
+  expectedDeviceNamePatterns:
+    - "VirtIO"
+    - "Red Hat"
+    - "QEMU"
+
+network:
+  enabled: true
+  computerName: "WIN-CNQUR4COKFN"
+  timeZone: "UTC"
+  interfaceAlias: "Ethernet"
+  ipv4:
+    address: "192.168.5.10"
+    prefixLength: 24
+    defaultGateway: "192.168.5.1"
+    dnsClientServersBeforePromotion:
+      - "192.168.5.10"
+    dnsClientServersAfterPromotion:
+      - "127.0.0.1"
+  ipv6:
+    configure: false
+    disable: false
+  requireStaticIp: true
+  allowDhcpAddressing: false
+  allowMultipleDefaultGateways: false
+
+roles:
+  activeDirectoryDomainServices:
+    enabled: true
+    includeManagementTools: true
+  dns:
+    enabled: true
+    includeManagementTools: true
+  dhcp:
+    enabled: true
+    includeManagementTools: true
+  wsus:
+    enabled: false
+    includeManagementTools: false
+  pki:
+    enabled: true
+    includeManagementTools: true
+
+activeDirectory:
+  enabled: true
+  mode: "newForest"
+  domainName: "identity.lab.example.com"
+  netbiosName: "IDENTITY"
+  forestMode: "WinThreshold"
+  domainMode: "WinThreshold"
+  installDns: true
+  createDnsDelegation: false
+  databasePath: "C:\\Windows\\NTDS"
+  logPath: "C:\\Windows\\NTDS"
+  sysvolPath: "C:\\Windows\\SYSVOL"
+  safeModeAdministratorPasswordPrompt: true
+  safeModeAdministratorPasswordSecretName: null
+  allowDotLocal: false
+  allowSingleLabelDomain: false
+  site:
+    renameDefaultSite: true
+    defaultSiteCurrentName: "Default-First-Site-Name"
+    newSiteName: "Main-Site"
+  domainController:
+    globalCatalog: true
+    readOnlyDomainController: false
+
+dns:
+  enabled: true
+  allowForwardersPointingToSelf: false
+  forwarders:
+    - "1.1.1.1"
+  useRootHints: true
+  createReverseLookupZones: true
+  reverseLookupZones:
+    - networkId: "192.168.5.0/24"
+      replicationScope: "Forest"
+  dnsClientUseLoopbackAfterPromotion: true
+  requiredRecordsToValidate:
+    - name: "identity.lab.example.com"
+      type: "A"
+    - name: "_ldap._tcp.dc._msdcs.identity.lab.example.com"
+      type: "SRV"
+  scavenging:
+    enabled: false
+    noRefreshIntervalDays: null
+    refreshIntervalDays: null
+
+dhcp:
+  enabled: true
+  reconcileExisting: false
+  authorizeInActiveDirectory: true
+  serverDnsName: "win-cnqur4cokfn.identity.lab.example.com"
+  serverIpAddress: "192.168.5.10"
+  conflictDetectionAttempts: 1
+  scopes:
+    - name: "Core LAN"
+      scopeId: "192.168.5.0"
+      startRange: "192.168.5.50"
+      endRange: "192.168.5.100"
+      subnetMask: "255.255.255.0"
+      leaseDuration: "8.00:00:00"
+      state: "Active"
+      options:
+        router:
+          - "192.168.5.1"
+        dnsServers:
+          - "192.168.5.10"
+        dnsDomain: "identity.lab.example.com"
+        ntpServers:
+          - "192.168.5.10"
+      reservations: []
+
+time:
+  enabled: true
+  configureOnlyIfPdcEmulator: true
+  behaviorIfNotPdc: "stop"
+  authoritativeForDomain: true
+  externalNtpServers:
+    - "time.cloudflare.com"
+  ntpFlags: "0x8"
+  reliableTimeSource: true
+  resyncAfterConfiguration: true
+  validation:
+    queryStatus: true
+    queryConfiguration: true
+    queryPeers: true
+    stripchartTargets:
+      - "time.cloudflare.com"
+    stripchartSamples: 3
+
+organizationalUnits:
+  enabled: true
+  protectedFromAccidentalDeletion: true
+  structure:
+    - distinguishedNameRelative: "OU=CorpUsers"
+      description: "User objects"
+    - distinguishedNameRelative: "OU=Servers"
+      description: "Server objects"
+    - distinguishedNameRelative: "OU=Groups"
+      description: "Group objects"
+    - distinguishedNameRelative: "OU=Service Accounts"
+      description: "Service accounts"
+
+groups:
+  enabled: true
+  defaultOuDistinguishedNameRelative: "OU=Groups"
+  items:
+    - name: "GG-Server-Admins"
+      scope: "Global"
+      category: "Security"
+      description: "Server administrators"
+      pathRelative: "OU=Groups"
+      members: []
+    - name: "GG-Keycloak-Users"
+      scope: "Global"
+      category: "Security"
+      description: "Keycloak users"
+      pathRelative: "OU=Groups"
+      members: []
+    - name: "GG-GitLab-Users"
+      scope: "Global"
+      category: "Security"
+      description: "GitLab users"
+      pathRelative: "OU=Groups"
+      members: []
+    - name: "GG-YubiKey-Required"
+      scope: "Global"
+      category: "Security"
+      description: "YubiKey users"
+      pathRelative: "OU=Groups"
+      members: []
+
+serviceAccounts:
+  enabled: true
+  defaultOuDistinguishedNameRelative: "OU=Service Accounts"
+  createStandardServiceAccounts: true
+  createGroupManagedServiceAccounts: false
+  accounts:
+    - name: "svc-keycloak-ldap"
+      samAccountName: "svc-keycloak-ldap"
+      type: "standard"
+      pathRelative: "OU=Service Accounts"
+      description: "Keycloak LDAP bind account"
+      enabled: true
+      passwordPrompt: true
+      passwordNeverExpires: false
+      userCannotChangePassword: true
+      resetPasswordIfExists: false
+      groups: []
+
+gpo:
+  enabled: true
+  allowModifyDefaultDomainPolicy: true
+  linkOrderExplicit: true
+  gpos:
+    - name: "GPO-Domain-Password-Lockout-Policy"
+      linkOrder: 1
+      target: "domain"
+      linkDistinguishedNameRelative: ""
+      enforced: true
+      enabled: true
+      settings:
+        passwordPolicy:
+          minimumPasswordLength: 15
+          passwordHistoryCount: 24
+          maximumPasswordAgeDays: 60
+          minimumPasswordAgeDays: 1
+          complexityEnabled: true
+          reversibleEncryptionEnabled: false
+        lockoutPolicy:
+          lockoutThreshold: 5
+          lockoutDurationMinutes: 15
+          lockoutObservationWindowMinutes: 15
+
+hardening:
+  enabled: true
+  stigAligned: true
+  applyLocalSecurityPolicy: true
+  importSecurityTemplate: false
+  securityTemplatePath: null
+  disableUnnecessaryServices: true
+  missingServiceBehavior: "warn"
+  unnecessaryServices:
+    - name: "Spooler"
+      startupType: "Disabled"
+      stopService: true
+      justification: "Not required on identity host"
+  fipsAlignedCrypto:
+    enabled: false
+    approved: false
+    registrySettings: []
+  localSecurityOptions:
+    renameGuestAccount:
+      enabled: true
+      newName: "GuestDisabled"
+    disableGuestAccount:
+      enabled: true
+    restrictAnonymous:
+      enabled: true
+  eventLogSizes:
+    securityMaxSizeMb: 1024
+    systemMaxSizeMb: 256
+    applicationMaxSizeMb: 256
+    directoryServiceMaxSizeMb: 512
+    dnsServerMaxSizeMb: 256
+  requireSmbSigning: true
+  disableSmbv1: true
+  ldapSigning:
+    requireSigning: true
+  channelBinding:
+    enabled: true
+
+defender:
+  enabled: true
+  configureMicrosoftDefender: true
+  realTimeProtection: true
+  cloudProtection: false
+  sampleSubmission: false
+  controlledFolderAccess: false
+  exclusions:
+    paths: []
+    processes: []
+    extensions: []
+  onboarding:
+    enabled: false
+    scriptPath: null
+
+firewall:
+  enabled: true
+  configureProfiles: true
+  profiles:
+    domain:
+      enabled: true
+      defaultInboundAction: "Block"
+      defaultOutboundAction: "Allow"
+    private:
+      enabled: true
+      defaultInboundAction: "Block"
+      defaultOutboundAction: "Allow"
+    public:
+      enabled: true
+      defaultInboundAction: "Block"
+      defaultOutboundAction: "Allow"
+  enableBuiltInRuleGroups:
+    - "Active Directory Domain Services"
+    - "DNS Service"
+    - "DHCP Server"
+  customRules: []
+
+eventForwarding:
+  enabled: false
+  mode: "collector"
+  collector:
+    subscriptionName: "Domain-Controller-Security-Events"
+    subscriptionXmlPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Subscriptions\\dc-security-subscription.xml"
+    allowedSourceComputersGroup: "GG-Server-Admins"
+    destinationLog: "ForwardedEvents"
+  source:
+    configureWinRM: true
+    configureSubscriptionManager: false
+    subscriptionManagerServer: null
+  validation:
+    requireForwardedEventsLog: false
+    requireSubscriptionPresent: false
+
+wazuh:
+  enabled: false
+  agentMsiPath: null
+  managerAddress: null
+  registrationServer: null
+  agentGroup: null
+  deploymentMode: "manual"
+  serviceName: "WazuhSvc"
+  validateServiceRunning: true
+
+pki:
+  enabled: true
+  mode: "offline-root-and-issuing-ca"
+  allowRootAndIssuingOnSameServer: false
+  rootCa:
+    enabled: true
+    caCommonName: "IDENTITY-ROOT-CA"
+    validityYears: 10
+    keyLength: 4096
+    hashAlgorithm: "SHA256"
+    cryptoProvider: "RSA#Microsoft Software Key Storage Provider"
+  issuingCa:
+    enabled: false
+    caCommonName: null
+    validityYears: null
+    keyLength: null
+    hashAlgorithm: null
+    cryptoProvider: null
+  certificateWorkflow:
+    requestDirectory: "C:\\ProgramData\\Configure-WindowsIdentityServices\\PKI\\Requests"
+    issuedDirectory: "C:\\ProgramData\\Configure-WindowsIdentityServices\\PKI\\Issued"
+    renewalWarningDays: 30
+    templates:
+      - "WebServer"
+      - "User"
+
+wsus:
+  enabled: false
+  mode: "install-and-configure"
+  contentDirectory: null
+  upstreamServer: null
+  upstreamPort: null
+  useSsl: null
+  products: []
+  classifications: []
+  computerTargetGroups: []
+  autoApprovalRules: []
+  emergencyPatching:
+    processDocumented: true
+    runbookPath: "docs/operator-runbook.md"
+  rollback:
+    processDocumented: true
+    runbookPath: "docs/rollback-runbook.md"
+
+backupRecovery:
+  enabled: true
+  backupPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Backups"
+  createRunbook: true
+  runbookPath: "docs/ad-backup-restore-runbook.md"
+  createBackupPathIfMissing: true
+  runInitialBackupNow: false
+  systemStateBackup:
+    enabled: true
+    scheduleConfiguredOutsideScript: true
+    scheduleDescription: "Daily system state backup at 02:00"
+  recoveryObjectives:
+    rpoHours: 24
+    rtoHours: 4
+  restoreValidation:
+    requireDocumentedTest: true
+    evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\restore-validation"
+
+vulnerabilityScanning:
+  enabled: true
+  requireScannerExecutionNow: false
+  authenticatedScan:
+    credentialAccountName: "svc-scan-win"
+    createCredentialAccount: false
+    requiredGroups:
+      - "Event Log Readers"
+  stigScanning:
+    enabled: true
+    toolName: "SCAP or approved scanner"
+    scannerPath: null
+    scheduleDescription: "Monthly authenticated scan and remediation cycle"
+  remediationCycle:
+    requireFindingExport: true
+    requireRescanEvidence: true
+    evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\vulnerability-scanning"
+
+identityIntegrations:
+  enabled: true
+  gitlab:
+    enabled: false
+    approved: false
+    ldapBindAccountSam: "svc-gitlab-ldap"
+    allowedGroup: "GG-GitLab-Users"
+    ldapBaseDnRelative: ""
+    ldapUserFilter: null
+    outputConfigSnippetPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\gitlab-ldap-config-example.txt"
+  keycloak:
+    enabled: true
+    approved: true
+    ldapBindAccountSam: "svc-keycloak-ldap"
+    allowedGroup: "GG-Keycloak-Users"
+    ldapBaseDnRelative: ""
+    ldapVendor: "ad"
+    connectionUrl: "ldap://win-cnqur4cokfn.identity.lab.example.com"
+    useKerberos: false
+    kerberosRealm: "IDENTITY.LAB.EXAMPLE.COM"
+    outputConfigSummaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\keycloak-ad-federation-summary.txt"
+  yubiKey:
+    enabled: true
+    policyGroup: "GG-YubiKey-Required"
+    requireSmartCardForInteractiveLogon: false
+    applySmartCardRequirementToGroupMembers: false
+    certificateMappingPlanned: true
+    notesPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\yubikey-policy-notes.txt"
+
+validation:
+  enabled: true
+  commands:
+    dcdiag: true
+    dcdiagDns: true
+    repadminReplSummary: true
+    nltestDsGetDc: true
+    resolveDomainName: true
+    resolveLdapSrvRecord: true
+    w32tmStatus: true
+    w32tmConfiguration: true
+    dhcpServerv4Scopes: true
+    gpoReport: true
+    firewallProfile: true
+    defenderStatus: true
+    eventForwardingStatus: false
+  evidenceFiles:
+    dcdiag: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\dcdiag.txt"
+    dcdiagDns: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\dcdiag-dns.txt"
+    repadmin: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\repadmin-replsummary.txt"
+    gpoReportDirectory: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\GPO"
+    finalReport: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\final-report.json"
+
+reporting:
+  enabled: true
+  writeHumanReadableSummary: true
+  summaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\summary.txt"
+  writeJsonSummary: true
+  jsonSummaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\summary.json"

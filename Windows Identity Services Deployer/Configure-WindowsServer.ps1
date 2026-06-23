@@ -180,6 +180,7 @@ function Invoke-Project {
     Write-ProjectInfo -Message 'Configuration imported and validated.'
 
     $resumeState = Get-ProjectState -Config $config
+    $resumePhase = $resumeState['currentPhase']
     $selectedPhases = @()
     if ($ValidateOnly) {
         $selectedPhases = @('Validate')
@@ -187,8 +188,8 @@ function Invoke-Project {
     elseif ($Phase) {
         $selectedPhases = @($Phase)
     }
-    elseif ($resumeState.currentPhase) {
-        $selectedPhases = @($resumeState.currentPhase, 'PostPromotion', 'Validate')
+    elseif ($resumePhase) {
+        $selectedPhases = @($resumePhase, 'PostPromotion', 'Validate')
     }
     else {
         $selectedPhases = @('Preflight', 'PromoteDomainController', 'PostPromotion', 'Validate')

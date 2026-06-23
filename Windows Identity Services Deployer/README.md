@@ -150,8 +150,8 @@ What it does:
   service accounts → optional features (PKI/WSUS/event forwarding/Wazuh/integrations)**.
 - Each stage must pass validation before **Next** advances. Errors appear in the log at
   the bottom of the screen with a plain explanation.
-- Writes `config.yaml` (backing up any existing file) and runs the project's **own validator**
-  as a final gate — if anything is inconsistent it tells you before you ever touch the server.
+- Writes `config.yaml` (backing up any existing file), runs the project's **own validator**
+  as a final gate, then shows a completion summary with the exact commands to run next.
 
 > The wizard intentionally **does not** prompt for the security/policy baseline
 > (GPO definitions, hardening, firewall, Defender, OU/group structure, validation and

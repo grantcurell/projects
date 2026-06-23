@@ -12,7 +12,7 @@ import sys
 from typing import Any
 
 import yaml
-from textual import events, on
+from textual import events, on, work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import (
@@ -56,21 +56,34 @@ STAGE_ORDER = [
     "stage-accounts",
     "stage-optional",
     "stage-write",
+    "stage-done",
 ]
 
 STAGE_LABELS = {
-    "stage-baseline": "Stage 1/12: Choose configuration baseline.",
-    "stage-environment": "Stage 2/12: Environment metadata.",
-    "stage-execution": "Stage 3/12: Execution paths and behavior.",
-    "stage-proxmox": "Stage 4/12: Proxmox guest integration.",
-    "stage-network": "Stage 5/12: Network and host identity.",
-    "stage-ad": "Stage 6/12: Active Directory (new forest).",
-    "stage-dns": "Stage 7/12: DNS.",
-    "stage-dhcp": "Stage 8/12: DHCP.",
-    "stage-time": "Stage 9/12: Domain time.",
-    "stage-accounts": "Stage 10/12: Service accounts.",
-    "stage-optional": "Stage 11/12: Optional features.",
-    "stage-write": "Stage 12/12: Write config.yaml and validate.",
+    "stage-baseline": "Stage 1/13: Choose configuration baseline.",
+    "stage-environment": "Stage 2/13: Environment metadata.",
+    "stage-execution": "Stage 3/13: Execution paths and behavior.",
+    "stage-proxmox": "Stage 4/13: Proxmox guest integration.",
+    "stage-network": "Stage 5/13: Network and host identity.",
+    "stage-ad": "Stage 6/13: Active Directory (new forest).",
+    "stage-dns": "Stage 7/13: DNS.",
+    "stage-dhcp": "Stage 8/13: DHCP.",
+    "stage-time": "Stage 9/13: Domain time.",
+    "stage-accounts": "Stage 10/13: Service accounts.",
+    "stage-optional": "Stage 11/13: Optional features.",
+    "stage-write": "Stage 12/13: Write config.yaml and validate.",
+    "stage-done": "Stage 13/13: Setup complete.",
+}
+
+SECTION_DIVIDER = "─" * 80
+
+VALID_FOREST_DOMAIN_MODES = {
+    "Win2008",
+    "Win2008R2",
+    "Win2012",
+    "Win2012R2",
+    "WinThreshold",
+    "Default",
 }
 
 
@@ -214,7 +227,7 @@ class IdentityConfigWizard(App[None]):
     .stage {
         height: 1fr;
     }
-    #stage-write {
+    #stage-write, #stage-done {
         align: center middle;
     }
     .write-center {
@@ -279,6 +292,7 @@ class IdentityConfigWizard(App[None]):
         self.baseline_path = EXAMPLE_PATH
         self.current_stage = "stage-baseline"
         self.quit_armed = False
+        self.write_succeeded = False
         self._refresh_cfg_derived_defaults()
 
     def _refresh_cfg_derived_defaults(self) -> None:
@@ -564,6 +578,17 @@ class IdentityConfigWizard(App[None]):
                 idi = self.cfg.get("identityIntegrations", {})
                 bkp = self.cfg.get("backupRecovery", {})
                 yield Static("Optional features must be explicitly on or off. Enable only what you prepared.")
+                yield Static(SECTION_DIVIDER)
+                yield Static("Enable AD backup/recovery artifacts?")
+                yield PersistentSelect(
+                    options=[("Yes", "true"), ("No", "false")],
+                    value="true" if bool(bkp.get("enabled")) else "false",
+                    id="opt_backup_enabled",
+                    classes="field",
+                )
+                yield Static("AD backup path (required when backup is enabled)")
+                yield Input(str(bkp.get("backupPath") or ""), id="opt_backup", classes="field")
+                yield Static(SECTION_DIVIDER)
                 yield Static("Enable PKI (AD Certificate Services)?")
                 yield PersistentSelect(
                     options=[("No", "false"), ("Yes", "true")],
@@ -607,8 +632,6 @@ class IdentityConfigWizard(App[None]):
                     id="opt_idi",
                     classes="field",
                 )
-                yield Static("AD backup path")
-                yield Input(str(bkp.get("backupPath") or ""), id="opt_backup", classes="field")
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_optional", classes="nav-button")
                     yield Button("Next", id="next_optional", variant="primary", classes="nav-button")
@@ -617,6 +640,10 @@ class IdentityConfigWizard(App[None]):
                 with Horizontal(classes="write-center"):
                     yield Button("Back", id="back_write", classes="nav-button")
                     yield Button("WRITE CONFIG\n[dim](press enter)[/dim]", id="write_now")
+
+            with VerticalScroll(id="stage-done", classes="stage"):
+                yield Static("Configuration complete. config.yaml is ready.", id="done_title")
+                yield Static("", id="done_summary")
 
         yield Log(id="log", highlight=True, auto_scroll=True)
         yield Footer()
@@ -663,11 +690,21 @@ class IdentityConfigWizard(App[None]):
 
     def _refresh_controls(self) -> None:
         armed_suffix = " | Quit: Esc then q" if not self.quit_armed else " | Quit armed: press q now"
-        if self.current_stage == "stage-write":
+        if self.current_stage == "stage-done":
+            legend = f"Setup complete. Press q to exit.{armed_suffix}"
+        elif self.current_stage == "stage-write":
             legend = f"Now: highlight WRITE CONFIG and press Enter to write config.yaml and run validation.{armed_suffix}"
         else:
-            legend = f"Now: fill fields, then highlight Next and press Enter to validate this stage.{armed_suffix}"
+            legend = f"Fill fields, then highlight Next and press Enter to validate this stage.{armed_suffix}"
         self.query_one("#control_legend", Static).update(legend)
+
+    def _ensure_focus_visible_target(self) -> None:
+        fields = self._stage_focusables()
+        if not fields:
+            return
+        owner = self._resolve_focus_owner(self.focused, fields)
+        if owner is None:
+            self.set_focus(fields[0])
 
     def _stage_focusables(self) -> list[Input | Select | Button]:
         stage = self.query_one(f"#{self.current_stage}")
@@ -692,6 +729,7 @@ class IdentityConfigWizard(App[None]):
         return None
 
     def action_focus_next_field(self) -> None:
+        self._ensure_focus_visible_target()
         fields = self._stage_focusables()
         if not fields:
             return
@@ -703,6 +741,7 @@ class IdentityConfigWizard(App[None]):
             self.set_focus(fields[0])
 
     def action_focus_prev_field(self) -> None:
+        self._ensure_focus_visible_target()
         fields = self._stage_focusables()
         if not fields:
             return
@@ -743,6 +782,48 @@ class IdentityConfigWizard(App[None]):
     def _require_text(self, value: str, label: str) -> None:
         if not value.strip():
             raise RuntimeError(f"{label} is required.")
+
+    def _validate_maintenance_window(self, value: str) -> None:
+        self._require_text(value, "Maintenance window")
+        if "/" not in value:
+            raise RuntimeError(
+                "Maintenance window must be ISO8601 start/end separated by '/' "
+                "(e.g. 2026-01-01T00:00:00-05:00/2026-01-01T04:00:00-05:00)."
+            )
+        start_raw, end_raw = value.split("/", 1)
+        for part, label in [(start_raw.strip(), "Maintenance window start"), (end_raw.strip(), "Maintenance window end")]:
+            if not part:
+                raise RuntimeError(f"{label} is required.")
+            try:
+                datetime.fromisoformat(part.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise RuntimeError(f"{label} is not valid ISO8601: {part}") from exc
+
+    def _validate_functional_level(self, value: str, label: str) -> None:
+        self._require_text(value, label)
+        if value not in VALID_FOREST_DOMAIN_MODES:
+            allowed = ", ".join(sorted(VALID_FOREST_DOMAIN_MODES))
+            raise RuntimeError(f"{label} must be one of: {allowed}.")
+
+    def _validate_gateway_in_subnet(self, gateway: str, address: str, prefix: int) -> None:
+        if not ipv4_in_subnet(gateway, address, prefix):
+            network = ipaddress.IPv4Network(f"{address}/{prefix}", strict=False)
+            raise RuntimeError(f"Default gateway must be inside the server subnet ({network}).")
+
+    def _expected_dhcp_server_fqdn(self) -> str:
+        hostname = str(get_in(self.cfg, ["network", "computerName"]) or "").strip()
+        domain = str(get_in(self.cfg, ["activeDirectory", "domainName"]) or "").strip()
+        if not hostname or not domain:
+            return ""
+        return f"{hostname.lower()}.{domain.lower()}"
+
+    def _validate_dhcp_server_identity(self, server_name: str, server_ip: str) -> None:
+        dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
+        expected_fqdn = self._expected_dhcp_server_fqdn()
+        if dc_ip and server_ip != dc_ip:
+            raise RuntimeError(f"DHCP server IP must match this server's static IP ({dc_ip}).")
+        if expected_fqdn and server_name.lower() != expected_fqdn:
+            raise RuntimeError(f"DHCP server DNS name must be {expected_fqdn}.")
 
     def _validate_hostname(self, value: str) -> None:
         if len(value) < 1 or len(value) > 15:
@@ -787,11 +868,13 @@ class IdentityConfigWizard(App[None]):
                 ("env_purpose", ["environment", "purpose"], "Purpose"),
                 ("env_change_id", ["environment", "changeId"], "Change/ticket ID"),
                 ("env_approved_by", ["environment", "approvedBy"], "Approved by"),
-                ("env_window", ["environment", "maintenanceWindow"], "Maintenance window"),
             ]:
                 value = self._input(widget_id)
                 self._require_text(value, label)
                 set_in(self.cfg, path, value)
+            window = self._input("env_window")
+            self._validate_maintenance_window(window)
+            set_in(self.cfg, ["environment", "maintenanceWindow"], window)
             self.append_log("Environment metadata validated.")
             self.switch_stage("stage-execution")
         except Exception as exc:  # noqa: BLE001
@@ -862,6 +945,7 @@ class IdentityConfigWizard(App[None]):
                 raise RuntimeError("IPv4 prefix length must be a whole number between 1 and 32.") from exc
             if prefix < 1 or prefix > 32:
                 raise RuntimeError("IPv4 prefix length must be between 1 and 32.")
+            self._validate_gateway_in_subnet(gw, ip, prefix)
             before_list = parse_ipv4_list(dns_before, "DNS before promotion")
             after_list = parse_ipv4_list(dns_after, "DNS after promotion")
             set_in(self.cfg, ["network", "enabled"], True)
@@ -893,11 +977,8 @@ class IdentityConfigWizard(App[None]):
             site_name = self._input("ad_site_name")
             self._validate_domain(domain)
             self._validate_netbios(netbios)
-            for label, value in [
-                ("Forest functional level", forest),
-                ("Domain functional level", domain_mode),
-            ]:
-                self._require_text(value, label)
+            self._validate_functional_level(forest, "Forest functional level")
+            self._validate_functional_level(domain_mode, "Domain functional level")
             for label, value, path_key in [
                 ("NTDS database path", db, "databasePath"),
                 ("NTDS log path", log_path, "logPath"),
@@ -970,6 +1051,7 @@ class IdentityConfigWizard(App[None]):
             server_ip = self._input("dhcp_server_ip")
             self._require_text(server_name, "DHCP server DNS name")
             must_ipv4(server_ip, "DHCP server IP address")
+            self._validate_dhcp_server_identity(server_name, server_ip)
             set_in(self.cfg, ["dhcp", "serverDnsName"], server_name)
             set_in(self.cfg, ["dhcp", "serverIpAddress"], server_ip)
             if self._bool_select("dhcp_redefine"):
@@ -1074,17 +1156,20 @@ class IdentityConfigWizard(App[None]):
                 set_in(self.cfg, ["wazuh", "agentMsiPath"], msi)
                 set_in(self.cfg, ["wazuh", "managerAddress"], mgr)
             set_in(self.cfg, ["identityIntegrations", "enabled"], self._bool_select("opt_idi"))
-            backup = self._input("opt_backup")
-            self._require_text(backup, "AD backup path")
-            must_windows_path(backup, "AD backup path")
-            set_in(self.cfg, ["backupRecovery", "backupPath"], backup)
+            backup_enabled = self._bool_select("opt_backup_enabled")
+            set_in(self.cfg, ["backupRecovery", "enabled"], backup_enabled)
+            if backup_enabled:
+                backup = self._input("opt_backup")
+                self._require_text(backup, "AD backup path")
+                must_windows_path(backup, "AD backup path")
+                set_in(self.cfg, ["backupRecovery", "backupPath"], backup)
             self.append_log("Optional feature settings validated.")
             self.switch_stage("stage-write")
         except Exception as exc:  # noqa: BLE001
             self.append_log(f"[ERROR] Stage 11 failed: {exc}")
             self.set_status("Stage 11 failed. Fix fields and try again.")
 
-    def _run_powershell_validation(self, config_path: Path) -> None:
+    def _run_powershell_validation(self, config_path: Path) -> str:
         ps_script = f"""
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -1093,6 +1178,7 @@ $loaded = Import-ProjectConfig -ConfigPath '{config_path}'
 Assert-ProjectConfig -Config $loaded
 Write-Output 'VALIDATION_OK'
 """.strip()
+        last_error = "PowerShell is not available; config.yaml was written but not validated."
         for exe in ("pwsh", "powershell"):
             proc = subprocess.run(
                 [exe, "-NoProfile", "-Command", ps_script],
@@ -1102,27 +1188,58 @@ Write-Output 'VALIDATION_OK'
                 check=False,
             )
             if proc.returncode == 0 and "VALIDATION_OK" in proc.stdout:
-                return
-            if proc.returncode != 0 and exe == "powershell":
-                detail = (proc.stderr or proc.stdout).strip()
-                raise RuntimeError(detail or "PowerShell validation failed.")
-        raise RuntimeError("PowerShell is not available; config.yaml was written but not validated.")
+                return exe
+            if proc.returncode != 0:
+                last_error = (proc.stderr or proc.stdout).strip() or "PowerShell validation failed."
+        raise RuntimeError(last_error)
+
+    @work(thread=True)
+    def _validate_written_config(self) -> None:
+        try:
+            exe = self._run_powershell_validation(OUTPUT_PATH)
+            self.call_from_thread(self._on_write_validation_success, exe)
+        except RuntimeError as exc:
+            self.call_from_thread(self._on_write_validation_failure, str(exc))
+
+    def _on_write_validation_success(self, exe: str) -> None:
+        self.write_succeeded = True
+        self.query_one("#write_now", Button).disabled = False
+        self.append_log(f"Validation PASSED via {exe}. config.yaml is ready.")
+        domain = str(get_in(self.cfg, ["activeDirectory", "domainName"]) or "")
+        hostname = str(get_in(self.cfg, ["network", "computerName"]) or "")
+        dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
+        summary = (
+            f"Domain: {domain}\n"
+            f"DC hostname: {hostname}\n"
+            f"Static IP: {dc_ip}\n"
+            f"Config file: {OUTPUT_PATH}\n\n"
+            "Next on the Windows Server (elevated PowerShell):\n"
+            f"  .\\Configure-WindowsServer.ps1 -ConfigPath .\\config.yaml -PlanOnly\n"
+            f"  .\\Configure-WindowsServer.ps1 -ConfigPath .\\config.yaml"
+        )
+        self.query_one("#done_summary", Static).update(summary)
+        self.switch_stage("stage-done")
+
+    def _on_write_validation_failure(self, message: str) -> None:
+        self.query_one("#write_now", Button).disabled = False
+        self.append_log(f"[WARN] {message}")
+        self.set_status("config.yaml written; fix validation errors before running the server script.")
 
     def write_config(self) -> None:
         try:
+            write_btn = self.query_one("#write_now", Button)
+            if write_btn.disabled:
+                return
+            write_btn.disabled = True
             if OUTPUT_PATH.exists():
                 backup = backup_file(OUTPUT_PATH)
                 self.append_log(f"Backed up existing config.yaml to {backup.name}.")
             dump_yaml(OUTPUT_PATH, self.cfg)
-            self.append_log(f"Wrote {OUTPUT_PATH.name}.")
-            try:
-                self._run_powershell_validation(OUTPUT_PATH)
-                self.append_log("Validation PASSED. config.yaml is ready.")
-                self.set_status("Complete. Run Configure-WindowsServer.ps1 -ConfigPath .\\config.yaml -PlanOnly")
-            except RuntimeError as exc:
-                self.append_log(f"[WARN] {exc}")
-                self.set_status("config.yaml written; fix validation errors before running the server script.")
+            self.append_log(f"Wrote {OUTPUT_PATH.name}. Running PowerShell validation...")
+            self.set_status("Validating config.yaml (this may take a moment)...")
+            self._validate_written_config()
         except Exception as exc:  # noqa: BLE001
+            self.query_one("#write_now", Button).disabled = False
             self.append_log(f"[ERROR] Write failed: {exc}")
             self.set_status("Write failed. Review the log and try again.")
 
