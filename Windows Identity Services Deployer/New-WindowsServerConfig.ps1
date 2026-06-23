@@ -207,7 +207,7 @@ function Read-IPv4List {
 # --------------------------------------------------------------------------------------
 # Load the baseline
 # --------------------------------------------------------------------------------------
-Write-Banner 'Configure-WindowsServer - configuration wizard'
+Write-Banner 'Windows Identity Services Deployer - configuration wizard'
 Write-Note 'Builds and validates config.yaml. Press Ctrl+C any time to abort (nothing is'
 Write-Note 'written until the very end).'
 

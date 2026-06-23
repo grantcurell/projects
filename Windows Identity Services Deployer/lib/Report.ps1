@@ -19,7 +19,7 @@ function Write-HumanReadableSummary {
     catch {
     }
     $content = @"
-Configure-WindowsIdentityServices summary
+WindowsIdentityServicesDeployer summary
 Host: $env:COMPUTERNAME
 Domain: $domain
 PDC Emulator: $pdc

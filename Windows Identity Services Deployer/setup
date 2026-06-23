@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+python3 - <<'PY'
+import importlib.util
+import subprocess
+import sys
+
+required = {
+    "textual": "textual",
+    "yaml": "pyyaml",
+}
+missing = [pkg for mod, pkg in required.items() if importlib.util.find_spec(mod) is None]
+if missing:
+    print("Installing Python dependencies for setup wizard:", ", ".join(missing))
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "--break-system-packages", *missing])
+PY
+
+exec python3 "$ROOT_DIR/scripts/identity-config-wizard.py"
