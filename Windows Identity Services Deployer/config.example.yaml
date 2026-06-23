@@ -8,11 +8,11 @@ environment:
   maintenanceWindow: "2026-01-01T00:00:00-05:00/2026-01-01T04:00:00-05:00"
 
 execution:
-  statePath: "C:\\ProgramData\\Configure-WindowsIdentityServices"
-  logPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs"
-  transcriptPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs\\transcript.log"
-  jsonLogPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs\\operations.jsonl"
-  evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence"
+  statePath: "C:\\ProgramData\\WindowsIdentityServicesDeployer"
+  logPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Logs"
+  transcriptPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Logs\\transcript.log"
+  jsonLogPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Logs\\operations.jsonl"
+  evidencePath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence"
   allowModuleInstall: false
   requiredPowerShellModules:
     - name: "powershell-yaml"
@@ -21,7 +21,7 @@ execution:
   requireCleanPendingReboot: true
   stopOnFirstValidationFailure: true
   planOnlyRequiresNoChanges: true
-  resumeScheduledTaskName: "Configure-WindowsIdentityServices-Resume"
+  resumeScheduledTaskName: "WindowsIdentityServicesDeployer-Resume"
 
 proxmoxGuest:
   enabled: true
@@ -365,7 +365,7 @@ eventForwarding:
   mode: "collector"
   collector:
     subscriptionName: "Domain-Controller-Security-Events"
-    subscriptionXmlPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Subscriptions\\dc-security-subscription.xml"
+    subscriptionXmlPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Subscriptions\\dc-security-subscription.xml"
     allowedSourceComputersGroup: "GG-Server-Admins"
     destinationLog: "ForwardedEvents"
   source:
@@ -444,7 +444,7 @@ backupRecovery:
     rtoHours: 4
   restoreValidation:
     requireDocumentedTest: true
-    evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\restore-validation"
+    evidencePath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\restore-validation"
 
 vulnerabilityScanning:
   enabled: true
@@ -461,7 +461,7 @@ vulnerabilityScanning:
   remediationCycle:
     requireFindingExport: true
     requireRescanEvidence: true
-    evidencePath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\vulnerability-scanning"
+    evidencePath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\vulnerability-scanning"
 
 identityIntegrations:
   enabled: true
@@ -472,7 +472,7 @@ identityIntegrations:
     allowedGroup: "GG-GitLab-Users"
     ldapBaseDnRelative: ""
     ldapUserFilter: null
-    outputConfigSnippetPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\gitlab-ldap-config-example.txt"
+    outputConfigSnippetPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\gitlab-ldap-config-example.txt"
   keycloak:
     enabled: true
     approved: true
@@ -483,14 +483,14 @@ identityIntegrations:
     connectionUrl: "ldap://dc01.lab.example.com"
     useKerberos: false
     kerberosRealm: "LAB.EXAMPLE.COM"
-    outputConfigSummaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\keycloak-ad-federation-summary.txt"
+    outputConfigSummaryPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\keycloak-ad-federation-summary.txt"
   yubiKey:
     enabled: true
     policyGroup: "GG-YubiKey-Required"
     requireSmartCardForInteractiveLogon: false
     applySmartCardRequirementToGroupMembers: false
     certificateMappingPlanned: true
-    notesPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\yubikey-policy-notes.txt"
+    notesPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\yubikey-policy-notes.txt"
 
 validation:
   enabled: true
@@ -509,15 +509,15 @@ validation:
     defenderStatus: true
     eventForwardingStatus: true
   evidenceFiles:
-    dcdiag: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\dcdiag.txt"
-    dcdiagDns: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\dcdiag-dns.txt"
-    repadmin: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\repadmin-replsummary.txt"
-    gpoReportDirectory: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\GPO"
-    finalReport: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\final-report.json"
+    dcdiag: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\dcdiag.txt"
+    dcdiagDns: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\dcdiag-dns.txt"
+    repadmin: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\repadmin-replsummary.txt"
+    gpoReportDirectory: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\GPO"
+    finalReport: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\final-report.json"
 
 reporting:
   enabled: true
   writeHumanReadableSummary: true
-  summaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\summary.txt"
+  summaryPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\summary.txt"
   writeJsonSummary: true
-  jsonSummaryPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Evidence\\summary.json"
+  jsonSummaryPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\summary.json"

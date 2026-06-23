@@ -20,7 +20,7 @@ Before running the setup you will need:
 - **Proxmox cluster/node** with SSH access (the setup will ask for credentials)
 - **Windows Server 2025 - WinPE builder VM** (Windows Server) with ADK/WinPE tooling and WinRM access.
   - You will need to manually build and setup Windows Server 2025 somewhere in your environment and record the credentials
-  - Need to build out the Windows Server identity host / domain controller too? The sibling project [`Configure-WindowsIdentityServices`](../Configure-WindowsIdentityServices/README.md) automates that buildout (AD DS, DNS, DHCP, time, GPO baseline, optional PKI) from a single YAML file. It is standalone and not part of this deployer's workflow.
+  - Need to build out the Windows Server identity host / domain controller too? The sibling project [`Windows Identity Services Deployer`](../Windows%20Identity%20Services%20Deployer/README.md) automates that buildout (AD DS, DNS, DHCP, time, GPO baseline, optional PKI) from a single YAML file. It is standalone and not part of this deployer's workflow.
 - **Golden image VM (Source VM)**
   - This is a running version of your Windows client from which you want to build a golden image. It must have WinRM enabled!
 - **Controller**

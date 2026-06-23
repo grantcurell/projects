@@ -1,4 +1,25 @@
-# Configure-WindowsIdentityServices
+# Windows Identity Services Deployer
+
+- [Windows Identity Services Deployer](#windows-identity-services-deployer)
+  - [What you get](#what-you-get)
+  - [When to use it (and when not to)](#when-to-use-it-and-when-not-to)
+  - [What you need before you start](#what-you-need-before-you-start)
+  - [Step 1 — Prepare the Windows Server VM](#step-1--prepare-the-windows-server-vm)
+  - [Step 2 — Copy the project onto the server](#step-2--copy-the-project-onto-the-server)
+  - [Step 3 — Install the YAML PowerShell module](#step-3--install-the-yaml-powershell-module)
+  - [Step 4 — Create your config (the wizard / TUI)](#step-4--create-your-config-the-wizard--tui)
+    - [Prefer to edit by hand?](#prefer-to-edit-by-hand)
+  - [Step 5 — Preview without changing anything (PlanOnly)](#step-5--preview-without-changing-anything-planonly)
+  - [Step 6 — Run it](#step-6--run-it)
+  - [Step 7 — The reboot (this is normal)](#step-7--the-reboot-this-is-normal)
+  - [Step 8 — Validate](#step-8--validate)
+  - [Did it work? Quick health check](#did-it-work-quick-health-check)
+  - [Where the logs and evidence live](#where-the-logs-and-evidence-live)
+  - [If something goes wrong (rollback)](#if-something-goes-wrong-rollback)
+  - [Passwords](#passwords)
+  - [The golden rule: no defaults in code](#the-golden-rule-no-defaults-in-code)
+  - [Project layout](#project-layout)
+
 
 Turn a **fresh Windows Server** into a fully configured **identity server** — Active
 Directory, DNS, DHCP, domain time, a security baseline, and (optionally) PKI/WSUS/log
@@ -13,28 +34,6 @@ workflow.
 > server**. It builds the **first domain controller in a brand-new forest**. It is **not**
 > a migration tool and must **never** be pointed at an existing/production Active Directory
 > without a real migration plan.
-
----
-
-## Table of contents
-
-- [What you get](#what-you-get)
-- [When to use it (and when not to)](#when-to-use-it-and-when-not-to)
-- [What you need before you start](#what-you-need-before-you-start)
-- [Step 1 — Prepare the Windows Server VM](#step-1--prepare-the-windows-server-vm)
-- [Step 2 — Copy the project onto the server](#step-2--copy-the-project-onto-the-server)
-- [Step 3 — Install the YAML PowerShell module](#step-3--install-the-yaml-powershell-module)
-- [Step 4 — Create your config (the wizard / TUI)](#step-4--create-your-config-the-wizard--tui)
-- [Step 5 — Preview without changing anything (PlanOnly)](#step-5--preview-without-changing-anything-planonly)
-- [Step 6 — Run it](#step-6--run-it)
-- [Step 7 — The reboot (this is normal)](#step-7--the-reboot-this-is-normal)
-- [Step 8 — Validate](#step-8--validate)
-- [Did it work? Quick health check](#did-it-work-quick-health-check)
-- [Where the logs and evidence live](#where-the-logs-and-evidence-live)
-- [If something goes wrong (rollback)](#if-something-goes-wrong-rollback)
-- [Passwords](#passwords)
-- [The golden rule: no defaults in code](#the-golden-rule-no-defaults-in-code)
-- [Project layout](#project-layout)
 
 ---
 
@@ -96,7 +95,7 @@ network behave:
 Copy this whole folder to the server, e.g.:
 
 ```
-C:\Admin\Configure-WindowsIdentityServices
+C:\Admin\Windows Identity Services Deployer
 ```
 
 Open **PowerShell as Administrator** (right-click → *Run as administrator*). The script
@@ -116,43 +115,61 @@ It will **not** auto-install modules.
 ## Step 4 — Create your config (the wizard / TUI)
 
 Everything the script does comes from your `config.yaml`. The easiest and safest way to
-build it is the **interactive wizard**, which prompts you for every environment-specific
-setting, **validates each answer as you type** (IP addresses, prefix lengths,
+build it is the **interactive Textual wizard** (same style as the Windows Workstation
+Deployer setup flow). It walks you through every environment-specific setting in staged
+screens, **validates each stage before you can advance** (IP addresses, prefix lengths,
 NetBIOS/domain rules, DHCP ranges that must fall inside their subnet, forwarders that must
-not point at the server itself, and more), and refuses to move on until the answer is
-valid. It runs in any PowerShell console — no GUI, no Python, nothing extra to install
-beyond the `powershell-yaml` module from Step 3.
+not point at the server itself, and more), and refuses to write the file until the
+project's own PowerShell validator passes.
+
+On the Windows Server (recommended):
 
 ```powershell
-cd C:\Admin\Configure-WindowsIdentityServices
-.\New-WindowsServerConfig.ps1
+cd "C:\Admin\Windows Identity Services Deployer"
+.\setup.ps1
 ```
+
+From Linux/macOS (for drafting a config before copying it to the server):
+
+```bash
+cd "Windows Identity Services Deployer"
+./setup
+```
+
+The wizard installs `textual` and `pyyaml` automatically if they are missing. You still
+need `powershell-yaml` from Step 3 for the main server script; the wizard uses PowerShell
+only for the final `Assert-ProjectConfig` gate when `pwsh` or `powershell` is available.
 
 What it does:
 
 - Seeds a **reviewed baseline** from `config.example.yaml` (or, if you already have a
-  `config.yaml`, offers to **edit that** instead).
+  `config.yaml`, lets you **edit that** instead).
 - Walks you through the environment-specific sections in order:
   **environment metadata → execution paths → Proxmox guest → network/identity →
   Active Directory → DNS → DHCP (incl. building scopes) → domain time →
   service accounts → optional features (PKI/WSUS/event forwarding/Wazuh/integrations)**.
-- Press **Enter** to keep the value shown in `[brackets]`; type a new value to change it.
-  Bad input is rejected on the spot with an explanation, so you never get a config that
-  fails later.
-- Writes `config.yaml` and then runs the project's **own validator** as a final gate —
-  if anything is inconsistent it tells you before you ever touch the server.
+- Each stage must pass validation before **Next** advances. Errors appear in the log at
+  the bottom of the screen with a plain explanation.
+- Writes `config.yaml` (backing up any existing file) and runs the project's **own validator**
+  as a final gate — if anything is inconsistent it tells you before you ever touch the server.
 
 > The wizard intentionally **does not** prompt for the security/policy baseline
 > (GPO definitions, hardening, firewall, Defender, OU/group structure, validation and
 > reporting). Those are inherited from the template; review and tune them directly in
 > `config.yaml` if needed (see the "edit by hand" note below).
 
+**Fallback:** if Python is unavailable, use the PowerShell console wizard instead:
+
+```powershell
+.\New-WindowsServerConfig.ps1
+```
+
 ### Prefer to edit by hand?
 
 You can skip the wizard and copy/edit the template directly:
 
 ```powershell
-cd C:\Admin\Configure-WindowsIdentityServices
+cd C:\Admin\Windows Identity Services Deployer
 Copy-Item .\config.example.yaml .\config.yaml
 notepad .\config.yaml
 ```
@@ -227,7 +244,7 @@ AD promotion **reboots the server**. Don't panic.
 
 1. After it comes back up, **sign in as the domain Administrator**.
 2. A scheduled resume task continues the run automatically; resume state lives under
-   `execution.statePath` (default `C:\ProgramData\Configure-WindowsIdentityServices`).
+   `execution.statePath` (default `C:\ProgramData\WindowsIdentityServicesDeployer`).
 3. If you were running phase-by-phase, run the `PostPromotion` command now.
 
 Re-running is safe: the script is idempotent where it can be and picks up from the right
@@ -320,13 +337,15 @@ tells you what to fix. It will not silently substitute a guess.
 ## Project layout
 
 ```
-Configure-WindowsIdentityServices/
+Windows Identity Services Deployer/
   Configure-WindowsServer.ps1              # entrypoint — runs the build
-  New-WindowsServerConfig.ps1              # interactive wizard/TUI that writes config.yaml
+  setup.ps1 / setup                        # Textual configuration wizard (recommended)
+  scripts/identity-config-wizard.py        # wizard implementation
+  New-WindowsServerConfig.ps1              # PowerShell fallback wizard
   config.example.yaml                      # template — copy to config.yaml (git-ignored)
   README.md                                # this guide
   lib/                                     # one module per concern (AD, DNS, DHCP, GPO, ...)
-  docs/                                     # operator + rollback + backup runbooks
+  docs/                                    # operator + rollback + backup runbooks
   tests/Pester/                            # config-validation tests (run on a dev box)
   tools/Test-PkiOnHost.ps1                 # optional PKI spot-check helper
 ```
