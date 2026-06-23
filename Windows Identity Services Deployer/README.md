@@ -145,7 +145,7 @@ What it does:
 - Seeds a **reviewed baseline** from `config.example.yaml` (or, if you already have a
   `config.yaml`, lets you **edit that** instead).
 - Walks you through the environment-specific sections in order:
-  **environment metadata → execution paths → Proxmox guest → network/identity →
+  **execution paths → Proxmox guest → network/identity →
   Active Directory → DNS → DHCP (incl. building scopes) → domain time →
   service accounts → optional features (PKI/WSUS/event forwarding/Wazuh/integrations)**.
 - Each stage must pass validation before **Next** advances. Errors appear in the log at

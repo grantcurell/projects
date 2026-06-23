@@ -4,7 +4,6 @@ Describe 'Time config validation' {
     It 'fails when authoritative time has empty external NTP list' {
         $config = [pscustomobject]@{
             schemaVersion = 1
-            environment = @{ enabled = $true }
             execution = @{ statePath='C:\S'; logPath='C:\L'; transcriptPath='C:\L\t.log'; jsonLogPath='C:\L\j.log'; evidencePath='C:\E'; resumeScheduledTaskName='Task' }
             proxmoxGuest = @{ enabled = $false }
             network = @{ enabled = $false }

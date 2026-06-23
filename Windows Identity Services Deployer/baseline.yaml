@@ -1,3 +1,6 @@
+# Baseline for the live 192.168.5.0/24 lab (proxmox1/2, WinServ2025 deploy target).
+# Sources: thedeltacharlie-labtracker/docs/LAB_IPs.md, workstation deployer inventory,
+# and tools/lab-config.yaml. Copy baseline.yaml to config.yaml or pick it in the TUI wizard.
 schemaVersion: 1
 
 execution:
@@ -19,24 +22,29 @@ execution:
 proxmoxGuest:
   enabled: true
   requireVirtioDrivers: true
-  requireQemuGuestAgent: true
+  requireQemuGuestAgent: false
   qemuGuestAgentServiceName: "QEMU-GA"
   virtioIsoDriveLetter: "D:"
   guestToolsInstallerPath: "D:\\virtio-win-guest-tools.exe"
   allowSilentGuestToolsInstall: false
-  expectedDeviceNamePatterns: ["VirtIO", "Red Hat", "QEMU"]
+  expectedDeviceNamePatterns:
+    - "VirtIO"
+    - "Red Hat"
+    - "QEMU"
 
 network:
   enabled: true
-  computerName: "dc01"
+  computerName: "identity-dc01"
   timeZone: "Eastern Standard Time"
   interfaceAlias: "Ethernet"
   ipv4:
-    address: "192.168.1.10"
+    address: "192.168.5.10"
     prefixLength: 24
-    defaultGateway: "192.168.1.1"
-    dnsClientServersBeforePromotion: ["192.168.1.10"]
-    dnsClientServersAfterPromotion: ["127.0.0.1"]
+    defaultGateway: "192.168.5.1"
+    dnsClientServersBeforePromotion:
+      - "192.168.5.10"
+    dnsClientServersAfterPromotion:
+      - "127.0.0.1"
   ipv6:
     configure: false
     disable: false
@@ -58,14 +66,14 @@ roles:
     enabled: false
     includeManagementTools: false
   pki:
-    enabled: false
-    includeManagementTools: false
+    enabled: true
+    includeManagementTools: true
 
 activeDirectory:
   enabled: true
   mode: "newForest"
-  domainName: "lab.example.com"
-  netbiosName: "LAB"
+  domainName: "identity.lab.example.com"
+  netbiosName: "IDENTITY"
   forestMode: "WinThreshold"
   domainMode: "WinThreshold"
   installDns: true
@@ -80,7 +88,7 @@ activeDirectory:
   site:
     renameDefaultSite: true
     defaultSiteCurrentName: "Default-First-Site-Name"
-    newSiteName: "Main-Site"
+    newSiteName: "Lab-Site"
   domainController:
     globalCatalog: true
     readOnlyDomainController: false
@@ -88,17 +96,18 @@ activeDirectory:
 dns:
   enabled: true
   allowForwardersPointingToSelf: false
-  forwarders: ["1.1.1.1", "8.8.8.8"]
+  forwarders:
+    - "1.1.1.1"
   useRootHints: true
   createReverseLookupZones: true
   reverseLookupZones:
-    - networkId: "192.168.1.0/24"
+    - networkId: "192.168.5.0/24"
       replicationScope: "Forest"
   dnsClientUseLoopbackAfterPromotion: true
   requiredRecordsToValidate:
-    - name: "lab.example.com"
+    - name: "identity.lab.example.com"
       type: "A"
-    - name: "_ldap._tcp.dc._msdcs.lab.example.com"
+    - name: "_ldap._tcp.dc._msdcs.identity.lab.example.com"
       type: "SRV"
   scavenging:
     enabled: false
@@ -109,34 +118,34 @@ dhcp:
   enabled: true
   reconcileExisting: false
   authorizeInActiveDirectory: true
-  serverDnsName: "dc01.lab.example.com"
-  serverIpAddress: "192.168.1.10"
+  serverDnsName: "identity-dc01.identity.lab.example.com"
+  serverIpAddress: "192.168.5.10"
   conflictDetectionAttempts: 1
   scopes:
-    - name: "Desktop VLAN 10"
-      scopeId: "192.168.10.0"
-      startRange: "192.168.10.100"
-      endRange: "192.168.10.199"
+    - name: "Lab Core LAN"
+      scopeId: "192.168.5.0"
+      startRange: "192.168.5.50"
+      endRange: "192.168.5.100"
       subnetMask: "255.255.255.0"
       leaseDuration: "8.00:00:00"
       state: "Active"
       options:
-        router: ["192.168.10.1"]
-        dnsServers: ["192.168.1.10"]
-        dnsDomain: "lab.example.com"
-        ntpServers: ["192.168.1.10"]
-      reservations:
-        - name: "desktop-admin-01"
-          ipAddress: "192.168.10.20"
-          clientId: "00-11-22-33-44-55"
-          description: "Admin desktop reservation"
+        router:
+          - "192.168.5.1"
+        dnsServers:
+          - "192.168.5.10"
+        dnsDomain: "identity.lab.example.com"
+        ntpServers:
+          - "192.168.5.10"
+      reservations: []
 
 time:
   enabled: true
   configureOnlyIfPdcEmulator: true
   behaviorIfNotPdc: "stop"
   authoritativeForDomain: true
-  externalNtpServers: ["time.cloudflare.com", "time.google.com"]
+  externalNtpServers:
+    - "time.cloudflare.com"
   ntpFlags: "0x8"
   reliableTimeSource: true
   resyncAfterConfiguration: true
@@ -144,25 +153,26 @@ time:
     queryStatus: true
     queryConfiguration: true
     queryPeers: true
-    stripchartTargets: ["time.cloudflare.com"]
+    stripchartTargets:
+      - "time.cloudflare.com"
     stripchartSamples: 3
 
 organizationalUnits:
   enabled: true
   protectedFromAccidentalDeletion: true
   structure:
+    - distinguishedNameRelative: "OU=Workstations"
+      description: "Workstation computer objects (offline deployer join target)"
     - distinguishedNameRelative: "OU=Users"
       description: "Standard users"
     - distinguishedNameRelative: "OU=Servers"
       description: "Server objects"
     - distinguishedNameRelative: "OU=Desktops"
       description: "Desktop objects"
-    - distinguishedNameRelative: "OU=Admins"
-      description: "Privileged accounts"
-    - distinguishedNameRelative: "OU=Service Accounts"
-      description: "Service accounts"
     - distinguishedNameRelative: "OU=Groups"
       description: "Security groups"
+    - distinguishedNameRelative: "OU=Service Accounts"
+      description: "Service accounts"
 
 groups:
   enabled: true
@@ -171,19 +181,19 @@ groups:
     - name: "GG-Server-Admins"
       scope: "Global"
       category: "Security"
-      description: "Server admins"
-      pathRelative: "OU=Groups"
-      members: []
-    - name: "GG-GitLab-Users"
-      scope: "Global"
-      category: "Security"
-      description: "GitLab users"
+      description: "Server administrators"
       pathRelative: "OU=Groups"
       members: []
     - name: "GG-Keycloak-Users"
       scope: "Global"
       category: "Security"
       description: "Keycloak users"
+      pathRelative: "OU=Groups"
+      members: []
+    - name: "GG-GitLab-Users"
+      scope: "Global"
+      category: "Security"
+      description: "GitLab users"
       pathRelative: "OU=Groups"
       members: []
     - name: "GG-YubiKey-Required"
@@ -199,33 +209,11 @@ serviceAccounts:
   createStandardServiceAccounts: true
   createGroupManagedServiceAccounts: false
   accounts:
-    - name: "svc-wazuh-win"
-      samAccountName: "svc-wazuh-win"
-      type: "standard"
-      pathRelative: "OU=Service Accounts"
-      description: "Wazuh account"
-      enabled: true
-      passwordPrompt: true
-      passwordNeverExpires: false
-      userCannotChangePassword: true
-      resetPasswordIfExists: false
-      groups: []
     - name: "svc-keycloak-ldap"
       samAccountName: "svc-keycloak-ldap"
       type: "standard"
       pathRelative: "OU=Service Accounts"
-      description: "Keycloak bind account"
-      enabled: true
-      passwordPrompt: true
-      passwordNeverExpires: false
-      userCannotChangePassword: true
-      resetPasswordIfExists: false
-      groups: []
-    - name: "svc-gitlab-ldap"
-      samAccountName: "svc-gitlab-ldap"
-      type: "standard"
-      pathRelative: "OU=Service Accounts"
-      description: "GitLab bind account"
+      description: "Keycloak LDAP bind account"
       enabled: true
       passwordPrompt: true
       passwordNeverExpires: false
@@ -256,32 +244,6 @@ gpo:
           lockoutThreshold: 5
           lockoutDurationMinutes: 15
           lockoutObservationWindowMinutes: 15
-    - name: "GPO-Baseline-Servers"
-      linkOrder: 2
-      target: "ou"
-      linkDistinguishedNameRelative: "OU=Servers"
-      enforced: false
-      enabled: true
-      settings:
-        auditPolicy:
-          enabled: true
-          categories:
-            accountLogon: "Success,Failure"
-        firewall:
-          enabled: true
-          domainProfile: "On"
-          privateProfile: "On"
-          publicProfile: "On"
-        screenLock:
-          enabled: true
-          timeoutSeconds: 900
-        removableMedia:
-          denyWriteAccess: true
-          denyExecuteAccess: true
-        wsus:
-          enabled: false
-          serverUrl: null
-          targetGroup: null
 
 hardening:
   enabled: true
@@ -349,12 +311,11 @@ firewall:
     - "Active Directory Domain Services"
     - "DNS Service"
     - "DHCP Server"
-    - "Remote Event Log Management"
     - "Windows Remote Management"
   customRules: []
 
 eventForwarding:
-  enabled: true
+  enabled: false
   mode: "collector"
   collector:
     subscriptionName: "Domain-Controller-Security-Events"
@@ -366,8 +327,8 @@ eventForwarding:
     configureSubscriptionManager: false
     subscriptionManagerServer: null
   validation:
-    requireForwardedEventsLog: true
-    requireSubscriptionPresent: true
+    requireForwardedEventsLog: false
+    requireSubscriptionPresent: false
 
 wazuh:
   enabled: false
@@ -380,16 +341,16 @@ wazuh:
   validateServiceRunning: true
 
 pki:
-  enabled: false
+  enabled: true
   mode: "offline-root-and-issuing-ca"
   allowRootAndIssuingOnSameServer: false
   rootCa:
-    enabled: false
-    caCommonName: null
-    validityYears: null
-    keyLength: null
-    hashAlgorithm: null
-    cryptoProvider: null
+    enabled: true
+    caCommonName: "IDENTITY-ROOT-CA"
+    validityYears: 10
+    keyLength: 4096
+    hashAlgorithm: "SHA256"
+    cryptoProvider: "RSA#Microsoft Software Key Storage Provider"
   issuingCa:
     enabled: false
     caCommonName: null
@@ -398,10 +359,12 @@ pki:
     hashAlgorithm: null
     cryptoProvider: null
   certificateWorkflow:
-    requestDirectory: null
-    issuedDirectory: null
-    renewalWarningDays: null
-    templates: []
+    requestDirectory: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\PKI\\Requests"
+    issuedDirectory: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\PKI\\Issued"
+    renewalWarningDays: 30
+    templates:
+      - "WebServer"
+      - "User"
 
 wsus:
   enabled: false
@@ -423,7 +386,7 @@ wsus:
 
 backupRecovery:
   enabled: true
-  backupPath: "E:\\ADBackups"
+  backupPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Backups"
   createRunbook: true
   runbookPath: "docs/ad-backup-restore-runbook.md"
   createBackupPathIfMissing: true
@@ -445,7 +408,8 @@ vulnerabilityScanning:
   authenticatedScan:
     credentialAccountName: "svc-scan-win"
     createCredentialAccount: false
-    requiredGroups: ["Event Log Readers"]
+    requiredGroups:
+      - "Event Log Readers"
   stigScanning:
     enabled: true
     toolName: "SCAP or approved scanner"
@@ -473,9 +437,9 @@ identityIntegrations:
     allowedGroup: "GG-Keycloak-Users"
     ldapBaseDnRelative: ""
     ldapVendor: "ad"
-    connectionUrl: "ldap://dc01.lab.example.com"
+    connectionUrl: "ldap://identity-dc01.identity.lab.example.com"
     useKerberos: false
-    kerberosRealm: "LAB.EXAMPLE.COM"
+    kerberosRealm: "IDENTITY.LAB.EXAMPLE.COM"
     outputConfigSummaryPath: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\keycloak-ad-federation-summary.txt"
   yubiKey:
     enabled: true
@@ -500,7 +464,7 @@ validation:
     gpoReport: true
     firewallProfile: true
     defenderStatus: true
-    eventForwardingStatus: true
+    eventForwardingStatus: false
   evidenceFiles:
     dcdiag: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\dcdiag.txt"
     dcdiagDns: "C:\\ProgramData\\WindowsIdentityServicesDeployer\\Evidence\\dcdiag-dns.txt"

@@ -1,12 +1,5 @@
 schemaVersion: 1
 
-environment:
-  name: "windows-server-2025-lab"
-  purpose: "identity-and-ca"
-  changeId: "AUTO-VALIDATION-RUN"
-  approvedBy: "ADMINISTRATOR"
-  maintenanceWindow: "2026-05-09T06:00:00-07:00/2026-05-09T12:00:00-07:00"
-
 execution:
   statePath: "C:\\ProgramData\\Configure-WindowsIdentityServices"
   logPath: "C:\\ProgramData\\Configure-WindowsIdentityServices\\Logs"

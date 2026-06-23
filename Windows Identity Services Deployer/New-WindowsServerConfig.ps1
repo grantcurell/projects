@@ -65,6 +65,17 @@ function Write-Note {
     Write-Host "  $Text" -ForegroundColor DarkGray
 }
 
+function Write-FieldHelp {
+    param(
+        [string]$Title,
+        [string]$Description
+    )
+    Write-Host ''
+    Write-Host "  $Title" -ForegroundColor White
+    Write-Host ('  ' + ('─' * 48)) -ForegroundColor DarkGray
+    Write-Host "  $Description" -ForegroundColor DarkGray
+}
+
 function Write-Bad {
     param([string]$Text)
     Write-Host "  ! $Text" -ForegroundColor Yellow
@@ -226,33 +237,29 @@ $cfg = ConvertFrom-Yaml -Yaml (Get-Content -LiteralPath $basePath -Raw -Encoding
 if ($null -eq $cfg) { throw "Baseline did not parse as YAML: $basePath" }
 
 # --------------------------------------------------------------------------------------
-# environment
-# --------------------------------------------------------------------------------------
-Write-Banner '1/11  Environment metadata'
-$envCfg = $cfg['environment']
-$envCfg['name'] = Read-Text -Label 'Environment name' -Current ([string]$envCfg['name'])
-$envCfg['purpose'] = Read-Text -Label 'Purpose (e.g. lab, production)' -Current ([string]$envCfg['purpose'])
-$envCfg['changeId'] = Read-Text -Label 'Change/ticket ID' -Current ([string]$envCfg['changeId'])
-$envCfg['approvedBy'] = Read-Text -Label 'Approved by' -Current ([string]$envCfg['approvedBy'])
-$envCfg['maintenanceWindow'] = Read-Text -Label 'Maintenance window (ISO8601 start/end)' -Current ([string]$envCfg['maintenanceWindow'])
-
-# --------------------------------------------------------------------------------------
 # execution
 # --------------------------------------------------------------------------------------
-Write-Banner '2/11  Execution paths and behavior'
-Write-Note 'These are local paths on the server. Defaults are sensible; press Enter to keep.'
+Write-Banner '1/10  Execution paths and behavior'
+Write-Note 'Where the script stores state, logs, and proof-of-work on this server.'
+Write-Note 'Use absolute Windows paths. Press Enter to keep the bracketed default.'
 $exec = $cfg['execution']
+Write-FieldHelp 'State path' 'Checkpoint/resume data so the run can continue after a reboot mid-promotion.'
 $exec['statePath'] = Read-Text -Label 'State path' -Current ([string]$exec['statePath']) -Validate { param($v) Test-AbsoluteWindowsPath $v }
+Write-FieldHelp 'Log path' 'Folder for general run logs (errors and step messages).'
 $exec['logPath'] = Read-Text -Label 'Log path' -Current ([string]$exec['logPath']) -Validate { param($v) Test-AbsoluteWindowsPath $v }
+Write-FieldHelp 'Transcript path' 'Full PowerShell transcript file (commands and output) for this run.'
 $exec['transcriptPath'] = Read-Text -Label 'Transcript path' -Current ([string]$exec['transcriptPath']) -Validate { param($v) Test-AbsoluteWindowsPath $v }
+Write-FieldHelp 'JSON operation log path' 'Machine-readable log file (one JSON record per line) for auditing or tooling.'
 $exec['jsonLogPath'] = Read-Text -Label 'JSON operation log path' -Current ([string]$exec['jsonLogPath']) -Validate { param($v) Test-AbsoluteWindowsPath $v }
+Write-FieldHelp 'Evidence path' 'Folder for validation artifacts: dcdiag, repadmin, GPO reports, summaries, final report.'
 $exec['evidencePath'] = Read-Text -Label 'Evidence path' -Current ([string]$exec['evidencePath']) -Validate { param($v) Test-AbsoluteWindowsPath $v }
+Write-FieldHelp 'Resume scheduled task name' 'Windows scheduled task name that re-runs the script after reboot during AD promotion.'
 $exec['resumeScheduledTaskName'] = Read-Text -Label 'Resume scheduled task name' -Current ([string]$exec['resumeScheduledTaskName'])
 
 # --------------------------------------------------------------------------------------
 # proxmoxGuest
 # --------------------------------------------------------------------------------------
-Write-Banner '3/11  Proxmox guest integration'
+Write-Banner '2/10  Proxmox guest integration'
 $pmx = $cfg['proxmoxGuest']
 $pmx['enabled'] = Read-YesNo 'Is this server a Proxmox VM (check VirtIO/QEMU guest agent)?' ([bool]$pmx['enabled'])
 if ($pmx['enabled']) {
@@ -267,7 +274,7 @@ if ($pmx['enabled']) {
 # --------------------------------------------------------------------------------------
 # network
 # --------------------------------------------------------------------------------------
-Write-Banner '4/11  Network and host identity'
+Write-Banner '3/10  Network and host identity'
 $net = $cfg['network']
 $net['enabled'] = $true
 $net['computerName'] = Read-Text -Label 'Computer name (hostname)' -Current ([string]$net['computerName']) -Validate {
@@ -289,7 +296,7 @@ $ipv4['dnsClientServersAfterPromotion'] = Read-IPv4List -Label 'DNS servers AFTE
 # --------------------------------------------------------------------------------------
 # activeDirectory
 # --------------------------------------------------------------------------------------
-Write-Banner '5/11  Active Directory (new forest)'
+Write-Banner '4/10  Active Directory (new forest)'
 $ad = $cfg['activeDirectory']
 $ad['enabled'] = $true
 $ad['allowDotLocal'] = [bool]$ad['allowDotLocal']
@@ -322,7 +329,7 @@ if ($ad.Contains('site')) {
 # --------------------------------------------------------------------------------------
 # dns
 # --------------------------------------------------------------------------------------
-Write-Banner '6/11  DNS'
+Write-Banner '5/10  DNS'
 $dns = $cfg['dns']
 $dns['enabled'] = $true
 $dns['allowForwardersPointingToSelf'] = [bool]$dns['allowForwardersPointingToSelf']
@@ -351,7 +358,7 @@ $dns['requiredRecordsToValidate'] = @(
 # --------------------------------------------------------------------------------------
 # dhcp
 # --------------------------------------------------------------------------------------
-Write-Banner '7/11  DHCP'
+Write-Banner '6/10  DHCP'
 $dhcp = $cfg['dhcp']
 $dhcp['enabled'] = Read-YesNo 'Configure DHCP on this server?' ([bool]$dhcp['enabled'])
 if ($dhcp['enabled']) {
@@ -412,7 +419,7 @@ if ($dhcp['enabled']) {
 # --------------------------------------------------------------------------------------
 # time
 # --------------------------------------------------------------------------------------
-Write-Banner '8/11  Domain time'
+Write-Banner '7/10  Domain time'
 $time = $cfg['time']
 $time['enabled'] = $true
 $time['authoritativeForDomain'] = Read-YesNo 'Make this server authoritative time source for the domain?' ([bool]$time['authoritativeForDomain'])
@@ -432,7 +439,7 @@ if ($time['authoritativeForDomain']) {
 # --------------------------------------------------------------------------------------
 # serviceAccounts
 # --------------------------------------------------------------------------------------
-Write-Banner '9/11  Service accounts'
+Write-Banner '8/10  Service accounts'
 $svc = $cfg['serviceAccounts']
 $svc['enabled'] = Read-YesNo 'Create service accounts?' ([bool]$svc['enabled'])
 if ($svc['enabled']) {
@@ -465,7 +472,7 @@ if ($svc['enabled']) {
 # --------------------------------------------------------------------------------------
 # Optional features
 # --------------------------------------------------------------------------------------
-Write-Banner '10/11  Optional features'
+Write-Banner '9/10  Optional features'
 Write-Note 'Each must be explicitly on or off. Enable only what you have prepared.'
 
 $pki = $cfg['pki']
@@ -506,7 +513,7 @@ Write-Note 'reporting are inherited from the template. Review them directly in c
 # --------------------------------------------------------------------------------------
 # Write + validate
 # --------------------------------------------------------------------------------------
-Write-Banner '11/11  Write and validate'
+Write-Banner '10/10  Write and validate'
 
 if (Test-Path -LiteralPath $OutputPath) {
     if (-not (Read-YesNo "Overwrite existing $OutputPath ?" $true)) {

@@ -4,7 +4,6 @@ Describe 'DNS no-defaults guardrails' {
     It 'fails if DNS forwarders include DC IP and not explicitly allowed' {
         $config = [pscustomobject]@{
             schemaVersion = 1
-            environment = @{ enabled = $true }
             execution = @{ statePath='C:\S'; logPath='C:\L'; transcriptPath='C:\L\t.log'; jsonLogPath='C:\L\j.log'; evidencePath='C:\E'; resumeScheduledTaskName='Task' }
             proxmoxGuest = @{ enabled = $false }
             network = @{ enabled = $true; interfaceAlias='E'; computerName='dc'; timeZone='UTC'; ipv4=@{address='10.0.0.10';prefixLength=24}; allowMultipleDefaultGateways=$false }

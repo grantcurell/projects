@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Interactive Textual wizard that builds a validated config.yaml for Configure-WindowsServer.ps1."""
+"""Interactive Textual wizard that builds a validated config.yaml for Configure-WindowsServer.ps1.
+
+Only the handful of values that are genuinely environment-specific are prompted. Everything
+else (execution paths, functional levels, NTDS paths, DNS forwarders, time, DHCP scope,
+Proxmox checks, optional features, service accounts) is inherited from the chosen baseline,
+and the values that depend on the core inputs (NetBIOS, client DNS, reverse zone, DHCP
+server identity) are derived automatically.
+"""
 from __future__ import annotations
 
 from datetime import datetime
@@ -31,60 +38,21 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE_PATH = ROOT / "config.example.yaml"
 OUTPUT_PATH = ROOT / "config.yaml"
 
-SUPPORTED_MASKS: dict[str, int] = {
-    "255.255.255.0": 24,
-    "255.255.0.0": 16,
-    "255.0.0.0": 8,
-    "255.255.255.128": 25,
-    "255.255.255.192": 26,
-    "255.255.255.224": 27,
-    "255.255.255.240": 28,
-    "255.255.255.248": 29,
-    "255.255.255.252": 30,
-}
-
 STAGE_ORDER = [
     "stage-baseline",
-    "stage-environment",
-    "stage-execution",
-    "stage-proxmox",
-    "stage-network",
-    "stage-ad",
-    "stage-dns",
-    "stage-dhcp",
-    "stage-time",
-    "stage-accounts",
-    "stage-optional",
+    "stage-core",
     "stage-write",
     "stage-done",
 ]
 
 STAGE_LABELS = {
-    "stage-baseline": "Stage 1/13: Choose configuration baseline.",
-    "stage-environment": "Stage 2/13: Environment metadata.",
-    "stage-execution": "Stage 3/13: Execution paths and behavior.",
-    "stage-proxmox": "Stage 4/13: Proxmox guest integration.",
-    "stage-network": "Stage 5/13: Network and host identity.",
-    "stage-ad": "Stage 6/13: Active Directory (new forest).",
-    "stage-dns": "Stage 7/13: DNS.",
-    "stage-dhcp": "Stage 8/13: DHCP.",
-    "stage-time": "Stage 9/13: Domain time.",
-    "stage-accounts": "Stage 10/13: Service accounts.",
-    "stage-optional": "Stage 11/13: Optional features.",
-    "stage-write": "Stage 12/13: Write config.yaml and validate.",
-    "stage-done": "Stage 13/13: Setup complete.",
+    "stage-baseline": "Stage 1/4: Choose configuration baseline.",
+    "stage-core": "Stage 2/4: Core settings for this server.",
+    "stage-write": "Stage 3/4: Write config.yaml and validate.",
+    "stage-done": "Stage 4/4: Setup complete.",
 }
 
-SECTION_DIVIDER = "─" * 80
-
-VALID_FOREST_DOMAIN_MODES = {
-    "Win2008",
-    "Win2008R2",
-    "Win2012",
-    "Win2012R2",
-    "WinThreshold",
-    "Default",
-}
+FIELD_DIVIDER = "─" * 48
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -123,10 +91,6 @@ def backup_file(path: Path) -> Path:
     return backup
 
 
-def ipv4_to_int(address: str) -> int:
-    return int(ipaddress.IPv4Address(address))
-
-
 def ipv4_in_subnet(address: str, network_id: str, prefix_length: int) -> bool:
     network = ipaddress.IPv4Network(f"{network_id}/{prefix_length}", strict=False)
     return ipaddress.IPv4Address(address) in network
@@ -137,21 +101,6 @@ def must_ipv4(value: str, label: str) -> None:
         ipaddress.IPv4Address(value.strip())
     except ValueError as exc:
         raise RuntimeError(f"{label} is not a valid IPv4 address: {value}") from exc
-
-
-def must_windows_path(value: str, label: str) -> None:
-    if re.match(r"^[A-Za-z]:\\", value) or value.startswith("\\\\"):
-        return
-    raise RuntimeError(f"{label} must be an absolute Windows path (e.g. C:\\ProgramData\\App).")
-
-
-def parse_ipv4_list(raw: str, label: str) -> list[str]:
-    items = [part.strip() for part in raw.split(",") if part.strip()]
-    if not items:
-        raise RuntimeError(f"{label}: enter at least one IPv4 address.")
-    for item in items:
-        must_ipv4(item, label)
-    return items
 
 
 class PersistentSelect(Select):
@@ -196,6 +145,14 @@ class Input(TextInput):
             event.stop()
             event.prevent_default()
             return
+
+
+def labeled_field(title: str, description: str, widget: Any):
+    """Title, divider, help text, then the input widget."""
+    yield Static(title, classes="field-title")
+    yield Static(FIELD_DIVIDER, classes="field-divider")
+    yield Static(description, classes="field-help")
+    yield widget
 
 
 class IdentityConfigWizard(App[None]):
@@ -246,6 +203,18 @@ class IdentityConfigWizard(App[None]):
     .field {
         margin-bottom: 1;
     }
+    .field-title {
+        text-style: bold;
+        margin-top: 1;
+    }
+    .field-divider {
+        color: $text-muted;
+        height: 1;
+    }
+    .field-help {
+        color: $text-muted;
+        margin-bottom: 1;
+    }
     Input:focus {
         border: round #2d8cff;
         background: #10243a;
@@ -293,14 +262,6 @@ class IdentityConfigWizard(App[None]):
         self.current_stage = "stage-baseline"
         self.quit_armed = False
         self.write_succeeded = False
-        self._refresh_cfg_derived_defaults()
-
-    def _refresh_cfg_derived_defaults(self) -> None:
-        dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
-        domain = str(get_in(self.cfg, ["activeDirectory", "domainName"]) or "")
-        if dc_ip and domain:
-            set_in(self.cfg, ["dhcp", "serverDnsName"], f"{get_in(self.cfg, ['network', 'computerName']) or 'dc01'}.{domain}")
-            set_in(self.cfg, ["dhcp", "serverIpAddress"], dc_ip)
 
     def compose(self) -> ComposeResult:
         yield Static(STAGE_LABELS["stage-baseline"], id="status")
@@ -321,320 +282,43 @@ class IdentityConfigWizard(App[None]):
                 with Horizontal(classes="stage-nav"):
                     yield Button("Next", id="next_baseline", variant="primary", classes="nav-button")
 
-            with VerticalScroll(id="stage-environment", classes="stage"):
-                env = self.cfg.get("environment", {})
-                yield Static("Environment metadata (change/ticket tracking). All fields are required.")
-                yield Static("Environment name")
-                yield Input(str(env.get("name") or ""), id="env_name", classes="field")
-                yield Static("Purpose (e.g. lab, production)")
-                yield Input(str(env.get("purpose") or ""), id="env_purpose", classes="field")
-                yield Static("Change/ticket ID")
-                yield Input(str(env.get("changeId") or ""), id="env_change_id", classes="field")
-                yield Static("Approved by")
-                yield Input(str(env.get("approvedBy") or ""), id="env_approved_by", classes="field")
-                yield Static("Maintenance window (ISO8601 start/end)")
-                yield Input(str(env.get("maintenanceWindow") or ""), id="env_window", classes="field")
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_environment", classes="nav-button")
-                    yield Button("Next", id="next_environment", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-execution", classes="stage"):
-                exe = self.cfg.get("execution", {})
-                yield Static("Local paths on the Windows Server. Use absolute Windows paths only.")
-                yield Static("State path")
-                yield Input(str(exe.get("statePath") or ""), id="exec_state", classes="field")
-                yield Static("Log path")
-                yield Input(str(exe.get("logPath") or ""), id="exec_log", classes="field")
-                yield Static("Transcript path")
-                yield Input(str(exe.get("transcriptPath") or ""), id="exec_transcript", classes="field")
-                yield Static("JSON operation log path")
-                yield Input(str(exe.get("jsonLogPath") or ""), id="exec_json", classes="field")
-                yield Static("Evidence path")
-                yield Input(str(exe.get("evidencePath") or ""), id="exec_evidence", classes="field")
-                yield Static("Resume scheduled task name")
-                yield Input(str(exe.get("resumeScheduledTaskName") or ""), id="exec_task", classes="field")
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_execution", classes="nav-button")
-                    yield Button("Next", id="next_execution", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-proxmox", classes="stage"):
-                pmx = self.cfg.get("proxmoxGuest", {})
-                yield Static("Proxmox guest checks (VirtIO + QEMU Guest Agent). Disable if not on Proxmox.")
-                yield Static("Is this server a Proxmox VM?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(pmx.get("enabled")) else "false",
-                    id="pmx_enabled",
-                    classes="field",
-                )
-                yield Static("Require VirtIO drivers present?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(pmx.get("requireVirtioDrivers")) else "false",
-                    id="pmx_virtio",
-                    classes="field",
-                )
-                yield Static("Require QEMU Guest Agent service?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(pmx.get("requireQemuGuestAgent")) else "false",
-                    id="pmx_qga",
-                    classes="field",
-                )
-                yield Static("Allow silent guest-tools install if missing?")
-                yield PersistentSelect(
-                    options=[("No (recommended)", "false"), ("Yes", "true")],
-                    value="true" if bool(pmx.get("allowSilentGuestToolsInstall")) else "false",
-                    id="pmx_silent",
-                    classes="field",
-                )
-                yield Static("Guest tools installer path (required when silent install is Yes)")
-                yield Input(str(pmx.get("guestToolsInstallerPath") or ""), id="pmx_installer", classes="field")
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_proxmox", classes="nav-button")
-                    yield Button("Next", id="next_proxmox", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-network", classes="stage"):
+            with VerticalScroll(id="stage-core", classes="stage"):
                 net = self.cfg.get("network", {})
                 ipv4 = net.get("ipv4", {})
-                yield Static("Network identity for the domain controller. Hostname must be 1-15 characters.")
-                yield Static("Computer name (hostname)")
-                yield Input(str(net.get("computerName") or ""), id="net_hostname", classes="field")
-                yield Static("Network interface alias (e.g. Ethernet)")
-                yield Input(str(net.get("interfaceAlias") or ""), id="net_iface", classes="field")
-                yield Static("Time zone (e.g. UTC, Eastern Standard Time)")
-                yield Input(str(net.get("timeZone") or ""), id="net_tz", classes="field")
-                yield Static("Static IPv4 address")
-                yield Input(str(ipv4.get("address") or ""), id="net_ip", classes="field")
-                yield Static("IPv4 prefix length (1-32)")
-                yield Input(str(ipv4.get("prefixLength") or ""), id="net_prefix", classes="field")
-                yield Static("Default gateway")
-                yield Input(str(ipv4.get("defaultGateway") or ""), id="net_gw", classes="field")
-                yield Static("DNS servers BEFORE promotion (comma-separated IPv4)")
-                yield Input(", ".join(ipv4.get("dnsClientServersBeforePromotion") or []), id="net_dns_before", classes="field")
-                yield Static("DNS servers AFTER promotion (comma-separated IPv4; loopback is typical)")
-                yield Input(", ".join(ipv4.get("dnsClientServersAfterPromotion") or []), id="net_dns_after", classes="field")
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_network", classes="nav-button")
-                    yield Button("Next", id="next_network", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-ad", classes="stage"):
                 ad = self.cfg.get("activeDirectory", {})
-                site = ad.get("site", {})
-                yield Static("New forest settings. Domain FQDN must be dotted unless you explicitly allow single-label.")
-                yield Static("AD domain FQDN (e.g. corp.example.com)")
-                yield Input(str(ad.get("domainName") or ""), id="ad_domain", classes="field")
-                yield Static("NetBIOS name (1-15 chars)")
-                yield Input(str(ad.get("netbiosName") or ""), id="ad_netbios", classes="field")
-                yield Static("Forest functional level")
-                yield Input(str(ad.get("forestMode") or ""), id="ad_forest", classes="field")
-                yield Static("Domain functional level")
-                yield Input(str(ad.get("domainMode") or ""), id="ad_domain_mode", classes="field")
-                yield Static("NTDS database path")
-                yield Input(str(ad.get("databasePath") or ""), id="ad_db", classes="field")
-                yield Static("NTDS log path")
-                yield Input(str(ad.get("logPath") or ""), id="ad_log", classes="field")
-                yield Static("SYSVOL path")
-                yield Input(str(ad.get("sysvolPath") or ""), id="ad_sysvol", classes="field")
-                yield Static("Rename the default AD site?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(site.get("renameDefaultSite")) else "false",
-                    id="ad_rename_site",
-                    classes="field",
+                yield Static(
+                    "The only values that are specific to this server. Everything else (paths, "
+                    "functional levels, DNS forwarders, time, DHCP scope, Proxmox checks, and "
+                    "optional features) uses the tested defaults from the baseline you picked."
                 )
-                yield Static("New site name (required when rename is Yes)")
-                yield Input(str(site.get("newSiteName") or ""), id="ad_site_name", classes="field")
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_ad", classes="nav-button")
-                    yield Button("Next", id="next_ad", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-dns", classes="stage"):
-                dns = self.cfg.get("dns", {})
-                dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "192.168.1.10")
-                default_rev = re.sub(r"\.\d+$", ".0", dc_ip) + "/24"
-                yield Static("DNS forwarders must not include this server's own IP unless explicitly allowed.")
-                yield Static("DNS forwarders (comma-separated IPv4)")
-                yield Input(", ".join(dns.get("forwarders") or []), id="dns_forwarders", classes="field")
-                yield Static(f"Create reverse lookup zone for {default_rev}?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(dns.get("createReverseLookupZones")) else "false",
-                    id="dns_reverse",
-                    classes="field",
+                yield from labeled_field(
+                    "Computer name (hostname)",
+                    "Windows hostname for this domain controller. 1-15 characters; letters, digits, hyphens.",
+                    Input(str(net.get("computerName") or ""), id="net_hostname", classes="field"),
+                )
+                yield from labeled_field(
+                    "Static IPv4 address",
+                    "The fixed IP this server owns. Also used as its DNS server IP and DHCP server IP.",
+                    Input(str(ipv4.get("address") or ""), id="net_ip", classes="field"),
+                )
+                yield from labeled_field(
+                    "IPv4 prefix length",
+                    "Subnet size in CIDR bits (e.g. 24 = 255.255.255.0).",
+                    Input(str(ipv4.get("prefixLength") or ""), id="net_prefix", classes="field"),
+                )
+                yield from labeled_field(
+                    "Default gateway",
+                    "Router address for this subnet. Must be inside the server's subnet.",
+                    Input(str(ipv4.get("defaultGateway") or ""), id="net_gw", classes="field"),
+                )
+                yield from labeled_field(
+                    "AD domain FQDN",
+                    "New forest root domain, e.g. corp.example.com. NetBIOS name is derived from the first label.",
+                    Input(str(ad.get("domainName") or ""), id="ad_domain", classes="field"),
                 )
                 with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_dns", classes="nav-button")
-                    yield Button("Next", id="next_dns", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-dhcp", classes="stage"):
-                dhcp = self.cfg.get("dhcp", {})
-                scope = (dhcp.get("scopes") or [{}])[0]
-                opts = scope.get("options", {})
-                yield Static("DHCP on this server. Scope fields apply when you choose to redefine scopes.")
-                yield Static("Configure DHCP on this server?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(dhcp.get("enabled")) else "false",
-                    id="dhcp_enabled",
-                    classes="field",
-                )
-                yield Static("Authorize DHCP in Active Directory?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(dhcp.get("authorizeInActiveDirectory")) else "false",
-                    id="dhcp_authorize",
-                    classes="field",
-                )
-                yield Static("Reconcile/overwrite conflicting existing scope?")
-                yield PersistentSelect(
-                    options=[("No", "false"), ("Yes", "true")],
-                    value="true" if bool(dhcp.get("reconcileExisting")) else "false",
-                    id="dhcp_reconcile",
-                    classes="field",
-                )
-                yield Static("DHCP server DNS name (FQDN)")
-                yield Input(str(dhcp.get("serverDnsName") or ""), id="dhcp_server_name", classes="field")
-                yield Static("DHCP server IP address")
-                yield Input(str(dhcp.get("serverIpAddress") or ""), id="dhcp_server_ip", classes="field")
-                yield Static("Redefine the primary DHCP scope now? (No keeps template scopes)")
-                yield PersistentSelect(
-                    options=[("No - keep baseline scopes", "false"), ("Yes - define one scope", "true")],
-                    value="false",
-                    id="dhcp_redefine",
-                    classes="field",
-                )
-                yield Static("Scope name")
-                yield Input(str(scope.get("name") or ""), id="dhcp_scope_name", classes="field")
-                yield Static("Subnet mask")
-                yield PersistentSelect(
-                    options=[(mask, mask) for mask in SUPPORTED_MASKS],
-                    value=str(scope.get("subnetMask") or "255.255.255.0"),
-                    id="dhcp_scope_mask",
-                    classes="field",
-                )
-                yield Static("Scope network ID (e.g. 192.168.10.0)")
-                yield Input(str(scope.get("scopeId") or ""), id="dhcp_scope_id", classes="field")
-                yield Static("Start of range")
-                yield Input(str(scope.get("startRange") or ""), id="dhcp_start", classes="field")
-                yield Static("End of range")
-                yield Input(str(scope.get("endRange") or ""), id="dhcp_end", classes="field")
-                yield Static("Router/gateway option (comma-separated IPv4)")
-                yield Input(", ".join(opts.get("router") or []), id="dhcp_router", classes="field")
-                yield Static("DNS servers option (comma-separated IPv4)")
-                yield Input(", ".join(opts.get("dnsServers") or []), id="dhcp_dns", classes="field")
-                yield Static("DNS domain option")
-                yield Input(str(opts.get("dnsDomain") or ""), id="dhcp_domain", classes="field")
-                yield Static("NTP servers option (comma-separated IPv4)")
-                yield Input(", ".join(opts.get("ntpServers") or []), id="dhcp_ntp", classes="field")
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_dhcp", classes="nav-button")
-                    yield Button("Next", id="next_dhcp", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-time", classes="stage"):
-                time_cfg = self.cfg.get("time", {})
-                yield Static("Domain time (w32time). External NTP servers required when authoritative.")
-                yield Static("Make this server authoritative time source for the domain?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(time_cfg.get("authoritativeForDomain")) else "false",
-                    id="time_auth",
-                    classes="field",
-                )
-                yield Static("External NTP servers (comma-separated hostnames or IPv4)")
-                yield Input(", ".join(time_cfg.get("externalNtpServers") or []), id="time_ntp", classes="field")
-                yield Static("If this server is NOT the PDC emulator")
-                yield PersistentSelect(
-                    options=[("stop", "stop"), ("warn", "warn"), ("skip", "skip")],
-                    value=str(time_cfg.get("behaviorIfNotPdc") or "stop"),
-                    id="time_not_pdc",
-                    classes="field",
-                )
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_time", classes="nav-button")
-                    yield Button("Next", id="next_time", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-accounts", classes="stage"):
-                svc = self.cfg.get("serviceAccounts", {})
-                baseline = ", ".join(str(a.get("samAccountName") or "") for a in (svc.get("accounts") or []))
-                yield Static(f"Service accounts from the baseline: {baseline or '(none)'}")
-                yield Static("Create service accounts?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(svc.get("enabled")) else "false",
-                    id="svc_enabled",
-                    classes="field",
-                )
-                yield Static("Passwords are prompted at runtime and are never stored in YAML.")
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_accounts", classes="nav-button")
-                    yield Button("Next", id="next_accounts", variant="primary", classes="nav-button")
-
-            with VerticalScroll(id="stage-optional", classes="stage"):
-                pki = self.cfg.get("pki", {})
-                wsus = self.cfg.get("wsus", {})
-                evt = self.cfg.get("eventForwarding", {})
-                wz = self.cfg.get("wazuh", {})
-                idi = self.cfg.get("identityIntegrations", {})
-                bkp = self.cfg.get("backupRecovery", {})
-                yield Static("Optional features must be explicitly on or off. Enable only what you prepared.")
-                yield Static(SECTION_DIVIDER)
-                yield Static("Enable AD backup/recovery artifacts?")
-                yield PersistentSelect(
-                    options=[("Yes", "true"), ("No", "false")],
-                    value="true" if bool(bkp.get("enabled")) else "false",
-                    id="opt_backup_enabled",
-                    classes="field",
-                )
-                yield Static("AD backup path (required when backup is enabled)")
-                yield Input(str(bkp.get("backupPath") or ""), id="opt_backup", classes="field")
-                yield Static(SECTION_DIVIDER)
-                yield Static("Enable PKI (AD Certificate Services)?")
-                yield PersistentSelect(
-                    options=[("No", "false"), ("Yes", "true")],
-                    value="true" if bool(pki.get("enabled")) else "false",
-                    id="opt_pki",
-                    classes="field",
-                )
-                yield Static("Root CA common name (when PKI enabled with root CA)")
-                yield Input(str(get_in(pki, ["rootCa", "caCommonName"]) or ""), id="opt_pki_cn", classes="field")
-                yield Static("Enable WSUS?")
-                yield PersistentSelect(
-                    options=[("No", "false"), ("Yes", "true")],
-                    value="true" if bool(wsus.get("enabled")) else "false",
-                    id="opt_wsus",
-                    classes="field",
-                )
-                yield Static("WSUS content directory")
-                yield Input(str(wsus.get("contentDirectory") or ""), id="opt_wsus_dir", classes="field")
-                yield Static("Enable Windows Event Forwarding?")
-                yield PersistentSelect(
-                    options=[("No", "false"), ("Yes", "true")],
-                    value="true" if bool(evt.get("enabled")) else "false",
-                    id="opt_evt",
-                    classes="field",
-                )
-                yield Static("Enable Wazuh agent?")
-                yield PersistentSelect(
-                    options=[("No", "false"), ("Yes", "true")],
-                    value="true" if bool(wz.get("enabled")) else "false",
-                    id="opt_wazuh",
-                    classes="field",
-                )
-                yield Static("Wazuh agent MSI path (local or UNC)")
-                yield Input(str(wz.get("agentMsiPath") or ""), id="opt_wazuh_msi", classes="field")
-                yield Static("Wazuh manager address")
-                yield Input(str(wz.get("managerAddress") or ""), id="opt_wazuh_mgr", classes="field")
-                yield Static("Write identity-integration artifacts (GitLab/Keycloak/YubiKey)?")
-                yield PersistentSelect(
-                    options=[("No", "false"), ("Yes", "true")],
-                    value="true" if bool(idi.get("enabled")) else "false",
-                    id="opt_idi",
-                    classes="field",
-                )
-                with Horizontal(classes="stage-nav"):
-                    yield Button("Back", id="back_optional", classes="nav-button")
-                    yield Button("Next", id="next_optional", variant="primary", classes="nav-button")
+                    yield Button("Back", id="back_core", classes="nav-button")
+                    yield Button("Next", id="next_core", variant="primary", classes="nav-button")
 
             with Vertical(id="stage-write", classes="stage"):
                 with Horizontal(classes="write-center"):
@@ -666,9 +350,6 @@ class IdentityConfigWizard(App[None]):
     def _select(self, widget_id: str) -> str:
         value = self.query_one(f"#{widget_id}", Select).value
         return "" if value is None else str(value)
-
-    def _bool_select(self, widget_id: str) -> bool:
-        return self._select(widget_id) == "true"
 
     def switch_stage(self, stage_id: str) -> None:
         self.query_one("#main-switcher", ContentSwitcher).current = stage_id
@@ -783,47 +464,10 @@ class IdentityConfigWizard(App[None]):
         if not value.strip():
             raise RuntimeError(f"{label} is required.")
 
-    def _validate_maintenance_window(self, value: str) -> None:
-        self._require_text(value, "Maintenance window")
-        if "/" not in value:
-            raise RuntimeError(
-                "Maintenance window must be ISO8601 start/end separated by '/' "
-                "(e.g. 2026-01-01T00:00:00-05:00/2026-01-01T04:00:00-05:00)."
-            )
-        start_raw, end_raw = value.split("/", 1)
-        for part, label in [(start_raw.strip(), "Maintenance window start"), (end_raw.strip(), "Maintenance window end")]:
-            if not part:
-                raise RuntimeError(f"{label} is required.")
-            try:
-                datetime.fromisoformat(part.replace("Z", "+00:00"))
-            except ValueError as exc:
-                raise RuntimeError(f"{label} is not valid ISO8601: {part}") from exc
-
-    def _validate_functional_level(self, value: str, label: str) -> None:
-        self._require_text(value, label)
-        if value not in VALID_FOREST_DOMAIN_MODES:
-            allowed = ", ".join(sorted(VALID_FOREST_DOMAIN_MODES))
-            raise RuntimeError(f"{label} must be one of: {allowed}.")
-
     def _validate_gateway_in_subnet(self, gateway: str, address: str, prefix: int) -> None:
         if not ipv4_in_subnet(gateway, address, prefix):
             network = ipaddress.IPv4Network(f"{address}/{prefix}", strict=False)
             raise RuntimeError(f"Default gateway must be inside the server subnet ({network}).")
-
-    def _expected_dhcp_server_fqdn(self) -> str:
-        hostname = str(get_in(self.cfg, ["network", "computerName"]) or "").strip()
-        domain = str(get_in(self.cfg, ["activeDirectory", "domainName"]) or "").strip()
-        if not hostname or not domain:
-            return ""
-        return f"{hostname.lower()}.{domain.lower()}"
-
-    def _validate_dhcp_server_identity(self, server_name: str, server_ip: str) -> None:
-        dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
-        expected_fqdn = self._expected_dhcp_server_fqdn()
-        if dc_ip and server_ip != dc_ip:
-            raise RuntimeError(f"DHCP server IP must match this server's static IP ({dc_ip}).")
-        if expected_fqdn and server_name.lower() != expected_fqdn:
-            raise RuntimeError(f"DHCP server DNS name must be {expected_fqdn}.")
 
     def _validate_hostname(self, value: str) -> None:
         if len(value) < 1 or len(value) > 15:
@@ -831,18 +475,20 @@ class IdentityConfigWizard(App[None]):
         if not re.match(r"^[A-Za-z0-9-]+$", value):
             raise RuntimeError("Hostname may contain only letters, digits, and hyphens.")
 
-    def _validate_netbios(self, value: str) -> None:
-        if len(value) < 1 or len(value) > 15:
-            raise RuntimeError("NetBIOS name must be 1-15 characters.")
-        if not re.match(r"^[A-Za-z0-9-]+$", value):
-            raise RuntimeError("NetBIOS name may contain only letters, digits, and hyphens.")
-
     def _validate_domain(self, value: str) -> None:
         ad = self.cfg.get("activeDirectory", {})
         if "." not in value and not bool(ad.get("allowSingleLabelDomain")):
             raise RuntimeError("Single-label domains are not allowed. Use a dotted FQDN (e.g. corp.example.com).")
         if value.lower().endswith(".local") and not bool(ad.get("allowDotLocal")):
             raise RuntimeError(".local domains are discouraged and not allowed by this config.")
+
+    def _derive_netbios(self, domain: str) -> str:
+        first_label = domain.split(".")[0]
+        cleaned = re.sub(r"[^A-Za-z0-9-]", "", first_label).upper()
+        netbios = cleaned[:15]
+        if not netbios:
+            raise RuntimeError("Could not derive a NetBIOS name from the domain FQDN.")
+        return netbios
 
     def validate_baseline_stage(self) -> None:
         try:
@@ -854,89 +500,34 @@ class IdentityConfigWizard(App[None]):
             else:
                 self.baseline_path = EXAMPLE_PATH
             self.cfg = load_yaml(self.baseline_path)
-            self._refresh_cfg_derived_defaults()
+            self.cfg.pop("environment", None)
             self.append_log(f"Loaded baseline from {self.baseline_path.name}.")
-            self.switch_stage("stage-environment")
+            self._reseed_core_fields()
+            self.switch_stage("stage-core")
         except Exception as exc:  # noqa: BLE001
             self.append_log(f"[ERROR] Stage 1 failed: {exc}")
             self.set_status("Stage 1 failed. Fix selection and try again.")
 
-    def validate_environment_stage(self) -> None:
-        try:
-            for widget_id, path, label in [
-                ("env_name", ["environment", "name"], "Environment name"),
-                ("env_purpose", ["environment", "purpose"], "Purpose"),
-                ("env_change_id", ["environment", "changeId"], "Change/ticket ID"),
-                ("env_approved_by", ["environment", "approvedBy"], "Approved by"),
-            ]:
-                value = self._input(widget_id)
-                self._require_text(value, label)
-                set_in(self.cfg, path, value)
-            window = self._input("env_window")
-            self._validate_maintenance_window(window)
-            set_in(self.cfg, ["environment", "maintenanceWindow"], window)
-            self.append_log("Environment metadata validated.")
-            self.switch_stage("stage-execution")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 2 failed: {exc}")
-            self.set_status("Stage 2 failed. Fix fields and try again.")
+    def _reseed_core_fields(self) -> None:
+        """Repopulate the core inputs from the freshly loaded baseline."""
+        net = self.cfg.get("network", {})
+        ipv4 = net.get("ipv4", {})
+        ad = self.cfg.get("activeDirectory", {})
+        self.query_one("#net_hostname", Input).value = str(net.get("computerName") or "")
+        self.query_one("#net_ip", Input).value = str(ipv4.get("address") or "")
+        self.query_one("#net_prefix", Input).value = str(ipv4.get("prefixLength") or "")
+        self.query_one("#net_gw", Input).value = str(ipv4.get("defaultGateway") or "")
+        self.query_one("#ad_domain", Input).value = str(ad.get("domainName") or "")
 
-    def validate_execution_stage(self) -> None:
-        try:
-            mapping = [
-                ("exec_state", ["execution", "statePath"], "State path"),
-                ("exec_log", ["execution", "logPath"], "Log path"),
-                ("exec_transcript", ["execution", "transcriptPath"], "Transcript path"),
-                ("exec_json", ["execution", "jsonLogPath"], "JSON log path"),
-                ("exec_evidence", ["execution", "evidencePath"], "Evidence path"),
-            ]
-            for widget_id, path, label in mapping:
-                value = self._input(widget_id)
-                self._require_text(value, label)
-                must_windows_path(value, label)
-                set_in(self.cfg, path, value)
-            task = self._input("exec_task")
-            self._require_text(task, "Resume scheduled task name")
-            set_in(self.cfg, ["execution", "resumeScheduledTaskName"], task)
-            self.append_log("Execution paths validated.")
-            self.switch_stage("stage-proxmox")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 3 failed: {exc}")
-            self.set_status("Stage 3 failed. Fix fields and try again.")
-
-    def validate_proxmox_stage(self) -> None:
-        try:
-            enabled = self._bool_select("pmx_enabled")
-            set_in(self.cfg, ["proxmoxGuest", "enabled"], enabled)
-            if enabled:
-                set_in(self.cfg, ["proxmoxGuest", "requireVirtioDrivers"], self._bool_select("pmx_virtio"))
-                set_in(self.cfg, ["proxmoxGuest", "requireQemuGuestAgent"], self._bool_select("pmx_qga"))
-                silent = self._bool_select("pmx_silent")
-                set_in(self.cfg, ["proxmoxGuest", "allowSilentGuestToolsInstall"], silent)
-                installer = self._input("pmx_installer")
-                if silent:
-                    self._require_text(installer, "Guest tools installer path")
-                    must_windows_path(installer, "Guest tools installer path")
-                set_in(self.cfg, ["proxmoxGuest", "guestToolsInstallerPath"], installer)
-            self.append_log("Proxmox guest settings validated.")
-            self.switch_stage("stage-network")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 4 failed: {exc}")
-            self.set_status("Stage 4 failed. Fix fields and try again.")
-
-    def validate_network_stage(self) -> None:
+    def validate_core_stage(self) -> None:
         try:
             hostname = self._input("net_hostname")
-            self._validate_hostname(hostname)
-            iface = self._input("net_iface")
-            tz = self._input("net_tz")
             ip = self._input("net_ip")
             prefix_raw = self._input("net_prefix")
             gw = self._input("net_gw")
-            dns_before = self._input("net_dns_before")
-            dns_after = self._input("net_dns_after")
-            for label, value in [("Interface alias", iface), ("Time zone", tz)]:
-                self._require_text(value, label)
+            domain = self._input("ad_domain")
+
+            self._validate_hostname(hostname)
             must_ipv4(ip, "Static IPv4 address")
             must_ipv4(gw, "Default gateway")
             try:
@@ -946,82 +537,37 @@ class IdentityConfigWizard(App[None]):
             if prefix < 1 or prefix > 32:
                 raise RuntimeError("IPv4 prefix length must be between 1 and 32.")
             self._validate_gateway_in_subnet(gw, ip, prefix)
-            before_list = parse_ipv4_list(dns_before, "DNS before promotion")
-            after_list = parse_ipv4_list(dns_after, "DNS after promotion")
+            self._validate_domain(domain)
+
+            forwarders = [str(f) for f in (get_in(self.cfg, ["dns", "forwarders"]) or [])]
+            allow_self = bool(get_in(self.cfg, ["dns", "allowForwardersPointingToSelf"]))
+            if not allow_self and ip in forwarders:
+                raise RuntimeError(
+                    f"The baseline's DNS forwarders include this server's IP ({ip}). "
+                    "Pick a different static IP or edit the baseline's dns.forwarders."
+                )
+
+            netbios = self._derive_netbios(domain)
+
+            # Core network identity (entered).
             set_in(self.cfg, ["network", "enabled"], True)
             set_in(self.cfg, ["network", "computerName"], hostname)
-            set_in(self.cfg, ["network", "interfaceAlias"], iface)
-            set_in(self.cfg, ["network", "timeZone"], tz)
             set_in(self.cfg, ["network", "ipv4", "address"], ip)
             set_in(self.cfg, ["network", "ipv4", "prefixLength"], prefix)
             set_in(self.cfg, ["network", "ipv4", "defaultGateway"], gw)
-            set_in(self.cfg, ["network", "ipv4", "dnsClientServersBeforePromotion"], before_list)
-            set_in(self.cfg, ["network", "ipv4", "dnsClientServersAfterPromotion"], after_list)
-            self._refresh_cfg_derived_defaults()
-            self.append_log("Network settings validated.")
-            self.switch_stage("stage-ad")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 5 failed: {exc}")
-            self.set_status("Stage 5 failed. Fix fields and try again.")
+            # Derived: a DC resolves against itself before promotion, loopback after.
+            set_in(self.cfg, ["network", "ipv4", "dnsClientServersBeforePromotion"], [ip])
+            set_in(self.cfg, ["network", "ipv4", "dnsClientServersAfterPromotion"], ["127.0.0.1"])
 
-    def validate_ad_stage(self) -> None:
-        try:
-            domain = self._input("ad_domain")
-            netbios = self._input("ad_netbios")
-            forest = self._input("ad_forest")
-            domain_mode = self._input("ad_domain_mode")
-            db = self._input("ad_db")
-            log_path = self._input("ad_log")
-            sysvol = self._input("ad_sysvol")
-            rename_site = self._bool_select("ad_rename_site")
-            site_name = self._input("ad_site_name")
-            self._validate_domain(domain)
-            self._validate_netbios(netbios)
-            self._validate_functional_level(forest, "Forest functional level")
-            self._validate_functional_level(domain_mode, "Domain functional level")
-            for label, value, path_key in [
-                ("NTDS database path", db, "databasePath"),
-                ("NTDS log path", log_path, "logPath"),
-                ("SYSVOL path", sysvol, "sysvolPath"),
-            ]:
-                self._require_text(value, label)
-                must_windows_path(value, label)
-                set_in(self.cfg, ["activeDirectory", path_key], value)
-            if rename_site:
-                self._require_text(site_name, "New site name")
+            # Active Directory (entered + derived NetBIOS).
             set_in(self.cfg, ["activeDirectory", "enabled"], True)
             set_in(self.cfg, ["activeDirectory", "domainName"], domain)
             set_in(self.cfg, ["activeDirectory", "netbiosName"], netbios)
-            set_in(self.cfg, ["activeDirectory", "forestMode"], forest)
-            set_in(self.cfg, ["activeDirectory", "domainMode"], domain_mode)
-            set_in(self.cfg, ["activeDirectory", "site", "renameDefaultSite"], rename_site)
-            if rename_site:
-                set_in(self.cfg, ["activeDirectory", "site", "newSiteName"], site_name)
-            self.append_log("Active Directory settings validated.")
-            self.switch_stage("stage-dns")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 6 failed: {exc}")
-            self.set_status("Stage 6 failed. Fix fields and try again.")
 
-    def validate_dns_stage(self) -> None:
-        try:
-            dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
-            domain = str(get_in(self.cfg, ["activeDirectory", "domainName"]) or "")
-            forwarders = parse_ipv4_list(self._input("dns_forwarders"), "DNS forwarders")
-            allow_self = bool(get_in(self.cfg, ["dns", "allowForwardersPointingToSelf"]))
-            if not allow_self and dc_ip in forwarders:
-                raise RuntimeError(f"Forwarders must not include this server's own IP ({dc_ip}).")
-            create_reverse = self._bool_select("dns_reverse")
+            # Derived DNS: reverse zone for the server's /24 and the records to validate.
             set_in(self.cfg, ["dns", "enabled"], True)
-            set_in(self.cfg, ["dns", "forwarders"], forwarders)
-            set_in(self.cfg, ["dns", "createReverseLookupZones"], create_reverse)
-            if create_reverse:
-                rev_net = re.sub(r"\.\d+$", ".0", dc_ip) + "/24"
-                set_in(
-                    self.cfg,
-                    ["dns", "reverseLookupZones"],
-                    [{"networkId": rev_net, "replicationScope": "Forest"}],
-                )
+            rev_net = re.sub(r"\.\d+$", ".0", ip) + "/24"
+            set_in(self.cfg, ["dns", "reverseLookupZones"], [{"networkId": rev_net, "replicationScope": "Forest"}])
             set_in(
                 self.cfg,
                 ["dns", "requiredRecordsToValidate"],
@@ -1030,144 +576,16 @@ class IdentityConfigWizard(App[None]):
                     {"name": f"_ldap._tcp.dc._msdcs.{domain}", "type": "SRV"},
                 ],
             )
-            self.append_log("DNS settings validated.")
-            self.switch_stage("stage-dhcp")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 7 failed: {exc}")
-            self.set_status("Stage 7 failed. Fix fields and try again.")
 
-    def validate_dhcp_stage(self) -> None:
-        try:
-            enabled = self._bool_select("dhcp_enabled")
-            set_in(self.cfg, ["dhcp", "enabled"], enabled)
-            set_in(self.cfg, ["roles", "dhcp", "enabled"], enabled)
-            if not enabled:
-                self.append_log("DHCP disabled; skipping scope validation.")
-                self.switch_stage("stage-time")
-                return
-            set_in(self.cfg, ["dhcp", "authorizeInActiveDirectory"], self._bool_select("dhcp_authorize"))
-            set_in(self.cfg, ["dhcp", "reconcileExisting"], self._bool_select("dhcp_reconcile"))
-            server_name = self._input("dhcp_server_name")
-            server_ip = self._input("dhcp_server_ip")
-            self._require_text(server_name, "DHCP server DNS name")
-            must_ipv4(server_ip, "DHCP server IP address")
-            self._validate_dhcp_server_identity(server_name, server_ip)
-            set_in(self.cfg, ["dhcp", "serverDnsName"], server_name)
-            set_in(self.cfg, ["dhcp", "serverIpAddress"], server_ip)
-            if self._bool_select("dhcp_redefine"):
-                mask = self._select("dhcp_scope_mask")
-                if mask not in SUPPORTED_MASKS:
-                    raise RuntimeError("Choose a supported subnet mask.")
-                prefix = SUPPORTED_MASKS[mask]
-                scope_id = self._input("dhcp_scope_id")
-                start = self._input("dhcp_start")
-                end = self._input("dhcp_end")
-                name = self._input("dhcp_scope_name")
-                router = parse_ipv4_list(self._input("dhcp_router"), "Router option")
-                dns_servers = parse_ipv4_list(self._input("dhcp_dns"), "DNS servers option")
-                dns_domain = self._input("dhcp_domain")
-                ntp_servers = parse_ipv4_list(self._input("dhcp_ntp"), "NTP servers option")
-                self._require_text(name, "Scope name")
-                self._require_text(dns_domain, "DNS domain option")
-                must_ipv4(scope_id, "Scope network ID")
-                must_ipv4(start, "Start of range")
-                must_ipv4(end, "End of range")
-                if not ipv4_in_subnet(start, scope_id, prefix):
-                    raise RuntimeError(f"Start of range is not inside {scope_id}/{prefix}.")
-                if not ipv4_in_subnet(end, scope_id, prefix):
-                    raise RuntimeError(f"End of range is not inside {scope_id}/{prefix}.")
-                if ipv4_to_int(end) < ipv4_to_int(start):
-                    raise RuntimeError("End of range must be greater than or equal to start of range.")
-                scope = {
-                    "name": name,
-                    "scopeId": scope_id,
-                    "startRange": start,
-                    "endRange": end,
-                    "subnetMask": mask,
-                    "leaseDuration": "8.00:00:00",
-                    "state": "Active",
-                    "options": {
-                        "router": router,
-                        "dnsServers": dns_servers,
-                        "dnsDomain": dns_domain,
-                        "ntpServers": ntp_servers,
-                    },
-                    "reservations": [],
-                }
-                set_in(self.cfg, ["dhcp", "scopes"], [scope])
-            self.append_log("DHCP settings validated.")
-            self.switch_stage("stage-time")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 8 failed: {exc}")
-            self.set_status("Stage 8 failed. Fix fields and try again.")
+            # Derived DHCP server identity (scope itself is inherited from the baseline).
+            set_in(self.cfg, ["dhcp", "serverDnsName"], f"{hostname.lower()}.{domain.lower()}")
+            set_in(self.cfg, ["dhcp", "serverIpAddress"], ip)
 
-    def validate_time_stage(self) -> None:
-        try:
-            authoritative = self._bool_select("time_auth")
-            set_in(self.cfg, ["time", "enabled"], True)
-            set_in(self.cfg, ["time", "authoritativeForDomain"], authoritative)
-            set_in(self.cfg, ["time", "behaviorIfNotPdc"], self._select("time_not_pdc"))
-            if authoritative:
-                ntp_raw = self._input("time_ntp")
-                servers = [part.strip() for part in ntp_raw.split(",") if part.strip()]
-                if not servers:
-                    raise RuntimeError("At least one external NTP server is required when authoritative.")
-                set_in(self.cfg, ["time", "externalNtpServers"], servers)
-            self.append_log("Domain time settings validated.")
-            self.switch_stage("stage-accounts")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 9 failed: {exc}")
-            self.set_status("Stage 9 failed. Fix fields and try again.")
-
-    def validate_accounts_stage(self) -> None:
-        try:
-            set_in(self.cfg, ["serviceAccounts", "enabled"], self._bool_select("svc_enabled"))
-            self.append_log("Service account settings validated.")
-            self.switch_stage("stage-optional")
-        except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 10 failed: {exc}")
-            self.set_status("Stage 10 failed. Fix fields and try again.")
-
-    def validate_optional_stage(self) -> None:
-        try:
-            pki_enabled = self._bool_select("opt_pki")
-            wsus_enabled = self._bool_select("opt_wsus")
-            wazuh_enabled = self._bool_select("opt_wazuh")
-            set_in(self.cfg, ["pki", "enabled"], pki_enabled)
-            set_in(self.cfg, ["roles", "pki", "enabled"], pki_enabled)
-            if pki_enabled:
-                cn = self._input("opt_pki_cn")
-                self._require_text(cn, "Root CA common name")
-                set_in(self.cfg, ["pki", "rootCa", "caCommonName"], cn)
-            set_in(self.cfg, ["wsus", "enabled"], wsus_enabled)
-            set_in(self.cfg, ["roles", "wsus", "enabled"], wsus_enabled)
-            if wsus_enabled:
-                wsus_dir = self._input("opt_wsus_dir")
-                self._require_text(wsus_dir, "WSUS content directory")
-                must_windows_path(wsus_dir, "WSUS content directory")
-                set_in(self.cfg, ["wsus", "contentDirectory"], wsus_dir)
-            set_in(self.cfg, ["eventForwarding", "enabled"], self._bool_select("opt_evt"))
-            set_in(self.cfg, ["wazuh", "enabled"], wazuh_enabled)
-            if wazuh_enabled:
-                msi = self._input("opt_wazuh_msi")
-                mgr = self._input("opt_wazuh_mgr")
-                self._require_text(msi, "Wazuh agent MSI path")
-                self._require_text(mgr, "Wazuh manager address")
-                set_in(self.cfg, ["wazuh", "agentMsiPath"], msi)
-                set_in(self.cfg, ["wazuh", "managerAddress"], mgr)
-            set_in(self.cfg, ["identityIntegrations", "enabled"], self._bool_select("opt_idi"))
-            backup_enabled = self._bool_select("opt_backup_enabled")
-            set_in(self.cfg, ["backupRecovery", "enabled"], backup_enabled)
-            if backup_enabled:
-                backup = self._input("opt_backup")
-                self._require_text(backup, "AD backup path")
-                must_windows_path(backup, "AD backup path")
-                set_in(self.cfg, ["backupRecovery", "backupPath"], backup)
-            self.append_log("Optional feature settings validated.")
+            self.append_log(f"Core settings validated. NetBIOS derived as '{netbios}'.")
             self.switch_stage("stage-write")
         except Exception as exc:  # noqa: BLE001
-            self.append_log(f"[ERROR] Stage 11 failed: {exc}")
-            self.set_status("Stage 11 failed. Fix fields and try again.")
+            self.append_log(f"[ERROR] Stage 2 failed: {exc}")
+            self.set_status("Stage 2 failed. Fix fields and try again.")
 
     def _run_powershell_validation(self, config_path: Path) -> str:
         ps_script = f"""
@@ -1208,8 +626,9 @@ Write-Output 'VALIDATION_OK'
         domain = str(get_in(self.cfg, ["activeDirectory", "domainName"]) or "")
         hostname = str(get_in(self.cfg, ["network", "computerName"]) or "")
         dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
+        netbios = str(get_in(self.cfg, ["activeDirectory", "netbiosName"]) or "")
         summary = (
-            f"Domain: {domain}\n"
+            f"Domain: {domain}  (NetBIOS {netbios})\n"
             f"DC hostname: {hostname}\n"
             f"Static IP: {dc_ip}\n"
             f"Config file: {OUTPUT_PATH}\n\n"
@@ -1247,89 +666,17 @@ Write-Output 'VALIDATION_OK'
     def on_next_baseline(self) -> None:
         self.validate_baseline_stage()
 
-    @on(Button.Pressed, "#back_environment")
-    def on_back_environment(self) -> None:
+    @on(Button.Pressed, "#back_core")
+    def on_back_core(self) -> None:
         self.switch_stage("stage-baseline")
 
-    @on(Button.Pressed, "#next_environment")
-    def on_next_environment(self) -> None:
-        self.validate_environment_stage()
-
-    @on(Button.Pressed, "#back_execution")
-    def on_back_execution(self) -> None:
-        self.switch_stage("stage-environment")
-
-    @on(Button.Pressed, "#next_execution")
-    def on_next_execution(self) -> None:
-        self.validate_execution_stage()
-
-    @on(Button.Pressed, "#back_proxmox")
-    def on_back_proxmox(self) -> None:
-        self.switch_stage("stage-execution")
-
-    @on(Button.Pressed, "#next_proxmox")
-    def on_next_proxmox(self) -> None:
-        self.validate_proxmox_stage()
-
-    @on(Button.Pressed, "#back_network")
-    def on_back_network(self) -> None:
-        self.switch_stage("stage-proxmox")
-
-    @on(Button.Pressed, "#next_network")
-    def on_next_network(self) -> None:
-        self.validate_network_stage()
-
-    @on(Button.Pressed, "#back_ad")
-    def on_back_ad(self) -> None:
-        self.switch_stage("stage-network")
-
-    @on(Button.Pressed, "#next_ad")
-    def on_next_ad(self) -> None:
-        self.validate_ad_stage()
-
-    @on(Button.Pressed, "#back_dns")
-    def on_back_dns(self) -> None:
-        self.switch_stage("stage-ad")
-
-    @on(Button.Pressed, "#next_dns")
-    def on_next_dns(self) -> None:
-        self.validate_dns_stage()
-
-    @on(Button.Pressed, "#back_dhcp")
-    def on_back_dhcp(self) -> None:
-        self.switch_stage("stage-dns")
-
-    @on(Button.Pressed, "#next_dhcp")
-    def on_next_dhcp(self) -> None:
-        self.validate_dhcp_stage()
-
-    @on(Button.Pressed, "#back_time")
-    def on_back_time(self) -> None:
-        self.switch_stage("stage-dhcp")
-
-    @on(Button.Pressed, "#next_time")
-    def on_next_time(self) -> None:
-        self.validate_time_stage()
-
-    @on(Button.Pressed, "#back_accounts")
-    def on_back_accounts(self) -> None:
-        self.switch_stage("stage-time")
-
-    @on(Button.Pressed, "#next_accounts")
-    def on_next_accounts(self) -> None:
-        self.validate_accounts_stage()
-
-    @on(Button.Pressed, "#back_optional")
-    def on_back_optional(self) -> None:
-        self.switch_stage("stage-accounts")
-
-    @on(Button.Pressed, "#next_optional")
-    def on_next_optional(self) -> None:
-        self.validate_optional_stage()
+    @on(Button.Pressed, "#next_core")
+    def on_next_core(self) -> None:
+        self.validate_core_stage()
 
     @on(Button.Pressed, "#back_write")
     def on_back_write(self) -> None:
-        self.switch_stage("stage-optional")
+        self.switch_stage("stage-core")
 
     @on(Button.Pressed, "#write_now")
     def on_write_now(self) -> None:

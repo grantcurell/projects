@@ -37,7 +37,7 @@ function Assert-RequiredTopLevelSections {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][pscustomobject]$Config)
     $required = @(
-        'schemaVersion','environment','execution','proxmoxGuest','network','roles','activeDirectory','dns','dhcp',
+        'schemaVersion','execution','proxmoxGuest','network','roles','activeDirectory','dns','dhcp',
         'time','organizationalUnits','groups','serviceAccounts','gpo','hardening','defender','firewall',
         'eventForwarding','wazuh','pki','wsus','backupRecovery','vulnerabilityScanning','identityIntegrations',
         'validation','reporting'
@@ -140,7 +140,7 @@ function Assert-NoUnknownTopLevelSections {
     )
 
     $known = @(
-        'schemaVersion','environment','execution','proxmoxGuest','network','roles','activeDirectory','dns','dhcp',
+        'schemaVersion','execution','proxmoxGuest','network','roles','activeDirectory','dns','dhcp',
         'time','organizationalUnits','groups','serviceAccounts','gpo','hardening','defender','firewall',
         'eventForwarding','wazuh','pki','wsus','backupRecovery','vulnerabilityScanning','identityIntegrations',
         'validation','reporting'

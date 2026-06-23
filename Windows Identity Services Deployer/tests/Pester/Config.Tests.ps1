@@ -3,7 +3,6 @@
 function New-BaseConfig {
     return [pscustomobject]@{
         schemaVersion = 1
-        environment = @{ enabled = $true }
         execution = @{
             statePath = 'C:\State'
             logPath = 'C:\Logs'
