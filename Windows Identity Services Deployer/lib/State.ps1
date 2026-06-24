@@ -69,6 +69,117 @@ function Test-PhaseComplete {
     return (Test-Path -LiteralPath $file)
 }
 
+function Get-ProjectPhaseCompletionMap {
+    <#
+    .SYNOPSIS
+    Maps orchestration phase names to completion marker files.
+    #>
+    [CmdletBinding()]
+    param()
+    return [ordered]@{
+        Preflight               = 'preflight-complete'
+        PromoteDomainController = 'ad-promoted'
+        PostPromotion           = 'post-promotion-complete'
+        Validate                = 'validation-complete'
+    }
+}
+
+function Get-ProjectPhaseSequence {
+    <#
+    .SYNOPSIS
+    Returns ordered phase names for the requested run mode.
+    #>
+    [CmdletBinding()]
+    param([Parameter()][bool]$PlanOnly)
+    if ($PlanOnly) {
+        return @('Preflight', 'PromoteDomainController')
+    }
+    return @('Preflight', 'PromoteDomainController', 'PostPromotion', 'Validate')
+}
+
+function Test-ProjectConverged {
+    <#
+    .SYNOPSIS
+    Returns true when validation has completed successfully.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][pscustomobject]$Config)
+    return Test-PhaseComplete -Config $Config -PhaseName 'validation-complete'
+}
+
+function Remove-ProjectFailure {
+    <#
+    .SYNOPSIS
+    Clears a prior failure marker so idempotent retries can proceed.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][pscustomobject]$Config)
+    $file = Join-Path $Config.execution.statePath 'failure.json'
+    if (Test-Path -LiteralPath $file) {
+        Remove-Item -LiteralPath $file -Force
+    }
+}
+
+function Get-IncompleteProjectPhases {
+    <#
+    .SYNOPSIS
+    Selects phases that still need work, skipping completed markers on re-run.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$Config,
+        [Parameter()][bool]$PlanOnly,
+        [Parameter()][bool]$ValidateOnly,
+        [Parameter()][string]$ExplicitPhase = ''
+    )
+
+    if ($ValidateOnly) {
+        return @('Validate')
+    }
+    if ($ExplicitPhase) {
+        return @($ExplicitPhase)
+    }
+
+    $sequence = Get-ProjectPhaseSequence -PlanOnly:$PlanOnly
+    if ($PlanOnly) {
+        return $sequence
+    }
+
+    if (Test-ProjectConverged -Config $Config) {
+        return @('Validate')
+    }
+
+    $completionMap = Get-ProjectPhaseCompletionMap
+    $incomplete = [System.Collections.Generic.List[string]]::new()
+    foreach ($phaseName in $sequence) {
+        $marker = [string]$completionMap[$phaseName]
+        if (-not (Test-PhaseComplete -Config $Config -PhaseName $marker)) {
+            [void]$incomplete.Add($phaseName)
+        }
+    }
+
+    if ($incomplete.Count -eq 0) {
+        return @('Validate')
+    }
+
+    $resumeState = Get-ProjectState -Config $Config
+    $resumePhase = [string]$resumeState['currentPhase']
+    if ($resumePhase -and $incomplete.Contains($resumePhase)) {
+        $startIndex = $incomplete.IndexOf($resumePhase)
+        if ($startIndex -gt 0) {
+            return @($incomplete.GetRange($startIndex, $incomplete.Count - $startIndex))
+        }
+    }
+
+    if (-not (Get-WindowsFeature -Name 'AD-Domain-Services').Installed) {
+        if (-not $incomplete.Contains('Preflight')) {
+            return @('Preflight') + @($incomplete | Where-Object { $_ -ne 'Preflight' })
+        }
+    }
+
+    return @($incomplete)
+}
+
 function Mark-PhaseComplete {
     <#
     .SYNOPSIS
@@ -77,8 +188,10 @@ function Mark-PhaseComplete {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][pscustomobject]$Config,
-        [Parameter(Mandatory = $true)][string]$PhaseName
+        [Parameter(Mandatory = $true)][string]$PhaseName,
+        [Parameter()][hashtable]$Context
     )
+    if ($Context -and $Context.PlanOnly) { return }
     Set-ProjectState -Config $Config -StateName $PhaseName -Data @{ completedAt = (Get-Date).ToString('o') }
 }
 

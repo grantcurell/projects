@@ -41,6 +41,10 @@ function Install-NewForestFromConfig {
         throw 'secret backend not implemented. safeModeAdministratorPasswordPrompt must be true.'
     }
     if ($Context.PlanOnly) { return }
+    if (-not (Get-WindowsFeature -Name 'AD-Domain-Services').Installed) {
+        throw 'AD-Domain-Services is not installed. Run Preflight before domain promotion.'
+    }
+    Import-Module ADDSDeployment -ErrorAction Stop
     $dsrm = $null
     if ($env:CONFIGURE_WIS_DSRM_PASSWORD) {
         $dsrm = ConvertTo-SecureString -String $env:CONFIGURE_WIS_DSRM_PASSWORD -AsPlainText -Force
@@ -49,7 +53,7 @@ function Install-NewForestFromConfig {
         $dsrm = Read-Host -Prompt 'Enter DSRM password' -AsSecureString
     }
 
-    Register-ResumeScheduledTask -Config $Config -ScriptPath $PSCommandPath -ConfigPath $Config.__configPath
+    Register-ResumeScheduledTask -Config $Config -ScriptPath (Join-Path (Split-Path -Parent $Config.__configPath) 'Configure-WindowsServer.ps1') -ConfigPath $Config.__configPath
     Install-ADDSForest `
         -DomainName $Config.activeDirectory.domainName `
         -DomainNetbiosName $Config.activeDirectory.netbiosName `

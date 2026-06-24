@@ -41,7 +41,7 @@ function Set-ComputerNameIfNeeded {
     )
     if ($env:COMPUTERNAME -eq $Config.network.computerName) { return }
     if ($Context.PlanOnly) { return }
-    Register-ResumeScheduledTask -Config $Config -ScriptPath $PSCommandPath -ConfigPath $Config.__configPath
+    Register-ResumeScheduledTask -Config $Config -ScriptPath (Join-Path (Split-Path -Parent $Config.__configPath) 'Configure-WindowsServer.ps1') -ConfigPath $Config.__configPath
     Rename-Computer -NewName $Config.network.computerName -Force -Restart
 }
 

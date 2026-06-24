@@ -18,6 +18,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Published so the top-level catch can record failures even when config load fails.
+$script:ProjectConfig = $null
+$script:FallbackStatePath = Join-Path $env:ProgramData 'WindowsIdentityServicesDeployer'
+
 $projectRoot = Split-Path -Parent $PSCommandPath
 $libRoot = Join-Path $projectRoot 'lib'
 
@@ -63,6 +67,15 @@ function Invoke-ProjectPhase {
         [hashtable]$Context
     )
 
+    if (-not $Context.PlanOnly -and $PhaseName -ne 'Validate') {
+        $completionMap = Get-ProjectPhaseCompletionMap
+        $marker = [string]$completionMap[$PhaseName]
+        if ($marker -and (Test-PhaseComplete -Config $Config -PhaseName $marker)) {
+            Write-ProjectInfo -Message "Phase '$PhaseName' already complete; skipping."
+            return
+        }
+    }
+
     switch ($PhaseName) {
         'Preflight' {
             Assert-NoPendingRebootIfRequired -Config $Config
@@ -79,12 +92,12 @@ function Invoke-ProjectPhase {
             if (-not $Context.PlanOnly) {
                 Assert-WindowsFeaturesInstalled -Config $Config
             }
-            Mark-PhaseComplete -Config $Config -PhaseName 'roles-installed'
-            Mark-PhaseComplete -Config $Config -PhaseName 'preflight-complete'
+            Mark-PhaseComplete -Config $Config -PhaseName 'roles-installed' -Context $Context
+            Mark-PhaseComplete -Config $Config -PhaseName 'preflight-complete' -Context $Context
         }
         'PromoteDomainController' {
             Install-NewForestFromConfig -Config $Config -Context $Context
-            Mark-PhaseComplete -Config $Config -PhaseName 'ad-promoted'
+            Mark-PhaseComplete -Config $Config -PhaseName 'ad-promoted' -Context $Context
         }
         'PostPromotion' {
             if (-not $Context.PlanOnly) {
@@ -129,11 +142,11 @@ function Invoke-ProjectPhase {
             Write-GitLabAdIntegrationArtifact -Config $Config -Context $Context
             Write-KeycloakAdFederationArtifact -Config $Config -Context $Context
             Write-YubiKeyPolicyArtifact -Config $Config -Context $Context
-            Mark-PhaseComplete -Config $Config -PhaseName 'post-promotion-complete'
+            Mark-PhaseComplete -Config $Config -PhaseName 'post-promotion-complete' -Context $Context
         }
         'Validate' {
             if ($Context.PlanOnly) {
-                Mark-PhaseComplete -Config $Config -PhaseName 'validation-complete'
+                Mark-PhaseComplete -Config $Config -PhaseName 'validation-complete' -Context $Context
                 break
             }
             Invoke-ValidationSuite -Config $Config -Context $Context
@@ -155,7 +168,7 @@ function Invoke-ProjectPhase {
             Assert-BackupRecoveryReadiness -Config $Config
             Assert-VulnerabilityScanningReadiness -Config $Config
             Assert-IdentityIntegrationPrerequisites -Config $Config
-            Mark-PhaseComplete -Config $Config -PhaseName 'validation-complete'
+            Mark-PhaseComplete -Config $Config -PhaseName 'validation-complete' -Context $Context
         }
     }
 }
@@ -171,6 +184,7 @@ function Invoke-Project {
     $config = Import-ProjectConfig -ConfigPath $ConfigPath
     Assert-ProjectConfig -Config $config
     Add-Member -InputObject $config -NotePropertyName '__configPath' -NotePropertyValue $ConfigPath -Force
+    $script:ProjectConfig = $config
 
     Initialize-ProjectLogging -Config $config
     Initialize-ProjectState -Config $config
@@ -185,25 +199,11 @@ function Invoke-Project {
 
     Write-ProjectInfo -Message 'Configuration imported and validated.'
 
-    $resumeState = Get-ProjectState -Config $config
-    $resumePhase = $resumeState['currentPhase']
-    $selectedPhases = @()
-    if ($ValidateOnly) {
-        $selectedPhases = @('Validate')
-    }
-    elseif ($Phase) {
-        $selectedPhases = @($Phase)
-    }
-    elseif ($resumePhase -and -not $PlanOnly) {
-        $selectedPhases = @($resumePhase, 'PostPromotion', 'Validate')
-    }
-    else {
-        if ($PlanOnly) {
-            $selectedPhases = @('Preflight', 'PromoteDomainController')
-        }
-        else {
-            $selectedPhases = @('Preflight', 'PromoteDomainController', 'PostPromotion', 'Validate')
-        }
+    Remove-ProjectFailure -Config $config
+
+    $selectedPhases = Get-IncompleteProjectPhases -Config $config -PlanOnly:$PlanOnly -ValidateOnly:$ValidateOnly -ExplicitPhase $Phase
+    if ($selectedPhases.Count -gt 0) {
+        Write-ProjectInfo -Message ("Selected phases: {0}" -f ($selectedPhases -join ', '))
     }
 
     foreach ($phaseName in $selectedPhases) {
@@ -221,6 +221,14 @@ function Invoke-Project {
         throw "PlanOnly completed with non-executable plan. Issues: $($context.PlanIssues -join '; ')"
     }
 
+    if ($PlanOnly) {
+        Set-ProjectState -Config $config -StateName 'planonly-complete' -Data @{
+            completedAt = (Get-Date).ToString('o')
+            executable  = [bool]$context.PlanExecutable
+        }
+        Set-ProjectState -Config $config -StateName 'current-phase' -Data @{ currentPhase = $null; updatedAt = (Get-Date).ToString('o') }
+    }
+
     Unregister-ResumeScheduledTask -Config $config
 }
 
@@ -228,17 +236,36 @@ try {
     Invoke-Project
 }
 catch {
+    $projectError = $_
+    # Always record a durable failure marker so external orchestration can detect
+    # the failure instead of silently waiting out a timeout. $config is function-scoped
+    # inside Invoke-Project, so rely on the script-scoped reference (which may be $null
+    # if the failure happened before the config was loaded) and a deterministic fallback.
+    $statePath = $script:FallbackStatePath
+    if ($script:ProjectConfig -and
+        ($script:ProjectConfig.PSObject.Properties.Name -contains 'execution') -and
+        $script:ProjectConfig.execution -and
+        ($script:ProjectConfig.execution.PSObject.Properties.Name -contains 'statePath') -and
+        $script:ProjectConfig.execution.statePath) {
+        $statePath = [string]$script:ProjectConfig.execution.statePath
+    }
     try {
-        if ($config) {
-            Set-ProjectState -Config $config -StateName 'failure' -Data @{
-                timestamp = (Get-Date).ToString('o')
-                message   = $_.Exception.Message
-            }
-            Write-ProjectError -Message $_.Exception.Message
-            Write-FinalReport -Config $config -Success $false -FailedChecks @($_.Exception.Message)
+        if (-not (Test-Path -LiteralPath $statePath)) {
+            New-Item -ItemType Directory -Path $statePath -Force | Out-Null
         }
+        @{
+            timestamp = (Get-Date).ToString('o')
+            message   = $projectError.Exception.Message
+            stack     = [string]$projectError.ScriptStackTrace
+        } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $statePath 'failure.json') -Encoding UTF8
     }
     catch {
     }
-    throw
+    if ($script:ProjectConfig) {
+        try { Write-ProjectError -Message $projectError.Exception.Message } catch {}
+        try { Write-FinalReport -Config $script:ProjectConfig -Success $false -FailedChecks @($projectError.Exception.Message) } catch {}
+    }
+    # Surface to stderr so synchronous WinRM callers see the cause directly.
+    Write-Error $projectError.Exception.Message
+    throw $projectError
 }

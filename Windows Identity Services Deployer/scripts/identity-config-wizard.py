@@ -746,21 +746,45 @@ Write-Output 'VALIDATION_OK'
     @work(thread=True)
     def _run_remote_impl(self, host: str, user: str, password: str, plan_only: bool) -> None:
         try:
+            dsrm = os.environ.get("CONFIGURE_WIS_DSRM_PASSWORD") or os.environ.get("WIS_LAB_DSRM_PASSWORD")
+            svc = os.environ.get("CONFIGURE_WIS_SERVICEACCOUNT_PASSWORD") or os.environ.get(
+                "WIS_LAB_SERVICEACCOUNT_PASSWORD"
+            )
             session = winrm_deploy.connect(host, user, password)
             self.call_from_thread(self.append_log, f"Connected to {host}. Uploading project...")
             winrm_deploy.upload_project(session, ROOT, OUTPUT_PATH)
-            self.call_from_thread(self.append_log, "Upload complete. Running Configure-WindowsServer.ps1...")
-            code, out, err = winrm_deploy.run_configure(
+            self.call_from_thread(self.append_log, "Upload complete. Ensuring host is ready...")
+            winrm_deploy.run_ps(
                 session,
-                plan_only=plan_only,
-                dsrm_password=os.environ.get("CONFIGURE_WIS_DSRM_PASSWORD") or os.environ.get("WIS_LAB_DSRM_PASSWORD"),
-                service_account_password=os.environ.get("CONFIGURE_WIS_SERVICEACCOUNT_PASSWORD")
-                or os.environ.get("WIS_LAB_SERVICEACCOUNT_PASSWORD"),
+                """
+$ErrorActionPreference = 'Stop'
+$cbs = Test-Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Component Based Servicing\\RebootPending'
+$pfr = $false
+$sessionMgr = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager' -ErrorAction SilentlyContinue
+if ($sessionMgr -and $sessionMgr.PendingFileRenameOperations) { $pfr = $true }
+if ($cbs -or $pfr) { Restart-Computer -Force } else { Write-Output 'READY' }
+""",
             )
-            combined = (out + "\n" + err).strip()
-            if code != 0 or "RUN_OK" not in out:
-                raise RuntimeError(combined or f"Remote run failed with exit code {code}.")
-            self.call_from_thread(self._on_remote_success, plan_only, combined)
+
+            def on_status(status: dict[str, object]) -> None:
+                phase = status.get("phase") or "pending"
+                msg = f"phase={phase} running={status.get('configureInProgress')}"
+                self.call_from_thread(self.append_log, msg)
+
+            self.call_from_thread(
+                self.append_log,
+                "PlanOnly started in background..." if plan_only else "Full deploy started (polls through reboots)...",
+            )
+            winrm_deploy.wait_for_deploy(
+                host,
+                user,
+                password,
+                plan_only=plan_only,
+                dsrm_password=dsrm,
+                service_account_password=svc,
+                on_status=on_status,
+            )
+            self.call_from_thread(self._on_remote_success, plan_only, "Deploy finished successfully.")
         except Exception as exc:  # noqa: BLE001
             self.call_from_thread(self._on_remote_failure, str(exc))
 
