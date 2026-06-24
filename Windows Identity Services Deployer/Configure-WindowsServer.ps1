@@ -25,6 +25,15 @@ $script:FallbackStatePath = Join-Path $env:ProgramData 'WindowsIdentityServicesD
 $projectRoot = Split-Path -Parent $PSCommandPath
 $libRoot = Join-Path $projectRoot 'lib'
 
+# Make bundled modules (e.g. powershell-yaml) importable no matter how this script
+# is launched. The resume scheduled task invokes this script directly and would
+# otherwise fail config load with "powershell-yaml is missing" because its
+# PSModulePath does not include the project's vendor\Modules directory.
+$vendorModules = Join-Path $projectRoot 'vendor\Modules'
+if ((Test-Path -LiteralPath $vendorModules) -and (($env:PSModulePath -split ';') -notcontains $vendorModules)) {
+    $env:PSModulePath = $vendorModules + ';' + $env:PSModulePath
+}
+
 . (Join-Path $libRoot 'Config.ps1')
 . (Join-Path $libRoot 'Logging.ps1')
 . (Join-Path $libRoot 'State.ps1')

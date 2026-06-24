@@ -18,10 +18,28 @@ function Initialize-ProjectLogging {
         }
     }
 
-    if (Test-Path -LiteralPath $Config.execution.transcriptPath) {
-        Remove-Item -LiteralPath $Config.execution.transcriptPath -Force
+    # A previous or concurrent run (or an orphaned process that outlived its WinRM
+    # client) can hold the transcript file open. A locked transcript must never abort
+    # the whole deploy: try the configured path, fall back to a unique path if it is
+    # locked, and finally continue without a transcript rather than throwing here.
+    $transcriptPath = $Config.execution.transcriptPath
+    try {
+        if (Test-Path -LiteralPath $transcriptPath) {
+            Remove-Item -LiteralPath $transcriptPath -Force -ErrorAction Stop
+        }
     }
-    Start-Transcript -Path $Config.execution.transcriptPath -Force | Out-Null
+    catch {
+        $transcriptPath = [System.IO.Path]::Combine(
+            (Split-Path -Parent $transcriptPath),
+            ('transcript-{0}.log' -f (Get-Date -Format 'yyyyMMddHHmmss'))
+        )
+    }
+    try {
+        Start-Transcript -Path $transcriptPath -Force | Out-Null
+    }
+    catch {
+        Write-Warning "Could not start transcript at '$transcriptPath': $($_.Exception.Message). Continuing without a transcript."
+    }
 
     if (-not (Test-Path -LiteralPath $Config.execution.jsonLogPath)) {
         New-Item -Path $Config.execution.jsonLogPath -ItemType File -Force | Out-Null
