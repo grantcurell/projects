@@ -28,6 +28,7 @@ Design notes (hard-won):
 """
 from __future__ import annotations
 
+import os
 import sys
 import time
 from datetime import datetime
@@ -35,21 +36,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tools"))
 import winrm_deploy  # noqa: E402
+import lab_credentials  # noqa: E402
 
-PRIMARY_HOST = "192.168.5.10"
-FALLBACK_HOST = "192.168.5.171"
-PASSWORD = "ChangeMe-WinRM-Pass"
-DSRM = "ChangeMe-DSRM-Pass"
-SVC = "ChangeMe-Svc-Pass"
-
-# Credential candidates, tried in order. Local admin works pre-promotion; the
-# domain identity works once the box is a DC (local auth then returns 401).
-CRED_CANDIDATES = [
-    ("Administrator", PASSWORD),
-    ("IDENTITY\\Administrator", PASSWORD),
-    ("Administrator@identity.lab.example.com", PASSWORD),
-]
+PRIMARY_HOST = os.environ.get("WIS_LAB_WINRM_HOST", "192.168.5.10")
+FALLBACK_HOST = os.environ.get("WIS_LAB_WINRM_FALLBACK_HOST", "192.168.5.171")
+NETBIOS = os.environ.get("WIS_LAB_NETBIOS_NAME", "IDENTITY")
+DOMAIN_DNS = os.environ.get("WIS_LAB_DOMAIN_DNS", "identity.lab.example.com")
 
 CONNECT_READ_TIMEOUT = 25
 CONNECT_OP_TIMEOUT = 20
@@ -59,6 +53,15 @@ MAX_WAIT_MINUTES = 90
 MAX_RELAUNCHES = 6
 
 LOG_PATH = Path("/tmp/wis-deploy.log")
+
+
+def cred_candidates() -> list[tuple[str, str]]:
+    password = lab_credentials.lab_winrm_password()
+    return [
+        ("Administrator", password),
+        (f"{NETBIOS}\\Administrator", password),
+        (f"Administrator@{DOMAIN_DNS}", password),
+    ]
 
 
 def log(msg: str) -> None:
@@ -71,7 +74,7 @@ def log(msg: str) -> None:
 def connect_any() -> tuple[object, str, str] | tuple[None, None, None]:
     """Return (session, host, user) for the first host+cred that authenticates."""
     for host in (PRIMARY_HOST, FALLBACK_HOST):
-        for user, pw in CRED_CANDIDATES:
+        for user, pw in cred_candidates():
             try:
                 session = winrm_deploy.connect(
                     host, user, pw,
@@ -149,7 +152,10 @@ def main() -> int:
         log(f"configure idle -> launching detached as {user} (attempt {relaunches}/{MAX_RELAUNCHES})")
         try:
             winrm_deploy.start_configure(
-                session, plan_only=False, dsrm_password=DSRM, service_account_password=SVC,
+                session,
+                plan_only=False,
+                dsrm_password=lab_credentials.lab_dsrm_password(),
+                service_account_password=lab_credentials.lab_service_account_password(),
             )
         except Exception as exc:
             log(f"start_configure error (will retry): {exc}")

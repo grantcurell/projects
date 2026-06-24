@@ -1,6 +1,8 @@
 # Operator working config — created from config.example.yaml. Holds environment-specific
 # values (hostnames, IPs, domain) and must never be committed. Keep only the template.
 config.yaml
+config.yaml.bak.*
+lab-secrets.env
 
 # Local run output, logs, evidence, and state if anyone runs the tool from this folder.
 Logs/

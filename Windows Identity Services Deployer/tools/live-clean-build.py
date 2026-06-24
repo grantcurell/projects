@@ -11,13 +11,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tools"))
 import winrm_deploy  # noqa: E402
+import lab_credentials  # noqa: E402
 
 DEFAULT_CONFIG = ROOT / "baseline.yaml"
 TARGET_IP = "192.168.5.10"
-LAB_PASSWORD = os.environ.get("WIS_LAB_WINRM_PASSWORD", "ChangeMe-WinRM-Pass")
-DSRM = os.environ.get("WIS_LAB_DSRM_PASSWORD", "ChangeMe-DSRM-Pass")
-SVC = os.environ.get("WIS_LAB_SERVICEACCOUNT_PASSWORD", "ChangeMe-Svc-Pass")
 POLL_CONNECT_TIMEOUT = 90
 POLL_INTERVAL_SEC = 30
 DEFAULT_MAX_WAIT_MINUTES = 120
@@ -166,7 +165,7 @@ def connect_poll(host: str):
     return winrm_deploy.connect(
         host,
         "Administrator",
-        LAB_PASSWORD,
+        lab_credentials.lab_winrm_password(),
         read_timeout_sec=POLL_CONNECT_TIMEOUT,
         operation_timeout_sec=POLL_CONNECT_TIMEOUT - 10,
     )
@@ -224,7 +223,7 @@ def run_configure_attempt(host: str, *, plan_only: bool) -> tuple[bool, str]:
     session = winrm_deploy.connect(
         host,
         "Administrator",
-        LAB_PASSWORD,
+        lab_credentials.lab_winrm_password(),
         read_timeout_sec=420,
         operation_timeout_sec=400,
     )
@@ -297,8 +296,8 @@ def orchestrate_full_deploy(
                 winrm_deploy.start_configure(
                     session,
                     plan_only=False,
-                    dsrm_password=DSRM,
-                    service_account_password=SVC,
+                    dsrm_password=lab_credentials.lab_dsrm_password(),
+                    service_account_password=lab_credentials.lab_service_account_password(),
                 )
         except RuntimeError:
             raise
