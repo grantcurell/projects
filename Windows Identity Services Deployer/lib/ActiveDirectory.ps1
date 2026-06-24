@@ -54,6 +54,11 @@ function Install-NewForestFromConfig {
     }
 
     Register-ResumeScheduledTask -Config $Config -ScriptPath (Join-Path (Split-Path -Parent $Config.__configPath) 'Configure-WindowsServer.ps1') -ConfigPath $Config.__configPath
+    # -NoRebootOnCompletion: we manage the reboot ourselves. Letting Install-ADDSForest
+    # auto-reboot creates a race where the current session continues into PostPromotion
+    # and immediately fails with "Unable to find a default server with Active Directory
+    # Web Services running" because ADWS/AD is only fully available after the reboot.
+    # The caller reboots after this returns and PostPromotion runs on the next boot.
     Install-ADDSForest `
         -DomainName $Config.activeDirectory.domainName `
         -DomainNetbiosName $Config.activeDirectory.netbiosName `
@@ -65,7 +70,11 @@ function Install-NewForestFromConfig {
         -LogPath $Config.activeDirectory.logPath `
         -SysvolPath $Config.activeDirectory.sysvolPath `
         -SafeModeAdministratorPassword $dsrm `
+        -NoRebootOnCompletion:$true `
         -Force:$true
+
+    # Signal the orchestrator that a reboot is required before any post-promotion work.
+    $Context.RebootRequiredAfterPromotion = $true
 }
 
 function Assert-ForestAndDomainMode {

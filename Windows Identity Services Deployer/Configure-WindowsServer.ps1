@@ -98,6 +98,18 @@ function Invoke-ProjectPhase {
         'PromoteDomainController' {
             Install-NewForestFromConfig -Config $Config -Context $Context
             Mark-PhaseComplete -Config $Config -PhaseName 'ad-promoted' -Context $Context
+            # A fresh forest install requires a reboot before AD/ADWS is usable.
+            # Reboot now (the ad-promoted marker is already written, so the resume
+            # path skips promotion and proceeds to PostPromotion once AD is online).
+            if (-not $Context.PlanOnly -and $Context.RebootRequiredAfterPromotion) {
+                Write-ProjectInfo -Message 'Domain promotion complete; rebooting before PostPromotion.'
+                Register-ResumeScheduledTask -Config $Config `
+                    -ScriptPath (Join-Path (Split-Path -Parent $Config.__configPath) 'Configure-WindowsServer.ps1') `
+                    -ConfigPath $Config.__configPath
+                Restart-Computer -Force
+                Start-Sleep -Seconds 600
+                exit 0
+            }
         }
         'PostPromotion' {
             if (-not $Context.PlanOnly) {
@@ -195,13 +207,17 @@ function Invoke-Project {
         WhatIfPreference = $WhatIfPreference
         PlanExecutable  = $true
         PlanIssues      = [System.Collections.Generic.List[string]]::new()
+        RebootRequiredAfterPromotion = $false
     }
 
     Write-ProjectInfo -Message 'Configuration imported and validated.'
 
     Remove-ProjectFailure -Config $config
 
-    $selectedPhases = Get-IncompleteProjectPhases -Config $config -PlanOnly:$PlanOnly -ValidateOnly:$ValidateOnly -ExplicitPhase $Phase
+    # Wrap in @() so a single selected phase stays an array; PowerShell otherwise
+    # unwraps a one-element result to a scalar string, and $selectedPhases.Count
+    # then throws under StrictMode ("property 'Count' cannot be found").
+    $selectedPhases = @(Get-IncompleteProjectPhases -Config $config -PlanOnly:$PlanOnly -ValidateOnly:$ValidateOnly -ExplicitPhase $Phase)
     if ($selectedPhases.Count -gt 0) {
         Write-ProjectInfo -Message ("Selected phases: {0}" -f ($selectedPhases -join ', '))
     }

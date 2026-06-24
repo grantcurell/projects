@@ -92,6 +92,29 @@ function Disable-UnnecessaryServicesFromConfig {
     }
 }
 
+function Get-OptionalConfigMember {
+    <#
+    .SYNOPSIS
+    Returns a named member of a config object, or $null when absent.
+    .DESCRIPTION
+    StrictMode (Version Latest) throws when a non-existent property is referenced
+    on a PSCustomObject. Optional config sections such as 'localSecurityOptions: {}'
+    deserialize to objects with no members, so direct dotted access blows up. This
+    helper safely probes both PSCustomObjects and hashtables.
+    #>
+    [CmdletBinding()]
+    param([Parameter()]$Object, [Parameter(Mandatory = $true)][string]$Name)
+    if ($null -eq $Object) { return $null }
+    if ($Object -is [System.Collections.IDictionary]) {
+        if ($Object.Contains($Name)) { return $Object[$Name] }
+        return $null
+    }
+    if ($Object.PSObject.Properties.Name -contains $Name) {
+        return $Object.PSObject.Properties[$Name].Value
+    }
+    return $null
+}
+
 function Configure-LocalSecurityOptions {
     <#
     .SYNOPSIS
@@ -100,17 +123,26 @@ function Configure-LocalSecurityOptions {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][pscustomobject]$Config, [Parameter(Mandatory = $true)][hashtable]$Context)
     if ($Context.PlanOnly) { return }
-    if ($Config.hardening.localSecurityOptions.renameGuestAccount.enabled) {
+    $lso = Get-OptionalConfigMember -Object $Config.hardening -Name 'localSecurityOptions'
+    if ($null -eq $lso) { return }
+
+    $rename = Get-OptionalConfigMember -Object $lso -Name 'renameGuestAccount'
+    if ($rename -and (Get-OptionalConfigMember -Object $rename -Name 'enabled')) {
         $guest = Get-LocalUser -Name 'Guest' -ErrorAction SilentlyContinue
         if ($guest) {
-            Rename-LocalUser -Name 'Guest' -NewName $Config.hardening.localSecurityOptions.renameGuestAccount.newName
+            Rename-LocalUser -Name 'Guest' -NewName (Get-OptionalConfigMember -Object $rename -Name 'newName')
         }
     }
-    if ($Config.hardening.localSecurityOptions.disableGuestAccount.enabled) {
-        Disable-LocalUser -Name $Config.hardening.localSecurityOptions.renameGuestAccount.newName -ErrorAction SilentlyContinue
+
+    $disable = Get-OptionalConfigMember -Object $lso -Name 'disableGuestAccount'
+    if ($disable -and (Get-OptionalConfigMember -Object $disable -Name 'enabled')) {
+        $newName = Get-OptionalConfigMember -Object $rename -Name 'newName'
+        if ($newName) { Disable-LocalUser -Name $newName -ErrorAction SilentlyContinue }
         Disable-LocalUser -Name 'Guest' -ErrorAction SilentlyContinue
     }
-    if ($Config.hardening.localSecurityOptions.restrictAnonymous.enabled) {
+
+    $restrict = Get-OptionalConfigMember -Object $lso -Name 'restrictAnonymous'
+    if ($restrict -and (Get-OptionalConfigMember -Object $restrict -Name 'enabled')) {
         New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -Name 'RestrictAnonymous' -PropertyType DWord -Value 1 -Force | Out-Null
     }
 }

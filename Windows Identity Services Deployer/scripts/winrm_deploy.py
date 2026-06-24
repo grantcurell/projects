@@ -80,6 +80,8 @@ def upload_bytes(session, target_path: str, payload: bytes, *, work_dir: str | N
     staging = work_dir or rf"{TEMP_DIR}\{uuid.uuid4().hex[:12]}"
     init_ps = f"""
 $ErrorActionPreference = 'Stop'
+$tempRoot = '{TEMP_DIR}'
+if (-not (Test-Path -LiteralPath $tempRoot)) {{ New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null }}
 $dir = '{staging}'
 if (-not (Test-Path $dir)) {{ New-Item -ItemType Directory -Path $dir -Force | Out-Null }}
 Get-ChildItem -LiteralPath $dir -Filter 'part*.b64' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
@@ -245,6 +247,8 @@ def start_configure(
     # "still running" from "died silently" and waits out the whole deadline.
     script = f"""
 $ErrorActionPreference = 'Stop'
+$tempDir = '{TEMP_DIR}'
+if (-not (Test-Path -LiteralPath $tempDir)) {{ New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }}
 $stateRoot = '{STATE_DIR}'
 if (-not (Test-Path -LiteralPath $stateRoot)) {{ New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null }}
 $failFile = Join-Path $stateRoot 'failure.json'
@@ -275,8 +279,14 @@ finally {{
   try {{ Stop-Transcript | Out-Null }} catch {{}}
 }}
 '@ | Set-Content -LiteralPath $launchPath -Encoding UTF8
-Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launchPath) -WindowStyle Hidden
-Write-Output 'CONFIGURE_STARTED'
+$proc = Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launchPath) -WindowStyle Hidden -PassThru
+Start-Sleep -Seconds 2
+$matches = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+  Where-Object {{ $_.CommandLine -like '*Configure-WindowsServer.ps1*' -or $_.CommandLine -like '*run-configure.ps1*' }})
+if (@($matches).Count -eq 0) {{
+  throw 'Configure process did not start (no matching powershell.exe within 2s).'
+}}
+"CONFIGURE_STARTED pid=$($proc.Id) matches=$($matches.Count)"
 """
     code, out, err = run_ps(session, script)
     if code != 0 or "CONFIGURE_STARTED" not in out:

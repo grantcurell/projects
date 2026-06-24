@@ -208,7 +208,9 @@ function Register-ResumeScheduledTask {
     )
 
     $taskName = [string]$Config.execution.resumeScheduledTaskName
-    $action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`" -ConfigPath `"$ConfigPath`""
+    $resolvedConfigPath = (Resolve-Path -LiteralPath $ConfigPath).Path
+    $resolvedScriptPath = (Resolve-Path -LiteralPath $ScriptPath).Path
+    $action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$resolvedScriptPath`" -ConfigPath `"$resolvedConfigPath`""
     $trigger = New-ScheduledTaskTrigger -AtStartup
     $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -RunLevel Highest -LogonType ServiceAccount
     Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Force | Out-Null

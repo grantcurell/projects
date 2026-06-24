@@ -173,15 +173,14 @@ def connect_poll(host: str):
 
 
 def deploy_is_complete(status: dict[str, object]) -> bool:
-    return bool(status.get("validationComplete") or status.get("summaryExists") or status.get("converged"))
+    # PlanOnly writes Evidence/summary.txt; only validationComplete means full deploy done.
+    return bool(status.get("validationComplete") or status.get("converged"))
 
 
 def deploy_is_in_progress(status: dict[str, object]) -> bool:
-    return bool(
-        status.get("configureInProgress")
-        or status.get("resumeTaskPresent")
-        or (status.get("phase") and not deploy_is_complete(status))
-    )
+    # A registered resume task or stale current-phase.json does NOT mean work is
+    # actively running — only a live Configure-WindowsServer process counts.
+    return bool(status.get("configureInProgress"))
 
 
 def run_planonly(host: str, *, max_wait_minutes: int = 15) -> tuple[bool, str]:
@@ -217,9 +216,22 @@ def run_planonly(host: str, *, max_wait_minutes: int = 15) -> tuple[bool, str]:
 
 
 def run_configure_attempt(host: str, *, plan_only: bool) -> tuple[bool, str]:
+    # PlanOnly only walks Preflight + PromoteDomainController (both no-ops in plan
+    # mode). Run synchronously so pass/fail is immediate; the detached launcher is
+    # reserved for full deploy where reboots drop the WinRM session.
     if not plan_only:
         raise ValueError("run_configure_attempt only supports plan_only=True")
-    return run_planonly(host)
+    session = winrm_deploy.connect(
+        host,
+        "Administrator",
+        LAB_PASSWORD,
+        read_timeout_sec=420,
+        operation_timeout_sec=400,
+    )
+    code, out, err = winrm_deploy.run_configure(session, plan_only=True)
+    combined = (out + "\n" + err).strip()
+    ok = code == 0 and "RUN_OK" in out
+    return ok, combined[-4000:]
 
 
 def orchestrate_full_deploy(
@@ -309,6 +321,11 @@ def main() -> int:
     parser.add_argument("--host", default=os.environ.get("WIS_LAB_WINRM_HOST", ""))
     parser.add_argument("--skip-planonly", action="store_true")
     parser.add_argument(
+        "--skip-upload",
+        action="store_true",
+        help="Skip WinRM project upload when the deployer is already on the target.",
+    )
+    parser.add_argument(
         "--clean",
         action="store_true",
         help="Clear remote deploy state before running (non-idempotent reset).",
@@ -352,11 +369,13 @@ def _run(args: argparse.Namespace) -> int:
         session = connect_lab(host)
 
     print("Uploading project...", flush=True)
-    winrm_deploy.upload_project(session, ROOT, args.config)
-    ensure_no_pending_reboot(session)
-    host = wait_for_winrm(host, *scan_winrm_hosts(), TARGET_IP, attempts=20, delay=10)
-
-    session = connect_lab(host)
+    if not args.skip_upload:
+        winrm_deploy.upload_project(session, ROOT, args.config)
+        ensure_no_pending_reboot(session)
+        host = wait_for_winrm(host, *scan_winrm_hosts(), TARGET_IP, attempts=20, delay=10)
+        session = connect_lab(host)
+    else:
+        print("  skipped (--skip-upload); using existing project on target", flush=True)
     status = winrm_deploy.query_deploy_status(session)
     if deploy_is_complete(status):
         print("Deploy already converged; verifying...", flush=True)

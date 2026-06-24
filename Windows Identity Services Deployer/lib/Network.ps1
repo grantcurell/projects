@@ -65,12 +65,39 @@ function Set-StaticIPv4FromConfig {
     param([Parameter(Mandatory = $true)][pscustomobject]$Config, [Parameter(Mandatory = $true)][hashtable]$Context)
     if ($Context.PlanOnly) { return }
     $alias = $Config.network.interfaceAlias
-    $current = Get-NetIPAddress -InterfaceAlias $alias -AddressFamily IPv4 -ErrorAction SilentlyContinue
-    foreach ($entry in @($current | Where-Object { $_.IPAddress -ne $Config.network.ipv4.address })) {
-        Remove-NetIPAddress -InterfaceAlias $alias -IPAddress $entry.IPAddress -Confirm:$false -ErrorAction SilentlyContinue
+    $targetIp = [string]$Config.network.ipv4.address
+    $prefix = [int]$Config.network.ipv4.prefixLength
+    $gateway = [string]$Config.network.ipv4.defaultGateway
+
+    # Never remove the only working address before the replacement is in place.
+    # Deleting a static lease first can leave the NIC requesting DHCP; on a lab LAN
+    # with no DHCP server that silently drops all remote access.
+    Set-NetIPInterface -InterfaceAlias $alias -AddressFamily IPv4 -Dhcp Disabled -ErrorAction Stop
+
+    $assigned = @(Get-NetIPAddress -InterfaceAlias $alias -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object { $_.IPAddress -ne '127.0.0.1' -and $_.PrefixOrigin -ne 'WellKnown' })
+    $hasTargetIp = @($assigned | Where-Object { $_.IPAddress -eq $targetIp }).Count -gt 0
+
+    if (-not $hasTargetIp) {
+        $defaultRoute = Get-NetRoute -InterfaceAlias $alias -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue
+        if ($defaultRoute) {
+            New-NetIPAddress -InterfaceAlias $alias -IPAddress $targetIp -PrefixLength $prefix -ErrorAction Stop
+        }
+        else {
+            New-NetIPAddress -InterfaceAlias $alias -IPAddress $targetIp -PrefixLength $prefix -DefaultGateway $gateway -ErrorAction Stop
+        }
     }
-    if (-not ($current | Where-Object { $_.IPAddress -eq $Config.network.ipv4.address })) {
-        New-NetIPAddress -InterfaceAlias $alias -IPAddress $Config.network.ipv4.address -PrefixLength $Config.network.ipv4.prefixLength -DefaultGateway $Config.network.ipv4.defaultGateway
+
+    $defaultRoute = Get-NetRoute -InterfaceAlias $alias -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue
+    if (-not ($defaultRoute | Where-Object { $_.NextHop -eq $gateway })) {
+        if ($defaultRoute) {
+            Remove-NetRoute -InterfaceAlias $alias -DestinationPrefix '0.0.0.0/0' -Confirm:$false -ErrorAction SilentlyContinue
+        }
+        New-NetRoute -InterfaceAlias $alias -DestinationPrefix '0.0.0.0/0' -NextHop $gateway -ErrorAction Stop
+    }
+
+    foreach ($entry in @($assigned | Where-Object { $_.IPAddress -ne $targetIp })) {
+        Remove-NetIPAddress -InterfaceAlias $alias -IPAddress $entry.IPAddress -Confirm:$false -ErrorAction SilentlyContinue
     }
 }
 

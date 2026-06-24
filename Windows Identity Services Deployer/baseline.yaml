@@ -163,8 +163,8 @@ organizationalUnits:
   structure:
     - distinguishedNameRelative: "OU=Workstations"
       description: "Workstation computer objects (offline deployer join target)"
-    - distinguishedNameRelative: "OU=Users"
-      description: "Standard users"
+    - distinguishedNameRelative: "OU=Lab Users"
+      description: "Standard users (named to avoid collision with built-in CN=Users container)"
     - distinguishedNameRelative: "OU=Servers"
       description: "Server objects"
     - distinguishedNameRelative: "OU=Desktops"
