@@ -317,6 +317,9 @@ if (Test-Path -LiteralPath $phaseFile) {{
 }}
 $result.validationComplete = Test-Path -LiteralPath (Join-Path $base 'validation-complete.json')
 $result.planonlyComplete = Test-Path -LiteralPath (Join-Path $base 'planonly-complete.json')
+$result.preflightComplete = Test-Path -LiteralPath (Join-Path $base 'preflight-complete.json')
+$result.adPromoted = Test-Path -LiteralPath (Join-Path $base 'ad-promoted.json')
+$result.postPromotionComplete = Test-Path -LiteralPath (Join-Path $base 'post-promotion-complete.json')
 $result.converged = $result.validationComplete
 $result.summaryExists = Test-Path -LiteralPath (Join-Path $base 'Evidence\summary.txt')
 $failFile = Join-Path $base 'failure.json'

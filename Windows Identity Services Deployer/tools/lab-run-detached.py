@@ -38,6 +38,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tools"))
 import winrm_deploy  # noqa: E402
 import lab_credentials  # noqa: E402
+import deploy_feedback  # noqa: E402
 
 PRIMARY_HOST = lab_credentials.lab_winrm_host()
 FALLBACK_HOST = lab_credentials.lab_winrm_fallback_host()
@@ -49,7 +50,7 @@ CONNECT_OP_TIMEOUT = 20
 POLL_INTERVAL_SEC = 20
 GRACE_AFTER_LAUNCH_SEC = 45
 MAX_WAIT_MINUTES = 90
-MAX_RELAUNCHES = 6
+MAX_RELAUNCHES = 10
 
 LOG_PATH = Path("/tmp/wis-deploy.log")
 
@@ -107,7 +108,10 @@ def main() -> int:
         session, host, user = connect_any()
 
         if session is None:
-            log(f"unreachable on all hosts/creds (likely rebooting); retrying ({remaining}s left)")
+            log(
+                f"unreachable on all hosts/creds (likely rebooting); retrying ({remaining}s left) — "
+                "this is normal during rename/promotion reboots"
+            )
             time.sleep(POLL_INTERVAL_SEC)
             continue
 
@@ -118,9 +122,31 @@ def main() -> int:
         complete = bool(status.get("validationComplete") or status.get("converged"))
         msg = str(status.get("failureMessage") or "")
 
+        action: str | None
+        if complete:
+            action = "done"
+        elif running:
+            action = "configure process detected — monitoring"
+        elif failed:
+            action = "failure seen — will retry once then stop if identical"
+        elif relaunches >= MAX_RELAUNCHES:
+            action = "max relaunches reached"
+        else:
+            action = f"launching configure (attempt {relaunches + 1}/{MAX_RELAUNCHES})"
+
+        log(
+            deploy_feedback.format_deploy_snapshot(
+                status,
+                host=host or "?",
+                remaining_sec=remaining,
+                relaunch=relaunches if relaunches else None,
+                max_relaunches=MAX_RELAUNCHES if relaunches else None,
+                action=action,
+            )
+        )
+
         signature = (host, user, phase, running, failed, complete)
         if signature != last_signature:
-            log(f"host={host} user={user} phase={phase} running={running} failed={failed} complete={complete}")
             last_signature = signature
 
         if complete:

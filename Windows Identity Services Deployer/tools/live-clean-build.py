@@ -14,12 +14,14 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tools"))
 import winrm_deploy  # noqa: E402
 import lab_credentials  # noqa: E402
+import deploy_feedback  # noqa: E402
 
 DEFAULT_CONFIG = ROOT / "baseline.yaml"
 TARGET_IP = lab_credentials.lab_winrm_host()
 POLL_CONNECT_TIMEOUT = 90
 POLL_INTERVAL_SEC = 30
 DEFAULT_MAX_WAIT_MINUTES = 120
+MAX_CONFIGURE_RELAUNCHES = 10
 LOCK_FILE = Path("/tmp/wis-clean-build.lock")
 
 
@@ -243,7 +245,7 @@ def orchestrate_full_deploy(
     host = start_host
     deadline = time.time() + max_wait_minutes * 60
     relaunch_count = 0
-    max_relaunches = 8
+    max_relaunches = MAX_CONFIGURE_RELAUNCHES
 
     while time.time() < deadline:
         remaining = int(deadline - time.time())
@@ -257,6 +259,12 @@ def orchestrate_full_deploy(
             status = winrm_deploy.query_deploy_status(session)
             if deploy_is_complete(status):
                 print(
+                    deploy_feedback.format_deploy_snapshot(
+                        status, host=host, remaining_sec=remaining,
+                    ),
+                    flush=True,
+                )
+                print(
                     f"  deploy complete on {host} "
                     f"(phase={status.get('phase')}, hostname={status.get('hostname')})",
                     flush=True,
@@ -264,19 +272,34 @@ def orchestrate_full_deploy(
                 return host
 
             in_progress = deploy_is_in_progress(status)
+            action: str | None = None
             if in_progress:
-                print(
-                    f"  progress: host={host} phase={status.get('phase') or 'pending'} "
-                    f"resumeTask={status.get('resumeTaskPresent')} "
-                    f"configureRunning={status.get('configureInProgress')} ({remaining}s left)",
-                    flush=True,
-                )
+                action = "configure process detected — monitoring (no relaunch)"
             else:
-                # Not complete and not running: either it has not started yet, it
-                # failed, or it died silently. Surface the cause and (re)launch up
-                # to a bounded number of times so a transient crash does not stall.
                 if status.get("failed"):
-                    print(f"  previous failure: {status.get('failureMessage')}", flush=True)
+                    action = "configure not running; will relaunch after showing failure details"
+                elif relaunch_count == 0:
+                    action = "starting configure in background (first launch)"
+                else:
+                    action = (
+                        "configure not visible since last poll; relaunching "
+                        "(may already be driven by resume task after a reboot)"
+                    )
+
+            snapshot = deploy_feedback.format_deploy_snapshot(
+                status,
+                host=host,
+                remaining_sec=remaining,
+                relaunch=relaunch_count if relaunch_count else None,
+                max_relaunches=max_relaunches if relaunch_count else None,
+                action=action,
+            )
+            print(snapshot, flush=True)
+
+            if in_progress:
+                pass  # snapshot printed above; do not relaunch
+            else:
+                if status.get("failed"):
                     tail = status.get("transcriptTail")
                     if tail:
                         print("  --- configure transcript tail ---", flush=True)
@@ -303,6 +326,11 @@ def orchestrate_full_deploy(
             raise
         except Exception as exc:
             print(f"  WinRM unavailable on {host}: {exc}", flush=True)
+            print(
+                "  (WinRM drop often means the box is rebooting — rename, promotion, "
+                "or Windows Update; will retry)",
+                flush=True,
+            )
 
         try:
             host = wait_for_winrm(TARGET_IP, host, *scan_winrm_hosts(), attempts=3, delay=10)
@@ -394,6 +422,16 @@ def _run(args: argparse.Namespace) -> int:
         print("PlanOnly PASSED", flush=True)
 
     print("Running full deploy...", flush=True)
+    print(
+        "  Phases: Preflight (rename/IP/roles) → PromoteDomainController (reboot) → "
+        "PostPromotion (DNS/DHCP/GPO/PKI) → Validate.",
+        flush=True,
+    )
+    print(
+        "  Poll updates appear every ~30s. configureInProgress=false is normal during "
+        "reboots, role installs, and resume-task logon — read the activity line.",
+        flush=True,
+    )
     orchestrate_full_deploy(host, args.config, uploaded=True, max_wait_minutes=args.max_wait_minutes)
 
     verify_host = wait_for_winrm(TARGET_IP, *scan_winrm_hosts(), attempts=30, delay=15)
