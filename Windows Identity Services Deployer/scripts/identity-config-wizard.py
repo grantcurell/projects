@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 import ipaddress
+import os
 import re
 import shutil
 import subprocess
@@ -35,6 +36,11 @@ from textual.widgets import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+import winrm_deploy  # noqa: E402
+
 EXAMPLE_PATH = ROOT / "config.example.yaml"
 OUTPUT_PATH = ROOT / "config.yaml"
 
@@ -42,14 +48,16 @@ STAGE_ORDER = [
     "stage-baseline",
     "stage-core",
     "stage-write",
+    "stage-execute",
     "stage-done",
 ]
 
 STAGE_LABELS = {
-    "stage-baseline": "Stage 1/4: Choose configuration baseline.",
-    "stage-core": "Stage 2/4: Core settings for this server.",
-    "stage-write": "Stage 3/4: Write config.yaml and validate.",
-    "stage-done": "Stage 4/4: Setup complete.",
+    "stage-baseline": "Stage 1/5: Choose configuration baseline.",
+    "stage-core": "Stage 2/5: Core settings for this server.",
+    "stage-write": "Stage 3/5: Write config.yaml.",
+    "stage-execute": "Stage 4/5: Preview or run on the Windows Server.",
+    "stage-done": "Stage 5/5: Complete.",
 }
 
 FIELD_DIVIDER = "─" * 48
@@ -200,6 +208,22 @@ class IdentityConfigWizard(App[None]):
         color: #ffffff;
         text-style: bold;
     }
+    #run_planonly {
+        width: 36;
+        height: 5;
+        border: round #2d8cff;
+        background: #10243a;
+        color: #ffffff;
+        text-style: bold;
+    }
+    #run_deploy {
+        width: 36;
+        height: 5;
+        border: round #f59e0b;
+        background: #78350f;
+        color: #ffffff;
+        text-style: bold;
+    }
     .field {
         margin-bottom: 1;
     }
@@ -262,6 +286,7 @@ class IdentityConfigWizard(App[None]):
         self.current_stage = "stage-baseline"
         self.quit_armed = False
         self.write_succeeded = False
+        self.execute_running = False
 
     def compose(self) -> ComposeResult:
         yield Static(STAGE_LABELS["stage-baseline"], id="status")
@@ -325,6 +350,34 @@ class IdentityConfigWizard(App[None]):
                     yield Button("Back", id="back_write", classes="nav-button")
                     yield Button("WRITE CONFIG\n[dim](press enter)[/dim]", id="write_now")
 
+            with VerticalScroll(id="stage-execute", classes="stage"):
+                yield Static(
+                    "config.yaml is written. Connect to the target Windows Server over WinRM, "
+                    "upload the project, then preview (PlanOnly) or run the full deploy."
+                )
+                dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
+                winrm_default = os.environ.get("WIS_LAB_WINRM_HOST", "")
+                yield from labeled_field(
+                    "WinRM host",
+                    "Current IP or hostname of the Windows Server (before deploy this may differ from the target static IP in config).",
+                    Input(winrm_default, id="winrm_host", classes="field"),
+                )
+                yield from labeled_field(
+                    "WinRM username",
+                    "Local Administrator account on the server.",
+                    Input(os.environ.get("WIS_LAB_WINRM_USER", "Administrator"), id="winrm_user", classes="field"),
+                )
+                yield from labeled_field(
+                    "WinRM password",
+                    "Not stored in config.yaml. You can also set WIS_LAB_WINRM_PASSWORD in the environment.",
+                    Input(os.environ.get("WIS_LAB_WINRM_PASSWORD", ""), password=True, id="winrm_pass", classes="field"),
+                )
+                with Horizontal(classes="stage-nav"):
+                    yield Button("Back", id="back_execute", classes="nav-button")
+                    yield Button("PREVIEW\n(PlanOnly)", id="run_planonly")
+                    yield Button("RUN DEPLOY", id="run_deploy")
+                yield Static("", id="execute_status")
+
             with VerticalScroll(id="stage-done", classes="stage"):
                 yield Static("Configuration complete. config.yaml is ready.", id="done_title")
                 yield Static("", id="done_summary")
@@ -360,6 +413,8 @@ class IdentityConfigWizard(App[None]):
         focusables = self._stage_focusables()
         if stage_id == "stage-write":
             self.set_focus(self.query_one("#write_now", Button))
+        elif stage_id == "stage-execute":
+            self.set_focus(self.query_one("#run_planonly", Button))
         elif focusables:
             self.set_focus(focusables[0])
             if isinstance(focusables[0], Select):
@@ -374,7 +429,11 @@ class IdentityConfigWizard(App[None]):
         if self.current_stage == "stage-done":
             legend = f"Setup complete. Press q to exit.{armed_suffix}"
         elif self.current_stage == "stage-write":
-            legend = f"Now: highlight WRITE CONFIG and press Enter to write config.yaml and run validation.{armed_suffix}"
+            legend = f"Highlight WRITE CONFIG and press Enter to save config.yaml.{armed_suffix}"
+        elif self.current_stage == "stage-execute":
+            legend = (
+                f"PREVIEW runs PlanOnly (no changes). RUN DEPLOY executes the full build (reboots server).{armed_suffix}"
+            )
         else:
             legend = f"Fill fields, then highlight Next and press Enter to validate this stage.{armed_suffix}"
         self.query_one("#control_legend", Static).update(legend)
@@ -615,34 +674,116 @@ Write-Output 'VALIDATION_OK'
     def _validate_written_config(self) -> None:
         try:
             exe = self._run_powershell_validation(OUTPUT_PATH)
-            self.call_from_thread(self._on_write_validation_success, exe)
+            self.call_from_thread(self._on_write_complete, "passed", exe)
         except RuntimeError as exc:
-            self.call_from_thread(self._on_write_validation_failure, str(exc))
+            self.call_from_thread(self._on_write_complete, "failed", str(exc))
 
-    def _on_write_validation_success(self, exe: str) -> None:
-        self.write_succeeded = True
-        self.query_one("#write_now", Button).disabled = False
-        self.append_log(f"Validation PASSED via {exe}. config.yaml is ready.")
+    def _prepare_execute_stage(self) -> None:
+        host_input = self.query_one("#winrm_host", Input)
+        if not host_input.value.strip():
+            host_input.value = os.environ.get("WIS_LAB_WINRM_HOST", "")
+        self.query_one("#execute_status", Static).update("")
+
+    def _build_done_summary(self) -> str:
         domain = str(get_in(self.cfg, ["activeDirectory", "domainName"]) or "")
         hostname = str(get_in(self.cfg, ["network", "computerName"]) or "")
         dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
         netbios = str(get_in(self.cfg, ["activeDirectory", "netbiosName"]) or "")
-        summary = (
+        return (
             f"Domain: {domain}  (NetBIOS {netbios})\n"
             f"DC hostname: {hostname}\n"
             f"Static IP: {dc_ip}\n"
             f"Config file: {OUTPUT_PATH}\n\n"
-            "Next on the Windows Server (elevated PowerShell):\n"
-            f"  .\\Configure-WindowsServer.ps1 -ConfigPath .\\config.yaml -PlanOnly\n"
-            f"  .\\Configure-WindowsServer.ps1 -ConfigPath .\\config.yaml"
+            "The deploy script was executed on the Windows Server via WinRM."
         )
-        self.query_one("#done_summary", Static).update(summary)
+
+    def _on_write_complete(self, result: str, detail: str) -> None:
+        self.write_succeeded = True
+        self.query_one("#write_now", Button).disabled = False
+        if result == "passed":
+            self.append_log(f"Local validation PASSED via {detail}.")
+        elif result == "failed":
+            self.append_log(f"[WARN] Local validation skipped or failed: {detail}")
+            self.append_log("Validation will run on the Windows Server when you PREVIEW or RUN DEPLOY.")
+        self._prepare_execute_stage()
+        self.set_status("config.yaml written. Preview or run deploy on the Windows Server.")
+        self.switch_stage("stage-execute")
+
+    def _set_execute_running(self, running: bool) -> None:
+        self.execute_running = running
+        self.query_one("#run_planonly", Button).disabled = running
+        self.query_one("#run_deploy", Button).disabled = running
+        self.query_one("#back_execute", Button).disabled = running
+        self._refresh_controls()
+
+    def _read_winrm_credentials(self) -> tuple[str, str, str]:
+        host = self._input("winrm_host") or os.environ.get("WIS_LAB_WINRM_HOST", "")
+        user = self._input("winrm_user") or os.environ.get("WIS_LAB_WINRM_USER", "Administrator")
+        password = self._input("winrm_pass") or os.environ.get("WIS_LAB_WINRM_PASSWORD", "")
+        if not host:
+            raise RuntimeError("WinRM host is required.")
+        return host, user, password
+
+    def start_remote_run(self, plan_only: bool) -> None:
+        if self.execute_running:
+            return
+        if not OUTPUT_PATH.exists():
+            self.append_log("[ERROR] config.yaml not found. Go back and write config first.")
+            self.set_status("Write config.yaml before running on the server.")
+            return
+        try:
+            host, user, password = self._read_winrm_credentials()
+        except RuntimeError as exc:
+            self.append_log(f"[ERROR] {exc}")
+            self.set_status(str(exc))
+            return
+        self._set_execute_running(True)
+        mode = "PlanOnly preview" if plan_only else "full deploy"
+        self.append_log(f"Starting remote {mode} against {host}...")
+        self.set_status(f"Running {mode} on {host} (may take several minutes)...")
+        self._run_remote_impl(host, user, password, plan_only)
+
+    @work(thread=True)
+    def _run_remote_impl(self, host: str, user: str, password: str, plan_only: bool) -> None:
+        try:
+            session = winrm_deploy.connect(host, user, password)
+            self.call_from_thread(self.append_log, f"Connected to {host}. Uploading project...")
+            winrm_deploy.upload_project(session, ROOT, OUTPUT_PATH)
+            self.call_from_thread(self.append_log, "Upload complete. Running Configure-WindowsServer.ps1...")
+            code, out, err = winrm_deploy.run_configure(
+                session,
+                plan_only=plan_only,
+                dsrm_password=os.environ.get("CONFIGURE_WIS_DSRM_PASSWORD") or os.environ.get("WIS_LAB_DSRM_PASSWORD"),
+                service_account_password=os.environ.get("CONFIGURE_WIS_SERVICEACCOUNT_PASSWORD")
+                or os.environ.get("WIS_LAB_SERVICEACCOUNT_PASSWORD"),
+            )
+            combined = (out + "\n" + err).strip()
+            if code != 0 or "RUN_OK" not in out:
+                raise RuntimeError(combined or f"Remote run failed with exit code {code}.")
+            self.call_from_thread(self._on_remote_success, plan_only, combined)
+        except Exception as exc:  # noqa: BLE001
+            self.call_from_thread(self._on_remote_failure, str(exc))
+
+    def _on_remote_success(self, plan_only: bool, output: str) -> None:
+        self._set_execute_running(False)
+        for line in output.splitlines():
+            if line.strip():
+                self.append_log(line)
+        if plan_only:
+            self.append_log("PlanOnly PASSED. Review output above, then RUN DEPLOY when ready.")
+            self.set_status("PlanOnly complete. You can run the full deploy next.")
+            self.query_one("#execute_status", Static).update("[green]PlanOnly succeeded.[/green]")
+            return
+        self.append_log("Deploy complete.")
+        self.query_one("#done_summary", Static).update(self._build_done_summary())
+        self.set_status("Deploy finished on the Windows Server.")
         self.switch_stage("stage-done")
 
-    def _on_write_validation_failure(self, message: str) -> None:
-        self.query_one("#write_now", Button).disabled = False
-        self.append_log(f"[WARN] {message}")
-        self.set_status("config.yaml written; fix validation errors before running the server script.")
+    def _on_remote_failure(self, message: str) -> None:
+        self._set_execute_running(False)
+        self.append_log(f"[ERROR] {message}")
+        self.set_status("Remote run failed. Fix the issue and try again.")
+        self.query_one("#execute_status", Static).update(f"[red]{message}[/red]")
 
     def write_config(self) -> None:
         try:
@@ -654,9 +795,15 @@ Write-Output 'VALIDATION_OK'
                 backup = backup_file(OUTPUT_PATH)
                 self.append_log(f"Backed up existing config.yaml to {backup.name}.")
             dump_yaml(OUTPUT_PATH, self.cfg)
-            self.append_log(f"Wrote {OUTPUT_PATH.name}. Running PowerShell validation...")
-            self.set_status("Validating config.yaml (this may take a moment)...")
-            self._validate_written_config()
+            self.append_log(f"Wrote {OUTPUT_PATH.name}.")
+            pwsh = shutil.which("pwsh") or shutil.which("powershell")
+            if pwsh:
+                self.append_log("Running local PowerShell validation...")
+                self.set_status("Validating config.yaml (this may take a moment)...")
+                self._validate_written_config()
+            else:
+                self.append_log("No local PowerShell; skipping validation (runs on the Windows Server via WinRM).")
+                self._on_write_complete("skipped", "")
         except Exception as exc:  # noqa: BLE001
             self.query_one("#write_now", Button).disabled = False
             self.append_log(f"[ERROR] Write failed: {exc}")
@@ -678,9 +825,23 @@ Write-Output 'VALIDATION_OK'
     def on_back_write(self) -> None:
         self.switch_stage("stage-core")
 
+    @on(Button.Pressed, "#back_execute")
+    def on_back_execute(self) -> None:
+        if self.execute_running:
+            return
+        self.switch_stage("stage-write")
+
     @on(Button.Pressed, "#write_now")
     def on_write_now(self) -> None:
         self.write_config()
+
+    @on(Button.Pressed, "#run_planonly")
+    def on_run_planonly(self) -> None:
+        self.start_remote_run(plan_only=True)
+
+    @on(Button.Pressed, "#run_deploy")
+    def on_run_deploy(self) -> None:
+        self.start_remote_run(plan_only=False)
 
     def on_key(self, event: events.Key) -> None:
         if event.key == "escape":

@@ -11,6 +11,7 @@ import sys
 required = {
     "textual": "textual",
     "yaml": "pyyaml",
+    "winrm": "pywinrm",
 }
 missing = [pkg for mod, pkg in required.items() if importlib.util.find_spec(mod) is None]
 if missing:

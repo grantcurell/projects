@@ -102,7 +102,11 @@ function Assert-StaticIpApplied {
     Verifies configured static IPv4 exists.
     #>
     [CmdletBinding()]
-    param([Parameter(Mandatory = $true)][pscustomobject]$Config)
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$Config,
+        [Parameter(Mandatory = $true)][hashtable]$Context
+    )
+    if ($Context.PlanOnly) { return }
     $assigned = Get-NetIPAddress -InterfaceAlias $Config.network.interfaceAlias -AddressFamily IPv4 -ErrorAction SilentlyContinue
     if (-not ($assigned | Where-Object { $_.IPAddress -eq $Config.network.ipv4.address })) {
         throw 'Configured static IPv4 address is not applied.'
@@ -122,5 +126,5 @@ function Assert-NetworkReady {
     Set-TimeZoneFromConfig -Config $Config -Context $Context
     Set-StaticIPv4FromConfig -Config $Config -Context $Context
     Set-DnsClientServersBeforePromotion -Config $Config -Context $Context
-    Assert-StaticIpApplied -Config $Config
+    Assert-StaticIpApplied -Config $Config -Context $Context
 }

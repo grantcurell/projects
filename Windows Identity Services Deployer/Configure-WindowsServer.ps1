@@ -87,7 +87,9 @@ function Invoke-ProjectPhase {
             Mark-PhaseComplete -Config $Config -PhaseName 'ad-promoted'
         }
         'PostPromotion' {
-            Assert-DomainControllerState -Config $Config
+            if (-not $Context.PlanOnly) {
+                Assert-DomainControllerState -Config $Config
+            }
             Rename-DefaultSiteIfConfigured -Config $Config -Context $Context
             Configure-DnsForwardersFromConfig -Config $Config -Context $Context
             Configure-ReverseLookupZonesFromConfig -Config $Config -Context $Context
@@ -130,6 +132,10 @@ function Invoke-ProjectPhase {
             Mark-PhaseComplete -Config $Config -PhaseName 'post-promotion-complete'
         }
         'Validate' {
+            if ($Context.PlanOnly) {
+                Mark-PhaseComplete -Config $Config -PhaseName 'validation-complete'
+                break
+            }
             Invoke-ValidationSuite -Config $Config -Context $Context
             Assert-DnsRecordsResolve -Config $Config
             Assert-DnsForwarders -Config $Config
@@ -188,11 +194,16 @@ function Invoke-Project {
     elseif ($Phase) {
         $selectedPhases = @($Phase)
     }
-    elseif ($resumePhase) {
+    elseif ($resumePhase -and -not $PlanOnly) {
         $selectedPhases = @($resumePhase, 'PostPromotion', 'Validate')
     }
     else {
-        $selectedPhases = @('Preflight', 'PromoteDomainController', 'PostPromotion', 'Validate')
+        if ($PlanOnly) {
+            $selectedPhases = @('Preflight', 'PromoteDomainController')
+        }
+        else {
+            $selectedPhases = @('Preflight', 'PromoteDomainController', 'PostPromotion', 'Validate')
+        }
     }
 
     foreach ($phaseName in $selectedPhases) {
