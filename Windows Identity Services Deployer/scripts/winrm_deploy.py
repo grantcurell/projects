@@ -38,9 +38,9 @@ def build_project_zip(root: Path, *, include_config: Path | None = None) -> byte
             if path.is_dir():
                 continue
             rel = path.relative_to(root).as_posix()
-            if rel.startswith(".git/") or rel == "config.yaml":
+            if rel in ("config.yaml", "lab-secrets.env") or rel.startswith("config.yaml.bak."):
                 continue
-            if rel.startswith("config.yaml.bak."):
+            if rel.startswith(".git/"):
                 continue
             if any(rel.startswith(prefix) for prefix in skip_prefixes):
                 continue

@@ -46,12 +46,12 @@ steps gated by `if ($Context.PlanOnly) { return }`.
   domain `identity.lab.example.com` (NETBIOS `IDENTITY`). See `baseline.yaml`.
 - **Controller:** grantdev LXC on proxmox1.
 - **Credentials:** never stored in tracked files. Copy `lab-secrets.env.example` to
-  `lab-secrets.env` (gitignored), fill in values locally, then:
-  ```bash
-  set -a && source lab-secrets.env && set +a
-  ```
-  Required env vars: `WIS_LAB_WINRM_PASSWORD`, `WIS_LAB_DSRM_PASSWORD`,
-  `WIS_LAB_SERVICEACCOUNT_PASSWORD`. Harnesses load these via `tools/lab_credentials.py`.
+  `lab-secrets.env` (gitignored), fill in values locally. All Python harnesses and
+  the config wizard load that file automatically via `tools/lab_credentials.py`
+  (explicit env vars still override file values). The wizard execute stage also
+  prompts for WinRM, DSRM, and service-account passwords.
+  Required keys: `WIS_LAB_WINRM_PASSWORD`, `WIS_LAB_DSRM_PASSWORD`,
+  `WIS_LAB_SERVICEACCOUNT_PASSWORD`.
 - **There is NO DHCP server on this network** until this deploy installs one.
   A NIC left in DHCP mode = dead box. See §5.1.
 
@@ -115,6 +115,7 @@ Netlogon all `Running`, `domainRole=5`.
 ### Full end-to-end (Linux controller)
 ```bash
 cd "Windows Identity Services Deployer"
+cp lab-secrets.env.example lab-secrets.env   # once; fill in passwords locally
 python3 tools/live-clean-build.py --config baseline.yaml --host 192.168.5.10
 # flags: --skip-upload, --skip-planonly, --clean, --max-wait-minutes N
 ```

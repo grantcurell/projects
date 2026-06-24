@@ -28,7 +28,6 @@ Design notes (hard-won):
 """
 from __future__ import annotations
 
-import os
 import sys
 import time
 from datetime import datetime
@@ -40,10 +39,10 @@ sys.path.insert(0, str(ROOT / "tools"))
 import winrm_deploy  # noqa: E402
 import lab_credentials  # noqa: E402
 
-PRIMARY_HOST = os.environ.get("WIS_LAB_WINRM_HOST", "192.168.5.10")
-FALLBACK_HOST = os.environ.get("WIS_LAB_WINRM_FALLBACK_HOST", "192.168.5.171")
-NETBIOS = os.environ.get("WIS_LAB_NETBIOS_NAME", "IDENTITY")
-DOMAIN_DNS = os.environ.get("WIS_LAB_DOMAIN_DNS", "identity.lab.example.com")
+PRIMARY_HOST = lab_credentials.lab_winrm_host()
+FALLBACK_HOST = lab_credentials.lab_winrm_fallback_host()
+NETBIOS = lab_credentials.lab_netbios_name()
+DOMAIN_DNS = lab_credentials.lab_domain_dns()
 
 CONNECT_READ_TIMEOUT = 25
 CONNECT_OP_TIMEOUT = 20

@@ -3,27 +3,25 @@
 from __future__ import annotations
 
 import base64
-import os
+import sys
 from pathlib import Path
 
 import winrm
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+import lab_credentials  # noqa: E402
+
 CONFIG_PATH = Path(__file__).resolve().parent / "lab-config.yaml"
-HOST = os.environ.get("WIS_LAB_WINRM_HOST", "192.168.5.10")
-USER = os.environ.get("WIS_LAB_WINRM_USER", "Administrator")
-PASSWORD = os.environ.get("WIS_LAB_WINRM_PASSWORD", "")
 REMOTE = r"C:\Admin\Windows Identity Services Deployer"
 TEMP_DIR = r"C:\Windows\Temp\WISDeploy"
 CHUNK_SIZE = 1200
 
 
 def session() -> winrm.Session:
-    if not PASSWORD:
-        raise RuntimeError("Set WIS_LAB_WINRM_PASSWORD before running remote lab tests.")
     return winrm.Session(
-        f"http://{HOST}:5985/wsman",
-        auth=(USER, PASSWORD),
+        f"http://{lab_credentials.lab_winrm_host()}:5985/wsman",
+        auth=(lab_credentials.lab_winrm_user(), lab_credentials.lab_winrm_password()),
         transport="ntlm",
         server_cert_validation="ignore",
         read_timeout_sec=300,

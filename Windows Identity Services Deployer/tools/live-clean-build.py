@@ -16,7 +16,7 @@ import winrm_deploy  # noqa: E402
 import lab_credentials  # noqa: E402
 
 DEFAULT_CONFIG = ROOT / "baseline.yaml"
-TARGET_IP = "192.168.5.10"
+TARGET_IP = lab_credentials.lab_winrm_host()
 POLL_CONNECT_TIMEOUT = 90
 POLL_INTERVAL_SEC = 30
 DEFAULT_MAX_WAIT_MINUTES = 120
@@ -317,7 +317,7 @@ def orchestrate_full_deploy(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run an idempotent identity-services lab deploy test.")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
-    parser.add_argument("--host", default=os.environ.get("WIS_LAB_WINRM_HOST", ""))
+    parser.add_argument("--host", default="")
     parser.add_argument("--skip-planonly", action="store_true")
     parser.add_argument(
         "--skip-upload",
@@ -332,7 +332,7 @@ def main() -> int:
     parser.add_argument(
         "--max-wait-minutes",
         type=int,
-        default=int(os.environ.get("WIS_LAB_MAX_WAIT_MINUTES", DEFAULT_MAX_WAIT_MINUTES)),
+        default=lab_credentials.lab_max_wait_minutes(DEFAULT_MAX_WAIT_MINUTES),
         help="Wall-clock limit for the full deploy poll loop.",
     )
     args = parser.parse_args()
@@ -349,7 +349,7 @@ def main() -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
-    prefer = [args.host] if args.host else []
+    prefer = [args.host] if args.host else [lab_credentials.lab_winrm_fallback_host()]
     prefer.extend(scan_winrm_hosts())
     prefer.append(TARGET_IP)
     host = wait_for_winrm(*prefer, attempts=30, delay=10)

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import io
-import os
 import sys
 import zipfile
 from pathlib import Path
@@ -12,9 +11,9 @@ from pathlib import Path
 import winrm
 
 ROOT = Path(__file__).resolve().parents[1]
-WIN_HOST = os.environ.get("WIS_LAB_WINRM_HOST", "192.168.5.10")
-WIN_USER = os.environ.get("WIS_LAB_WINRM_USER", "Administrator")
-WIN_PASS = os.environ.get("WIS_LAB_WINRM_PASSWORD", "")
+sys.path.insert(0, str(ROOT / "tools"))
+import lab_credentials  # noqa: E402
+
 REMOTE_DIR = r"C:\Admin\Windows Identity Services Deployer"
 CHUNK_SIZE = 1200
 TEMP_DIR = r"C:\Windows\Temp\WISDeploy"
@@ -27,18 +26,16 @@ def build_zip() -> bytes:
             if path.is_dir():
                 continue
             rel = path.relative_to(ROOT).as_posix()
-            if rel.startswith(".git/") or rel == "config.yaml":
+            if rel.startswith(".git/") or rel in ("config.yaml", "lab-secrets.env"):
                 continue
             zf.write(path, rel)
     return buf.getvalue()
 
 
 def connect() -> winrm.Session:
-    if not WIN_PASS:
-        raise RuntimeError("Set WIS_LAB_WINRM_PASSWORD before running remote lab tests.")
     return winrm.Session(
-        f"http://{WIN_HOST}:5985/wsman",
-        auth=(WIN_USER, WIN_PASS),
+        f"http://{lab_credentials.lab_winrm_host()}:5985/wsman",
+        auth=(lab_credentials.lab_winrm_user(), lab_credentials.lab_winrm_password()),
         transport="ntlm",
         server_cert_validation="ignore",
     )

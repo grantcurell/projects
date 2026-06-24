@@ -37,9 +37,13 @@ from textual.widgets import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = ROOT / "scripts"
+TOOLS_DIR = ROOT / "tools"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
 import winrm_deploy  # noqa: E402
+import lab_credentials  # noqa: E402
 
 EXAMPLE_PATH = ROOT / "config.example.yaml"
 OUTPUT_PATH = ROOT / "config.yaml"
@@ -352,11 +356,9 @@ class IdentityConfigWizard(App[None]):
 
             with VerticalScroll(id="stage-execute", classes="stage"):
                 yield Static(
-                    "config.yaml is written. Connect to the target Windows Server over WinRM, "
-                    "upload the project, then preview (PlanOnly) or run the full deploy."
+                    "config.yaml is written. Enter credentials below, then preview (PlanOnly) or run the full deploy."
                 )
-                dc_ip = str(get_in(self.cfg, ["network", "ipv4", "address"]) or "")
-                winrm_default = os.environ.get("WIS_LAB_WINRM_HOST", "")
+                winrm_default = lab_credentials.lab_winrm_host()
                 yield from labeled_field(
                     "WinRM host",
                     "Current IP or hostname of the Windows Server (before deploy this may differ from the target static IP in config).",
@@ -365,12 +367,29 @@ class IdentityConfigWizard(App[None]):
                 yield from labeled_field(
                     "WinRM username",
                     "Local Administrator account on the server.",
-                    Input(os.environ.get("WIS_LAB_WINRM_USER", "Administrator"), id="winrm_user", classes="field"),
+                    Input(lab_credentials.lab_winrm_user(), id="winrm_user", classes="field"),
                 )
                 yield from labeled_field(
                     "WinRM password",
-                    "Not stored in config.yaml. You can also set WIS_LAB_WINRM_PASSWORD in the environment.",
-                    Input(os.environ.get("WIS_LAB_WINRM_PASSWORD", ""), password=True, id="winrm_pass", classes="field"),
+                    "Password for the WinRM account above. Pre-filled from lab-secrets.env when present.",
+                    Input("", password=True, id="winrm_pass", classes="field"),
+                )
+                yield Static("Forest promotion & service accounts", classes="field-title")
+                yield Static(FIELD_DIVIDER, classes="field-divider")
+                yield Static(
+                    "Required for RUN DEPLOY (forest promotion and service-account creation). "
+                    "PlanOnly preview only needs WinRM credentials above.",
+                    classes="field-help",
+                )
+                yield from labeled_field(
+                    "DSRM password",
+                    "Directory Services Restore Mode password for the new forest. Never stored in config.yaml.",
+                    Input("", password=True, id="dsrm_pass", classes="field"),
+                )
+                yield from labeled_field(
+                    "Service account password",
+                    "Password applied to configured service accounts during PostPromotion (e.g. LDAP bind accounts).",
+                    Input("", password=True, id="svc_pass", classes="field"),
                 )
                 with Horizontal(classes="stage-nav"):
                     yield Button("Back", id="back_execute", classes="nav-button")
@@ -414,7 +433,7 @@ class IdentityConfigWizard(App[None]):
         if stage_id == "stage-write":
             self.set_focus(self.query_one("#write_now", Button))
         elif stage_id == "stage-execute":
-            self.set_focus(self.query_one("#run_planonly", Button))
+            self.set_focus(self.query_one("#winrm_host", Input))
         elif focusables:
             self.set_focus(focusables[0])
             if isinstance(focusables[0], Select):
@@ -678,10 +697,17 @@ Write-Output 'VALIDATION_OK'
         except RuntimeError as exc:
             self.call_from_thread(self._on_write_complete, "failed", str(exc))
 
+    def _prefill_execute_field(self, widget_id: str, value: str) -> None:
+        field = self.query_one(f"#{widget_id}", Input)
+        if not field.value.strip() and value:
+            field.value = value
+
     def _prepare_execute_stage(self) -> None:
-        host_input = self.query_one("#winrm_host", Input)
-        if not host_input.value.strip():
-            host_input.value = os.environ.get("WIS_LAB_WINRM_HOST", "")
+        self._prefill_execute_field("winrm_host", lab_credentials.lab_winrm_host())
+        self._prefill_execute_field("winrm_user", lab_credentials.lab_winrm_user())
+        self._prefill_execute_field("winrm_pass", lab_credentials.lab_winrm_password_if_set())
+        self._prefill_execute_field("dsrm_pass", lab_credentials.lab_dsrm_password_if_set())
+        self._prefill_execute_field("svc_pass", lab_credentials.lab_service_account_password_if_set())
         self.query_one("#execute_status", Static).update("")
 
     def _build_done_summary(self) -> str:
@@ -716,13 +742,24 @@ Write-Output 'VALIDATION_OK'
         self.query_one("#back_execute", Button).disabled = running
         self._refresh_controls()
 
-    def _read_winrm_credentials(self) -> tuple[str, str, str]:
-        host = self._input("winrm_host") or os.environ.get("WIS_LAB_WINRM_HOST", "")
-        user = self._input("winrm_user") or os.environ.get("WIS_LAB_WINRM_USER", "Administrator")
-        password = self._input("winrm_pass") or os.environ.get("WIS_LAB_WINRM_PASSWORD", "")
+    def _read_execute_credentials(
+        self, *, plan_only: bool
+    ) -> tuple[str, str, str, str | None, str | None]:
+        host = self._input("winrm_host") or lab_credentials.lab_winrm_host()
+        user = self._input("winrm_user") or lab_credentials.lab_winrm_user()
+        password = self._input("winrm_pass") or lab_credentials.lab_winrm_password_if_set()
+        dsrm = self._input("dsrm_pass") or lab_credentials.lab_dsrm_password_if_set()
+        svc = self._input("svc_pass") or lab_credentials.lab_service_account_password_if_set()
         if not host:
             raise RuntimeError("WinRM host is required.")
-        return host, user, password
+        if not password:
+            raise RuntimeError("WinRM password is required.")
+        if not plan_only:
+            if not dsrm:
+                raise RuntimeError("DSRM password is required for full deploy.")
+            if not svc:
+                raise RuntimeError("Service account password is required for full deploy.")
+        return host, user, password, dsrm or None, svc or None
 
     def start_remote_run(self, plan_only: bool) -> None:
         if self.execute_running:
@@ -732,7 +769,7 @@ Write-Output 'VALIDATION_OK'
             self.set_status("Write config.yaml before running on the server.")
             return
         try:
-            host, user, password = self._read_winrm_credentials()
+            host, user, password, dsrm, svc = self._read_execute_credentials(plan_only=plan_only)
         except RuntimeError as exc:
             self.append_log(f"[ERROR] {exc}")
             self.set_status(str(exc))
@@ -741,15 +778,20 @@ Write-Output 'VALIDATION_OK'
         mode = "PlanOnly preview" if plan_only else "full deploy"
         self.append_log(f"Starting remote {mode} against {host}...")
         self.set_status(f"Running {mode} on {host} (may take several minutes)...")
-        self._run_remote_impl(host, user, password, plan_only)
+        self._run_remote_impl(host, user, password, plan_only, dsrm_password=dsrm, service_account_password=svc)
 
     @work(thread=True)
-    def _run_remote_impl(self, host: str, user: str, password: str, plan_only: bool) -> None:
+    def _run_remote_impl(
+        self,
+        host: str,
+        user: str,
+        password: str,
+        plan_only: bool,
+        *,
+        dsrm_password: str | None,
+        service_account_password: str | None,
+    ) -> None:
         try:
-            dsrm = os.environ.get("CONFIGURE_WIS_DSRM_PASSWORD") or os.environ.get("WIS_LAB_DSRM_PASSWORD")
-            svc = os.environ.get("CONFIGURE_WIS_SERVICEACCOUNT_PASSWORD") or os.environ.get(
-                "WIS_LAB_SERVICEACCOUNT_PASSWORD"
-            )
             session = winrm_deploy.connect(host, user, password)
             self.call_from_thread(self.append_log, f"Connected to {host}. Uploading project...")
             winrm_deploy.upload_project(session, ROOT, OUTPUT_PATH)
@@ -780,8 +822,8 @@ if ($cbs -or $pfr) { Restart-Computer -Force } else { Write-Output 'READY' }
                 user,
                 password,
                 plan_only=plan_only,
-                dsrm_password=dsrm,
-                service_account_password=svc,
+                dsrm_password=dsrm_password,
+                service_account_password=service_account_password,
                 on_status=on_status,
             )
             self.call_from_thread(self._on_remote_success, plan_only, "Deploy finished successfully.")
